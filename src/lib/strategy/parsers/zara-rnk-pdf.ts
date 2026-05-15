@@ -286,6 +286,13 @@ function derivedMargin(markup: unknown): number | null {
 
 function extractColorRef(modelRef: unknown): string | null {
   if (typeof modelRef !== 'string') return null;
+  // Zara format `MODEL FABRIC COLOR`: e.g. "4786 166 401"
+  //   parts[0] = model       → canonical lineage
+  //   parts[1] = fabric/sub  → variant within lineage
+  //   parts[2] = color code  → the actual color (mapped via color taxonomy)
+  // Color winner detection ranks parts[2] within the parts[0] lineage.
   const parts = modelRef.trim().split(/\s+/);
-  return parts.length >= 2 ? parts[1] : null;
+  if (parts.length >= 3) return parts[2];
+  if (parts.length === 2) return parts[1];
+  return null;
 }

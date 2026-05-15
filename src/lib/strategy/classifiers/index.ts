@@ -67,6 +67,12 @@ export type LifecycleStage =
 export interface SkuScoreInput {
   product_fact_id: string;
   identity_node_id: string | null;
+  // How many distinct seasons this SKU's lineage has appeared in (computed
+  // from the identity_graph members at score time). Drives BP §5.8 carryover
+  // survivor detection — a SKU with 2+ seasons of positive performance is
+  // a survivor candidate.
+  lineage_seasons_present: number;
+  season_tag: string;
   model_ref: string;
   color_ref: string | null;
   family_code: string | null;
@@ -95,6 +101,8 @@ export interface SkuScoreInput {
   velocity_8_14d: number;
   max_sale_no_promo: number | null;
   max_sale_promo: number | null;
+  emptying_rate: number | null;
+  emptying_rate_available: number | null;
 }
 
 export interface SkuScore {
@@ -153,24 +161,26 @@ export async function loadDefaultAlgorithmVersion(): Promise<{
 }
 
 export async function loadScoringInputs(
-  tenantId: string
+  tenantId: string,
+  /** Restrict to facts derived from these source_id rows. Empty/undefined = all tenant facts. */
+  sourceSetIds?: string[]
 ): Promise<SkuScoreInput[]> {
   // Pull every product_fact + its inventory + windows + efficiency + identity_node.
   // We do this in one go for the tenant; for very large tenants v2 will
   // paginate per analysis_run scope.
 
-  const { data: products, error: pErr } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('strategy_product_facts')
     .select(
       `
       id, model_ref, color_ref, family_code, pvp, pvp_compare, markup_pct, on_promo,
-      cost_estimate, margin_pct_list,
+      cost_estimate, margin_pct_list, source_id, season_tag,
       strategy_inventory_facts!strategy_inventory_facts_product_idx (
         days_in_store, stores_with_stock, stores_active, stock_store,
         stock_warehouse, stock_in_transit, stock_pending, pipeline_total
       ),
       strategy_sales_windows!strategy_sales_windows_product_window_idx (
-        window_type, units, max_sale_no_promo, max_sale_promo
+        window_type, units, max_sale_no_promo, max_sale_promo, emptying_rate, emptying_rate_available
       ),
       strategy_efficiency_facts!strategy_efficiency_facts_product_idx (
         total_bought, total_sold, sell_through_shipped_pct, sell_through_bought_pct, returns_pct
@@ -179,19 +189,28 @@ export async function loadScoringInputs(
     )
     .eq('tenant_id', tenantId);
 
+  if (sourceSetIds && sourceSetIds.length > 0) {
+    query = query.in('source_id', sourceSetIds);
+  }
+  const { data: products, error: pErr } = await query;
+
   if (pErr) throw new Error(`scoring inputs fetch failed: ${pErr.message}`);
 
   // Match each product_fact to its identity_node by member array containment.
+  // Also capture how many distinct seasons each lineage has appeared in —
+  // required for BP §5.8 carryover survivor classifier.
   const { data: identityNodes } = await supabaseAdmin
     .from('strategy_sku_identity_graph')
-    .select('id, member_product_fact_ids')
+    .select('id, member_product_fact_ids, seasons_present')
     .eq('tenant_id', tenantId);
 
   const identityByProduct = new Map<string, string>();
+  const seasonsPresentByNode = new Map<string, number>();
   for (const node of identityNodes || []) {
     for (const pid of node.member_product_fact_ids as string[]) {
       identityByProduct.set(pid, node.id);
     }
+    seasonsPresentByNode.set(node.id, ((node.seasons_present as string[]) || []).length);
   }
 
   const inputs: SkuScoreInput[] = (products || []).map((p: any) => {
@@ -204,10 +223,24 @@ export async function loadScoringInputs(
       windows.find((x) => x.max_sale_no_promo != null)?.max_sale_no_promo ?? null;
     const maxPromo =
       windows.find((x) => x.max_sale_promo != null)?.max_sale_promo ?? null;
+    // Pull the worst (highest) emptying_rate across observed windows — that
+    // is the strongest signal of stockout pressure on this SKU.
+    const emptyingValues = windows
+      .map((x) => numOrNull(x.emptying_rate))
+      .filter((v): v is number => v != null);
+    const emptyingRate = emptyingValues.length > 0 ? Math.max(...emptyingValues) : null;
+    const emptyingAvailValues = windows
+      .map((x) => numOrNull(x.emptying_rate_available))
+      .filter((v): v is number => v != null);
+    const emptyingRateAvailable =
+      emptyingAvailValues.length > 0 ? Math.max(...emptyingAvailValues) : null;
 
+    const nodeId = identityByProduct.get(p.id) ?? null;
     return {
       product_fact_id: p.id,
-      identity_node_id: identityByProduct.get(p.id) ?? null,
+      identity_node_id: nodeId,
+      lineage_seasons_present: nodeId ? seasonsPresentByNode.get(nodeId) ?? 1 : 1,
+      season_tag: p.season_tag,
       model_ref: p.model_ref,
       color_ref: p.color_ref,
       family_code: p.family_code,
@@ -236,6 +269,8 @@ export async function loadScoringInputs(
       velocity_8_14d: velOf('8_14d'),
       max_sale_no_promo: maxNoPromo,
       max_sale_promo: maxPromo,
+      emptying_rate: emptyingRate,
+      emptying_rate_available: emptyingRateAvailable,
     };
   });
 
@@ -316,18 +351,35 @@ export function scoreSku(
   };
 
   // ── Classifier 4: stockout-aware velocity ────────────────────────────────
-  let distributionRatio: number | null = null;
+  // CORRECTED post-Codex review: the previous version inverted the ratio.
+  // "Stockout suppression" means stores ran OUT — so `stores_active`
+  // (selling) is much LESS than `stores_with_stock` (carrying) OR the
+  // emptying rate is high. We compute both and take the stronger signal.
+  //
+  // `activation_ratio` = stores_active / stores_with_stock: tells us what
+  //                      share of carrying stores are converting. Low = many
+  //                      stores have stock but aren't selling (taste mismatch
+  //                      or distribution issue, NOT stockout).
+  // `Tasa Vaciado`     = stores running out of stock per period. HIGH means
+  //                      demand exceeds what the store had — true stockout
+  //                      suppression. This is the right signal.
+  let activationRatio: number | null = null;
   if (input.stores_with_stock && input.stores_active && input.stores_with_stock > 0) {
-    distributionRatio = input.stores_active / input.stores_with_stock;
+    activationRatio = input.stores_active / input.stores_with_stock;
   }
+  // Worst (highest) emptying_rate across observed windows.
+  const emptyingRate = input.emptying_rate;
   const stockoutSuppressed =
-    distributionRatio != null &&
-    distributionRatio < 0.6 &&
-    velocityRaw7d > 0;
-  let stockout_risk_score = stockoutSuppressed ? 1 - distributionRatio! : 0;
+    (emptyingRate != null && emptyingRate >= 0.6 && velocityRaw7d > 0) ||
+    (activationRatio != null && activationRatio < 0.5 && velocityRaw7d > 0 && (input.stock_store ?? 0) < 10);
+  const stockout_risk_score = stockoutSuppressed
+    ? Math.min(1, Math.max(emptyingRate ?? 0, activationRatio != null ? 1 - activationRatio : 0))
+    : 0;
   traces.stockout_aware_velocity = {
-    distribution_ratio: distributionRatio,
+    activation_ratio: activationRatio,
+    emptying_rate: emptyingRate,
     stockout_suppressed: stockoutSuppressed,
+    note: 'High emptying_rate OR (low activation_ratio AND near-zero in-store stock) flags stockout suppression',
   };
 
   // ── Classifier 5: cannibalization detector ───────────────────────────────
@@ -399,6 +451,35 @@ export function scoreSku(
     days_in_store: daysInStore,
     velocity_ratio: velocityRatio,
     stage: lifecycle,
+  };
+
+  // ── Classifier 8: carryover survivor (BP §5.8) ───────────────────────────
+  // A SKU whose lineage has been present in 2+ seasons AND is currently
+  // performing at or above median for its family is a "survivor" — strong
+  // carryover candidate. Override lifecycle if we currently classified it
+  // as 'mature' so the recommendation flow tags this as carryover_survivor.
+  const seasonsPresent = input.lineage_seasons_present ?? 1;
+  const familyMedianDensity = input.family_code
+    ? familyBaselines.get(input.family_code)?.median_density ?? 0
+    : 0;
+  const carryoverSurvivor =
+    seasonsPresent >= 2 &&
+    velocityPerStorePerDay != null &&
+    velocityPerStorePerDay >= familyMedianDensity &&
+    (input.returns_pct ?? 0) <= ctx.thresholds.hero_returns_pct_max &&
+    !stockoutSuppressed;
+  if (carryoverSurvivor && (lifecycle === 'mature' || lifecycle === 'peak')) {
+    // Already in the right neighbourhood; keep stage but flag in trace.
+  }
+  traces.carryover_survivor = {
+    seasons_present: seasonsPresent,
+    family_median_density: familyMedianDensity,
+    velocity_per_store_per_day: velocityPerStorePerDay,
+    returns_pct: input.returns_pct,
+    is_survivor: carryoverSurvivor,
+    note:
+      'Survivorship bias warning: only SKUs visible in the input feed are evaluated. ' +
+      'A "survivor" verdict is conditional on the input including the lineage across the seasons.',
   };
 
   // ── Classifier 7: distribution breadth score ─────────────────────────────

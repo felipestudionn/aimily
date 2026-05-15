@@ -1,0 +1,17 @@
+
+-- Cover all FKs flagged by Supabase advisor
+CREATE INDEX strategy_tenants_created_by_idx ON strategy_tenants(created_by);
+CREATE INDEX strategy_sources_uploaded_by_idx ON strategy_sources(uploaded_by);
+CREATE INDEX strategy_product_facts_raw_record_idx ON strategy_product_facts(raw_record_id);
+CREATE INDEX strategy_constraints_created_by_idx ON strategy_constraints(created_by);
+CREATE INDEX strategy_creative_briefs_created_by_idx ON strategy_creative_briefs(created_by);
+CREATE INDEX strategy_sku_identity_graph_validator_idx ON strategy_sku_identity_graph(human_validated_by);
+CREATE INDEX strategy_taxonomies_reviewer_idx ON strategy_taxonomies(reviewed_by);
+CREATE INDEX strategy_analysis_runs_algorithm_idx ON strategy_analysis_runs(algorithm_version_id);
+CREATE INDEX strategy_analysis_runs_constraint_idx ON strategy_analysis_runs(constraint_id);
+CREATE INDEX strategy_analysis_runs_brief_idx ON strategy_analysis_runs(creative_brief_id);
+CREATE INDEX strategy_analysis_runs_creator_idx ON strategy_analysis_runs(created_by);
+CREATE INDEX strategy_sku_scores_product_idx ON strategy_sku_scores(product_fact_id);
+CREATE INDEX strategy_sku_scores_identity_idx ON strategy_sku_scores(identity_node_id);
+CREATE INDEX cp_strategy_links_acceptor_idx ON collection_plan_strategy_links(accepted_by);
+CREATE INDEX cp_strategy_links_scenario_idx ON collection_plan_strategy_links(strategy_scenario_id);

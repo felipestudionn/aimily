@@ -81,9 +81,13 @@ export async function runBacktest(
     .eq('tenant_id', tenantId);
   const seasonByPid = new Map((facts || []).map((r: any) => [r.id, r.season_tag as string]));
 
+  // Parse season tags ("V26", "I26", "I26+V26", "SS27", "FW25") into a
+  // comparable (year, half) tuple so the newest season is reliably last.
+  // Codex P1 fix: lexicographic sort ranked "I26+V26" after "V26", which
+  // inverted real time for many tenants.
   const allSeasons = Array.from(
     new Set((facts || []).map((r: any) => r.season_tag as string))
-  ).sort();
+  ).sort((a, b) => seasonRank(a) - seasonRank(b));
   if (allSeasons.length < 2) {
     return {
       run_id: runId,
@@ -264,8 +268,40 @@ export async function runBacktest(
 }
 
 function canonicalKey(modelRef: string): string {
+  // Codex P0 fix: lineage is the FIRST token (model code). Earlier version
+  // used 2 tokens, which split colorways across multiple lineages and
+  // broke backtest comparison across seasons.
   const parts = modelRef.trim().split(/\s+/);
-  return parts.slice(0, 2).join(' ');
+  return parts[0] || modelRef.trim();
+}
+
+/**
+ * Rank a season tag for chronological ordering.
+ *
+ *   "V26"      → 2026.5  (spring/summer)
+ *   "I26"      → 2026.1  (winter)
+ *   "I26+V26"  → 2026.5  (carryover into V26 → ranked at V26)
+ *   "SS27"     → 2027.5
+ *   "FW25"     → 2025.1
+ *
+ * Lexicographic sort would put "I26+V26" before "V26", inverting time.
+ */
+function seasonRank(tag: string): number {
+  if (!tag) return -Infinity;
+  // If it's a compound carryover like "I26+V26", take the LAST segment —
+  // that is the most recent season the SKU appeared in.
+  const segments = tag.split('+').map((s) => s.trim());
+  const latest = segments[segments.length - 1];
+  // Spanish: V = Verano (spring/summer, half=0.5), I = Invierno (winter, half=0.1)
+  // English: SS = Spring/Summer (half=0.5), FW/AW = Fall/Winter (half=0.1)
+  const m = latest.match(/^(V|I|SS|FW|AW)\s?(\d{2,4})$/i);
+  if (!m) return -Infinity;
+  const prefix = m[1].toUpperCase();
+  let yearRaw = m[2];
+  if (yearRaw.length === 2) yearRaw = `20${yearRaw}`;
+  const year = parseInt(yearRaw, 10);
+  const half = prefix === 'V' || prefix === 'SS' ? 0.5 : 0.1;
+  return year + half;
 }
 
 function classifyEngine(score: SkuScore, input: any, thresholds: ClassifierThresholds): string {

@@ -312,9 +312,15 @@ async function fetchAllProductFacts(tenantId: string): Promise<FactRow[]> {
 
 function canonicalPrefix(modelRef: string): string {
   if (!modelRef) return '';
-  // Take the first two space-separated tokens: e.g. "4786 166 401" -> "4786 166".
+  // The model code is the FIRST space-separated token. Subsequent tokens
+  // are fabric/sub-line/color codes that vary within a single silhouette.
+  //   "4786 166 401" + "4786 166 250" + "4786 30 620" all collapse to "4786"
+  //   (the GRANDAD COLLAR SHIRT lineage with different fabrics + colors).
+  // Codex contrapropuesta §1 fix: previous version used first TWO tokens,
+  // which double-counted lineages per fabric and broke color-winner
+  // detection across fabrics.
   const parts = modelRef.trim().split(/\s+/);
-  return parts.slice(0, 2).join(' ');
+  return parts[0] || modelRef.trim();
 }
 
 function tokens(text: string): Set<string> {
@@ -336,7 +342,10 @@ function unionTokens(texts: string[]): Set<string> {
 function jaccard(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;
   let inter = 0;
-  a.forEach((x) => { if (b.has(x)) inter += 1; }); inter += 1;
+  a.forEach((x) => {
+    if (b.has(x)) inter += 1;
+  });
+  if (inter === 0) return 0;
   return inter / (a.size + b.size - inter);
 }
 

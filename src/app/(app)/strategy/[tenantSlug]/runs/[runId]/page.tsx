@@ -349,6 +349,17 @@ function RecommendationCard({ candidate }: { candidate: any }) {
       ? 'bg-amber-50 text-amber-700'
       : 'bg-red-50 text-red-700';
 
+  // 6 confidence dimensions per Codex P1 fix — render the breakdown that
+  // the BP §9 value prop hinges on. NULL creative_fit means "no brief".
+  const dims: Array<{ key: string; label: string; value: number | null }> = [
+    { key: 'data_completeness', label: 'Data', value: candidate.confidence_data_completeness != null ? Number(candidate.confidence_data_completeness) : null },
+    { key: 'identity', label: 'Identity', value: candidate.confidence_identity != null ? Number(candidate.confidence_identity) : null },
+    { key: 'demand', label: 'Demand', value: candidate.confidence_demand != null ? Number(candidate.confidence_demand) : null },
+    { key: 'margin', label: 'Margin', value: candidate.confidence_margin != null ? Number(candidate.confidence_margin) : null },
+    { key: 'creative_fit', label: 'Creative fit', value: candidate.confidence_creative_fit != null ? Number(candidate.confidence_creative_fit) : null },
+    { key: 'action', label: 'Action', value: confidence },
+  ];
+
   return (
     <article className="bg-white rounded-[20px] p-6 md:p-8">
       <header className="flex items-start justify-between gap-3 mb-4">
@@ -364,6 +375,35 @@ function RecommendationCard({ candidate }: { candidate: any }) {
           {actionLabel} · {(confidence * 100).toFixed(0)}%
         </span>
       </header>
+
+      {/* Confidence dimensions breakdown */}
+      <section className="mb-4">
+        <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-2">
+          Confidence breakdown · 6 dimensions
+        </p>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {dims.map((d) => (
+            <div key={d.key} className="bg-carbon/[0.03] rounded-[8px] p-2">
+              <div className="text-[10px] text-carbon/40 uppercase tracking-[0.06em] truncate">
+                {d.label}
+              </div>
+              <div
+                className={`text-[13px] font-semibold mt-0.5 ${
+                  d.value == null
+                    ? 'text-carbon/30'
+                    : d.value >= 0.7
+                    ? 'text-emerald-700'
+                    : d.value >= 0.4
+                    ? 'text-amber-700'
+                    : 'text-red-700'
+                }`}
+              >
+                {d.value == null ? '—' : `${Math.round(d.value * 100)}%`}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {candidate.data_sufficiency_warning && (
         <p className="text-[12px] text-amber-700 bg-amber-50 px-3 py-2 rounded-[8px] mb-4">

@@ -42,12 +42,40 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
   const t0 = Date.now();
   const warnings: string[] = [];
 
-  // 1. Load run + linked entities
+  // 1. Atomic claim — only one execution can transition a run from pending/failed
+  //    into 'scoring'. Solves Codex P0 race condition: two concurrent POSTs
+  //    cannot both insert scores. The UPDATE..RETURNING returns 0 rows if a
+  //    concurrent execution already claimed the run.
+  const { data: claim, error: claimErr } = await supabaseAdmin
+    .from('strategy_analysis_runs')
+    .update({ run_status: 'scoring', scoring_started_at: new Date().toISOString() })
+    .eq('id', runId)
+    .in('run_status', ['pending', 'failed'])
+    .select(
+      'id, tenant_id, algorithm_version_id, constraint_id, creative_brief_id, source_set_ids'
+    );
+  if (claimErr) {
+    throw new Error(`Run claim failed: ${claimErr.message}`);
+  }
+  if (!claim || claim.length === 0) {
+    throw new Error(`Run already in flight or completed: ${runId}`);
+  }
+  // Idempotent cleanup of any partial state from a previous failed attempt.
+  await Promise.all([
+    supabaseAdmin.from('strategy_sku_scores').delete().eq('run_id', runId),
+    supabaseAdmin.from('strategy_family_scores').delete().eq('run_id', runId),
+    supabaseAdmin.from('strategy_recommendation_candidates').delete().eq('run_id', runId),
+    supabaseAdmin.from('strategy_scenarios').delete().eq('run_id', runId),
+    supabaseAdmin.from('strategy_backtests').delete().eq('run_id', runId),
+  ]);
+
+  // Re-fetch with the algorithm_version join.
   const { data: run, error: runErr } = await supabaseAdmin
     .from('strategy_analysis_runs')
     .select(
       `
       id, tenant_id, algorithm_version_id, constraint_id, creative_brief_id, run_status,
+      source_set_ids,
       strategy_algorithm_versions!inner(id, thresholds)
     `
     )
@@ -76,10 +104,12 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     hard_exclusions: [],
   };
   if (run.constraint_id) {
+    // Tenant filter on lookup — defense in depth against cross-tenant injection.
     const { data: c } = await supabaseAdmin
       .from('strategy_constraints')
       .select('*')
       .eq('id', run.constraint_id)
+      .eq('tenant_id', run.tenant_id)
       .single();
     if (c) {
       constraints = {
@@ -99,6 +129,7 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
       .from('strategy_creative_briefs')
       .select('*')
       .eq('id', run.creative_brief_id)
+      .eq('tenant_id', run.tenant_id)
       .single();
     if (b) {
       brief = {
@@ -112,14 +143,14 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     }
   }
 
-  // 4. Mark scoring start
-  await supabaseAdmin
-    .from('strategy_analysis_runs')
-    .update({ run_status: 'scoring', scoring_started_at: new Date().toISOString() })
-    .eq('id', runId);
+  // 4. (Run is already in 'scoring' status from the atomic claim above.)
 
-  // 5. Load inputs
-  const inputs = await loadScoringInputs(run.tenant_id);
+  // 5. Load inputs — restricted to the run's declared source_set_ids so
+  //    selecting sources in the UI actually narrows the scoring scope.
+  const inputs = await loadScoringInputs(
+    run.tenant_id,
+    (run.source_set_ids as string[]) || undefined
+  );
   if (inputs.length === 0) {
     warnings.push('No product_facts available for tenant — cannot score');
     await supabaseAdmin
@@ -265,7 +296,7 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     colorTaxonomy
   );
 
-  // 11. Persist candidates
+  // 11. Persist candidates — including ALL 6 confidence dimensions per Codex P1.
   const candidateInserts = allCandidates.map((c) => ({
     tenant_id: run.tenant_id,
     run_id: runId,
@@ -276,6 +307,11 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     evidence: c.evidence,
     counter_evidence: c.counter_evidence,
     assumptions: c.assumptions,
+    confidence_data_completeness: c.confidence_data_completeness,
+    confidence_identity: c.confidence_identity,
+    confidence_demand: c.confidence_demand,
+    confidence_margin: c.confidence_margin,
+    confidence_creative_fit: c.confidence_creative_fit,
     confidence_action: c.confidence_action,
     data_sufficiency_warning: c.data_sufficiency_warning,
     narrative: c.narrative,

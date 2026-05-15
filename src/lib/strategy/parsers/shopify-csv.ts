@@ -135,7 +135,10 @@ export function parseShopifyCsvOrXlsx(
     const importe = toNumber(row.net_sales);
     bucket.lifetime_units += units;
     bucket.lifetime_net_sales += importe;
-    bucket.lifetime_returns += toNumber(row.total_returns ?? row.units_returned);
+    // Returns: prefer units_returned (clean integer units). `total_returns`
+    // is often a euros amount in Shopify exports — do NOT add it as units.
+    // Codex P1 fix.
+    bucket.lifetime_returns += toNumber(row.units_returned);
 
     const dt = parseDate(row.day || row.week || row.month);
     if (dt) {
@@ -335,6 +338,77 @@ function sheetToObjects<T>(workbook: XLSX.WorkBook, sheetName: string | undefine
   return rows.map((r) => normalizeKeys(r) as T);
 }
 
+/**
+ * Shopify report header alias map — different Shopify export versions use
+ * different column names for the same data. We normalize them all to a
+ * canonical key. Codex P1 fix: previous parser silently lost columns from
+ * any export that didn't use the exact names we expected.
+ */
+const HEADER_ALIASES: Record<string, string> = {
+  // SKU identity
+  product_variant_sku: 'variant_sku',
+  variant_sku: 'variant_sku',
+  sku: 'variant_sku',
+  product_sku: 'variant_sku',
+
+  // Product / variant titles
+  product_title: 'product_title',
+  product_name: 'product_title',
+  title: 'product_title',
+  product: 'product_title',
+  product_variant_title: 'variant_title',
+  variant_title: 'variant_title',
+  variant: 'variant_title',
+
+  // Vendor / type / tags
+  product_vendor: 'vendor',
+  vendor: 'vendor',
+  product_type: 'product_type',
+  type: 'product_type',
+  product_tags: 'tags',
+  tags: 'tags',
+
+  // Sales metrics — Shopify variants
+  net_items_sold: 'net_units_sold',
+  net_units_sold: 'net_units_sold',
+  units_sold: 'net_units_sold',
+  net_quantity: 'net_units_sold',
+  net_sales: 'net_sales',
+  gross_sales: 'gross_sales',
+  total_sales: 'gross_sales',
+
+  // Returns
+  units_returned: 'units_returned',
+  returns: 'units_returned',
+  return_quantity: 'units_returned',
+  total_returns: 'units_returned',
+  return_amount: 'return_amount',
+
+  // Time bucket
+  day: 'day',
+  date: 'day',
+  week: 'week',
+  month: 'month',
+
+  // Inventory
+  available: 'available',
+  inventory_available: 'available',
+  on_hand: 'on_hand',
+  inventory_on_hand: 'on_hand',
+  incoming: 'incoming',
+  inventory_incoming: 'incoming',
+  committed: 'committed',
+  inventory_committed: 'committed',
+  location: 'location',
+  inventory_location: 'location',
+
+  // Returns sheet
+  reason: 'reason',
+  return_reason: 'reason',
+  return_date: 'return_date',
+  date_of_return: 'return_date',
+};
+
 function normalizeKeys(row: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row)) {
@@ -343,7 +417,12 @@ function normalizeKeys(row: Record<string, unknown>): Record<string, unknown> {
       .replace(/\s+/g, '_')
       .replace(/[^a-z0-9_]+/g, '')
       .replace(/^_+|_+$/g, '');
-    out[norm] = v;
+    const canonical = HEADER_ALIASES[norm] || norm;
+    // First win — never overwrite a canonical key that's already populated
+    // with a more authoritative value from an earlier column.
+    if (out[canonical] === undefined || out[canonical] === null || out[canonical] === '') {
+      out[canonical] = v;
+    }
   }
   return out;
 }

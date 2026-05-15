@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No default algorithm version' }, { status: 500 });
   }
 
-  // Default source_set_ids = all sources for tenant if not specified.
+  // Source scoping — validate every requested source belongs to THIS tenant.
+  // Defaults to every processed source for the tenant when none supplied.
   let sourceSetIds: string[] = Array.isArray(body.source_set_ids)
     ? body.source_set_ids.filter((x: unknown) => typeof x === 'string')
     : [];
@@ -58,6 +59,24 @@ export async function POST(req: NextRequest) {
       .eq('tenant_id', tenant.id)
       .not('processed_at', 'is', null);
     sourceSetIds = (data || []).map((s) => s.id);
+  } else {
+    const { data: validSources } = await supabaseAdmin
+      .from('strategy_sources')
+      .select('id')
+      .eq('tenant_id', tenant.id)
+      .in('id', sourceSetIds)
+      .not('processed_at', 'is', null);
+    const validIds = new Set((validSources || []).map((s) => s.id));
+    const rejected = sourceSetIds.filter((id) => !validIds.has(id));
+    if (rejected.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'source_set_ids contains sources that do not belong to this tenant or are not processed',
+          rejected,
+        },
+        { status: 403 }
+      );
+    }
   }
 
   if (sourceSetIds.length === 0) {
@@ -65,6 +84,39 @@ export async function POST(req: NextRequest) {
       { error: 'No processed sources available for this tenant. Upload + parse a source first.' },
       { status: 400 }
     );
+  }
+
+  // Cross-tenant injection guard — constraint_id and creative_brief_id MUST
+  // belong to the active tenant. Without this an analyst on tenant A who
+  // learns a UUID from tenant B could splice that brief/constraint into
+  // a run. Codex P0 fix.
+  if (body.constraint_id) {
+    const { data: c } = await supabaseAdmin
+      .from('strategy_constraints')
+      .select('id')
+      .eq('id', body.constraint_id)
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+    if (!c) {
+      return NextResponse.json(
+        { error: 'constraint_id does not belong to this tenant' },
+        { status: 403 }
+      );
+    }
+  }
+  if (body.creative_brief_id) {
+    const { data: b } = await supabaseAdmin
+      .from('strategy_creative_briefs')
+      .select('id')
+      .eq('id', body.creative_brief_id)
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+    if (!b) {
+      return NextResponse.json(
+        { error: 'creative_brief_id does not belong to this tenant' },
+        { status: 403 }
+      );
+    }
   }
 
   const { data: run, error } = await supabaseAdmin

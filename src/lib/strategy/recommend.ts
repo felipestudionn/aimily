@@ -41,6 +41,12 @@ export interface RecommendationCandidate {
   evidence: Record<string, unknown>;
   counter_evidence: Record<string, unknown>;
   assumptions: string[];
+  // 6 confidence dimensions snapshot at the time the candidate is generated.
+  confidence_data_completeness: number;
+  confidence_identity: number;
+  confidence_demand: number;
+  confidence_margin: number;
+  confidence_creative_fit: number | null;
   confidence_action: number;
   data_sufficiency_warning: string | null;
   narrative: string | null;
@@ -120,6 +126,11 @@ export function generateSkuCandidates(
           cannibalization_risk: score.cannibalization_risk_score,
         },
         assumptions,
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
         confidence_action: score.confidence_action,
         data_sufficiency_warning: score.confidence_data_completeness < 0.5
           ? 'Insufficient data for confident carryover; treat as hypothesis'
@@ -142,6 +153,11 @@ export function generateSkuCandidates(
           markdown_potential: score.markdown_risk_score,
         },
         assumptions,
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
         confidence_action: score.confidence_action,
         data_sufficiency_warning: null,
         narrative: null,
@@ -162,6 +178,11 @@ export function generateSkuCandidates(
             (score.lifecycle_stage as string) === 'peak',
         },
         assumptions,
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
         confidence_action: score.confidence_action,
         data_sufficiency_warning: null,
         narrative: null,
@@ -182,6 +203,11 @@ export function generateSkuCandidates(
         evidence: { ...evidence, stockout_diagnosis: true },
         counter_evidence: {},
         assumptions,
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
         confidence_action: score.confidence_action,
         data_sufficiency_warning: null,
         narrative: null,
@@ -205,6 +231,11 @@ export function generateSkuCandidates(
           velocity_currently: input.velocity_7d,
         },
         assumptions: [...assumptions, 'Oversupply signal; previous buy was larger than demand absorbed'],
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
         confidence_action: score.confidence_action,
         data_sufficiency_warning: null,
         narrative: null,
@@ -230,6 +261,11 @@ export function generateSkuCandidates(
           ...assumptions,
           'High returns + high velocity = volume hero but margin loser; verify fit / quality / tech-pack before scaling',
         ],
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
         confidence_action: score.confidence_action,
         data_sufficiency_warning: null,
         narrative: null,
@@ -268,6 +304,11 @@ export function generateFamilyCandidates(
         assumptions: [
           'Family returns rate elevated vs cross-family benchmark — quality / fit / tech-pack review recommended before re-buying',
         ],
+        confidence_data_completeness: 0.75,
+        confidence_identity: 1,
+        confidence_demand: 0.75,
+        confidence_margin: 0.75,
+        confidence_creative_fit: null,
         confidence_action: 0.75,
         data_sufficiency_warning: null,
         narrative: null,
@@ -292,6 +333,11 @@ export function generateFamilyCandidates(
         assumptions: [
           'Family saturation high (≥50% dogs/exits) — recommend cutting the bottom quartile and concentrating on heroes',
         ],
+        confidence_data_completeness: 0.7,
+        confidence_identity: 1,
+        confidence_demand: 0.7,
+        confidence_margin: 0.7,
+        confidence_creative_fit: null,
         confidence_action: 0.7,
         data_sufficiency_warning: null,
         narrative: null,
@@ -317,6 +363,11 @@ export function generateFamilyCandidates(
         assumptions: [
           'Strong family ROI + multiple heroes — extend the winning archetypes; do not blanket expand the family',
         ],
+        confidence_data_completeness: 0.75,
+        confidence_identity: 1,
+        confidence_demand: 0.75,
+        confidence_margin: 0.75,
+        confidence_creative_fit: null,
         confidence_action: 0.75,
         data_sufficiency_warning: null,
         narrative: null,
@@ -372,6 +423,11 @@ export function generateColorWinnerCandidates(
         },
         counter_evidence: {},
         assumptions: ['Color winner within proven silhouette — extend palette around this anchor color'],
+        confidence_data_completeness: 0.8,
+        confidence_identity: 1,
+        confidence_demand: 0.8,
+        confidence_margin: 0.8,
+        confidence_creative_fit: null,
         confidence_action: 0.8,
         data_sufficiency_warning: null,
         narrative: null,
@@ -393,6 +449,11 @@ export function generateColorWinnerCandidates(
         },
         counter_evidence: {},
         assumptions: ['Color loser within proven silhouette — drop from next season'],
+        confidence_data_completeness: 0.7,
+        confidence_identity: 1,
+        confidence_demand: 0.7,
+        confidence_margin: 0.7,
+        confidence_creative_fit: null,
         confidence_action: 0.7,
         data_sufficiency_warning: null,
         narrative: null,
@@ -426,17 +487,24 @@ export function applyCreativeBriefModulation(
 
   return candidates.map((c) => {
     let weight = 1;
+    let creativeFit = 0;
     const application: Record<string, unknown> = {};
 
-    // Family pivot
+    // Family pivot — Bucket B aligns or opposes a candidate's action.
     if (c.scope === 'family' && brief.family_pivot[c.scope_ref] != null) {
       const pivot = brief.family_pivot[c.scope_ref];
       if (pivot > 0 && (c.action_type === 'resize_up' || c.action_type === 'carryover')) {
         weight *= 1 + pivot;
+        creativeFit = Math.max(creativeFit, Math.min(1, 0.5 + pivot));
         application.family_pivot = `+${(pivot * 100).toFixed(0)}% pivot aligned`;
       } else if (pivot < 0 && (c.action_type === 'resize_down' || c.action_type === 'kill')) {
         weight *= 1 + Math.abs(pivot);
+        creativeFit = Math.max(creativeFit, Math.min(1, 0.5 + Math.abs(pivot)));
         application.family_pivot = `${(pivot * 100).toFixed(0)}% pivot aligned`;
+      } else {
+        // Candidate works against the brief — penalize fit.
+        creativeFit = Math.max(creativeFit, 0.1);
+        application.family_pivot_misaligned = pivot;
       }
     }
 
@@ -446,7 +514,11 @@ export function applyCreativeBriefModulation(
       const colorName = colorTaxonomy.get(colorRef);
       if (colorName && brief.color_story.includes(colorName)) {
         weight *= 1.25;
+        creativeFit = Math.max(creativeFit, 0.85);
         application.color_story_hit = colorName;
+      } else {
+        creativeFit = Math.max(creativeFit, 0.25);
+        application.color_off_palette = colorName ?? colorRef ?? null;
       }
     }
 
@@ -456,15 +528,20 @@ export function applyCreativeBriefModulation(
       const archetype = familyCode ? familyToArchetype.get(familyCode) : null;
       if (archetype && brief.archetypes_focus.includes(archetype)) {
         weight *= 1.2;
+        creativeFit = Math.max(creativeFit, 0.8);
         application.archetype_focus = archetype;
       }
     }
 
-    if (weight === 1) return c;
+    // No brief signal touched this candidate → leave creative_fit unset.
+    const nextCreativeFit = creativeFit > 0 ? Math.min(1, creativeFit) : c.confidence_creative_fit;
+
+    if (weight === 1 && nextCreativeFit === c.confidence_creative_fit) return c;
 
     return {
       ...c,
       confidence_action: Math.min(1, c.confidence_action * weight),
+      confidence_creative_fit: nextCreativeFit,
       evidence: { ...c.evidence, creative_application: application },
     };
   });
@@ -571,6 +648,18 @@ export function assembleScenarios(
   return scenarios;
 }
 
+/**
+ * Build one scenario with:
+ *   - candidate filtering by posture
+ *   - dedupe by (scope, scope_ref): pick the HIGHEST-CONFIDENCE candidate
+ *     per SKU/family. Avoids Codex P0 double-count where a single SKU
+ *     emitted carryover + replenish + investigate and the financials
+ *     summed three times.
+ *   - Bucket A constraint enforcement: target_total_skus cap (drop
+ *     lowest-confidence picks), target_buy_budget cap (same), hard_exclusions.
+ *   - Each SKU contributes to revenue/margin/budget ONCE based on the
+ *     winning action's multiplier.
+ */
 function buildScenario(args: {
   candidates: RecommendationCandidate[];
   inputsByPid: Map<string, SkuScoreInput>;
@@ -581,51 +670,131 @@ function buildScenario(args: {
   constraints: Constraints;
 }): ScenarioBlueprint {
   const { candidates, inputsByPid, name, description, scenario_type, filter, constraints } = args;
-  const selectedIndices: number[] = [];
-  let revenue = 0;
-  let margin = 0;
-  let returns = 0;
-  let budget = 0;
-  const skuSet = new Set<string>();
-  const creativeApps: string[] = [];
 
+  // 1. Filter + drop hard exclusions
+  const passing: Array<{ idx: number; cand: RecommendationCandidate }> = [];
   for (let i = 0; i < candidates.length; i += 1) {
     const c = candidates[i];
     if (!filter(c)) continue;
-
-    // Honour constraints (best-effort within a deterministic single pass).
     if (constraints.hard_exclusions.includes(c.scope_ref)) continue;
+    passing.push({ idx: i, cand: c });
+  }
 
-    selectedIndices.push(i);
+  // 2. Dedupe by (scope, scope_ref): keep highest-confidence candidate.
+  //    Lower-confidence variants are dropped — their action is implicitly
+  //    superseded. Other-scope candidates (family/color/etc.) are kept
+  //    alongside the winning SKU pick.
+  const winnerByKey = new Map<string, { idx: number; cand: RecommendationCandidate }>();
+  for (const p of passing) {
+    const key = `${p.cand.scope}::${p.cand.scope_ref}`;
+    const incumbent = winnerByKey.get(key);
+    if (!incumbent || p.cand.confidence_action > incumbent.cand.confidence_action) {
+      winnerByKey.set(key, p);
+    }
+  }
+  let winners = Array.from(winnerByKey.values());
 
-    if (c.scope === 'sku') {
-      const input = inputsByPid.get(c.scope_ref);
-      if (input) {
-        skuSet.add(c.scope_ref);
-        const multiplier =
-          ((c.proposed_magnitude as any)?.multiplier as number) ??
-          (c.action_type === 'kill' ? 0 : 1);
-        const projectedBuy = (input.total_bought ?? 0) * multiplier;
-        const projectedSold = (input.total_sold ?? 0) * multiplier;
-        const projectedRevenue = (input.pvp ?? 0) * projectedSold;
-        const projectedMargin =
-          (input.pvp ?? 0) *
-          (input.margin_pct_list ?? 0) *
-          projectedSold *
-          (1 - (input.returns_pct ?? 0));
-        const projectedReturns =
-          (input.pvp ?? 0) * projectedSold * (input.returns_pct ?? 0);
-        const projectedBudget = (input.cost_estimate ?? 0) * projectedBuy;
-        revenue += projectedRevenue;
-        margin += projectedMargin;
-        returns += projectedReturns;
-        budget += projectedBudget;
+  // 3. Bucket A enforcement — pre-compute projected impact per SKU pick.
+  type Impact = {
+    pid: string;
+    revenue: number;
+    margin: number;
+    returns: number;
+    budget: number;
+    multiplier: number;
+  };
+  const impactByPid = new Map<string, Impact>();
+  const projectImpact = (cand: RecommendationCandidate): Impact | null => {
+    if (cand.scope !== 'sku') return null;
+    const input = inputsByPid.get(cand.scope_ref);
+    if (!input) return null;
+    const multiplier =
+      ((cand.proposed_magnitude as { multiplier?: number } | null)?.multiplier as
+        | number
+        | undefined) ?? (cand.action_type === 'kill' ? 0 : 1);
+    const projectedBuy = (input.total_bought ?? 0) * multiplier;
+    const projectedSold = (input.total_sold ?? 0) * multiplier;
+    const revenue = (input.pvp ?? 0) * projectedSold;
+    const margin =
+      (input.pvp ?? 0) *
+      (input.margin_pct_list ?? 0) *
+      projectedSold *
+      (1 - (input.returns_pct ?? 0));
+    const returnsEur = (input.pvp ?? 0) * projectedSold * (input.returns_pct ?? 0);
+    const budget = (input.cost_estimate ?? 0) * projectedBuy;
+    return { pid: cand.scope_ref, revenue, margin, returns: returnsEur, budget, multiplier };
+  };
+
+  for (const w of winners) {
+    const impact = projectImpact(w.cand);
+    if (impact) impactByPid.set(impact.pid, impact);
+  }
+
+  // SKU cap — keep highest-confidence picks until target_total_skus is met.
+  let skuConstraintApplied = false;
+  if (constraints.target_total_skus != null && constraints.target_total_skus > 0) {
+    const skuWinners = winners
+      .filter((w) => w.cand.scope === 'sku')
+      .sort((a, b) => b.cand.confidence_action - a.cand.confidence_action);
+    if (skuWinners.length > constraints.target_total_skus) {
+      const allowed = new Set(skuWinners.slice(0, constraints.target_total_skus).map((w) => w.cand.scope_ref));
+      winners = winners.filter((w) => w.cand.scope !== 'sku' || allowed.has(w.cand.scope_ref));
+      skuConstraintApplied = true;
+    }
+  }
+
+  // Budget cap — drop the lowest-confidence SKU picks until projected buy
+  // budget fits inside target_buy_budget.
+  let budgetConstraintApplied = false;
+  if (constraints.target_buy_budget != null && constraints.target_buy_budget > 0) {
+    let totalBudget = winners.reduce((acc, w) => {
+      const imp = impactByPid.get(w.cand.scope_ref);
+      return acc + (imp?.budget ?? 0);
+    }, 0);
+    if (totalBudget > constraints.target_buy_budget) {
+      const droppable = winners
+        .filter((w) => w.cand.scope === 'sku')
+        .sort((a, b) => a.cand.confidence_action - b.cand.confidence_action);
+      const toDrop = new Set<string>();
+      for (const w of droppable) {
+        if (totalBudget <= constraints.target_buy_budget) break;
+        const imp = impactByPid.get(w.cand.scope_ref);
+        if (!imp || imp.budget <= 0) continue;
+        toDrop.add(`${w.cand.scope}::${w.cand.scope_ref}`);
+        totalBudget -= imp.budget;
+      }
+      if (toDrop.size > 0) {
+        winners = winners.filter((w) => !toDrop.has(`${w.cand.scope}::${w.cand.scope_ref}`));
+        budgetConstraintApplied = true;
       }
     }
-
-    const app = (c.evidence as any)?.creative_application;
-    if (app) creativeApps.push(JSON.stringify(app));
   }
+
+  // 4. Accumulate totals — each SKU contributes ONCE (via its winning action).
+  let revenue = 0;
+  let margin = 0;
+  let returnsEur = 0;
+  let budget = 0;
+  const skuSet = new Set<string>();
+  const creativeApps: unknown[] = [];
+
+  for (const w of winners) {
+    if (w.cand.scope === 'sku') {
+      const imp = impactByPid.get(w.cand.scope_ref);
+      if (imp && !skuSet.has(imp.pid)) {
+        skuSet.add(imp.pid);
+        revenue += imp.revenue;
+        margin += imp.margin;
+        returnsEur += imp.returns;
+        budget += imp.budget;
+      }
+    }
+    const app = (w.cand.evidence as { creative_application?: unknown } | undefined)
+      ?.creative_application;
+    if (app) creativeApps.push(app);
+  }
+
+  const selectedIndices = winners.map((w) => w.idx);
 
   return {
     name,
@@ -635,18 +804,25 @@ function buildScenario(args: {
     candidate_indices: selectedIndices,
     total_predicted_revenue: Math.round(revenue * 100) / 100,
     total_predicted_margin: Math.round(margin * 100) / 100,
-    total_predicted_returns: Math.round(returns * 100) / 100,
+    total_predicted_returns: Math.round(returnsEur * 100) / 100,
     total_predicted_buy_budget: Math.round(budget * 100) / 100,
     predicted_sku_count: skuSet.size,
     constraint_satisfaction_summary: {
       target_total_skus: constraints.target_total_skus,
       actual_total_skus: skuSet.size,
+      sku_constraint_applied: skuConstraintApplied,
       target_buy_budget: constraints.target_buy_budget,
       actual_buy_budget: Math.round(budget * 100) / 100,
+      budget_constraint_applied: budgetConstraintApplied,
       budget_utilization:
         constraints.target_buy_budget && constraints.target_buy_budget > 0
           ? Math.round((budget / constraints.target_buy_budget) * 10000) / 10000
           : null,
+      target_avg_margin: constraints.target_avg_margin,
+      actual_avg_margin:
+        revenue > 0 ? Math.round((margin / revenue) * 10000) / 10000 : null,
+      positioning_tier: constraints.positioning_tier,
+      hard_exclusions_count: constraints.hard_exclusions.length,
     },
     creative_application_summary:
       creativeApps.length > 0
