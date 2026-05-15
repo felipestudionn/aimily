@@ -173,20 +173,46 @@ export const soraProvider: VideoProvider = {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-    // Dynamic import keeps the SDK out of edge bundles where it wouldn't
-    // load anyway. Both this provider and the rest of Studio are node-only.
+    // Dynamic imports keep node-only deps out of edge bundles.
     const { default: OpenAI, toFile } = await import('openai');
+    const { default: sharp } = await import('sharp');
     const client = new OpenAI({ apiKey });
 
     const prompt = buildVideoPrompt(input);
     const seconds = input.duration === '10' ? '8' : '4'; // Sora legal durations
-    const size = '720x1280'; // Studio default is vertical 1024x1536
 
-    // Pull the source image into a File-like for the multipart upload.
+    /* Sora 2 requires the input_reference image to have dimensions that
+     * EXACTLY match the requested `size`. Studio sources are typically
+     * 1024x1536 (vertical, 2:3) — different ratio than Sora's 9:16. So:
+     *   1. Detect the source orientation
+     *   2. Pick the closest Sora-legal size (portrait | landscape | square)
+     *   3. sharp-resize to those exact dimensions with smart-crop
+     *      ('attention' = saliency-based, keeps faces/products in frame) */
     const imgRes = await fetch(input.imageUrl);
     if (!imgRes.ok) throw new Error(`Sora source image fetch failed: ${imgRes.status}`);
-    const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-    const imageFile = await toFile(imgBuffer, 'source.png', { type: 'image/png' });
+    const rawBuffer = Buffer.from(await imgRes.arrayBuffer());
+    const meta = await sharp(rawBuffer).metadata();
+    const srcW = meta.width || 1024;
+    const srcH = meta.height || 1024;
+    const aspect = srcW / srcH;
+
+    let size: '720x1280' | '1280x720' | '1024x1024';
+    let targetW: number;
+    let targetH: number;
+    if (aspect < 0.95) {
+      size = '720x1280'; targetW = 720; targetH = 1280;        // portrait
+    } else if (aspect > 1.05) {
+      size = '1280x720'; targetW = 1280; targetH = 720;        // landscape
+    } else {
+      size = '1024x1024'; targetW = 1024; targetH = 1024;      // square
+    }
+
+    const resizedBuffer = await sharp(rawBuffer)
+      .resize(targetW, targetH, { fit: 'cover', position: sharp.strategy.attention })
+      .png()
+      .toBuffer();
+
+    const imageFile = await toFile(resizedBuffer, 'source.png', { type: 'image/png' });
 
     /* Create the video job. The SDK marshals this as multipart/form-data
      * with `input_reference` as the file part. If a future Sora release
