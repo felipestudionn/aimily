@@ -904,20 +904,26 @@ type VideoStyleCard = {
     | 'campaign-hero' | 'runway-reveal' | 'playful-bounce' | 'street-kinetic' | 'slow-reveal';
   name: string;
   tagline: string;
+  /* Brand-film references the AI is anchored to. Concrete > abstract. */
+  brands: string;
+  /* Distribution channels where this style typically lives. Helps the
+   * user pick by intent ("I'm posting on TikTok" → narrows to 3-4 options).
+   * Lowercase + bullets for visual lightness. */
+  useFor: string;
 };
 const VIDEO_STYLE_CARDS: VideoStyleCard[] = [
   // PRESERVE — input image anchored, micro-motion only
-  { id: 'editorial-stillness', name: 'Editorial Stillness', tagline: 'Painterly tableau, alive with breath' },
-  { id: 'direct-address',      name: 'Direct Address',      tagline: 'Eye contact, the look' },
-  { id: 'wind-light',          name: 'Wind & Light',        tagline: 'Atmospheric, dream-like loop' },
-  { id: 'avant-garde',         name: 'Avant-Garde',         tagline: 'Sculptural, monumental tension' },
-  { id: 'product-macro',       name: 'Product Macro',       tagline: 'Craft detail, materials in focus' },
+  { id: 'editorial-stillness', name: 'Editorial Stillness', tagline: 'Painterly tableau, alive with breath',  brands: 'Bottega · Khaite · The Row',          useFor: 'web hero · lookbook · email' },
+  { id: 'direct-address',      name: 'Direct Address',      tagline: 'Eye contact, the look',                  brands: 'Calvin Klein · Acne Studios',         useFor: 'reel · portrait · web hero' },
+  { id: 'wind-light',          name: 'Wind & Light',        tagline: 'Atmospheric, dream-like loop',           brands: 'Self-Portrait · Zimmermann',          useFor: 'ig story loop · web hero loop' },
+  { id: 'avant-garde',         name: 'Avant-Garde',         tagline: 'Sculptural, monumental tension',         brands: 'Rick Owens · Comme · Yohji',          useFor: 'campaign launch · art film' },
+  { id: 'product-macro',       name: 'Product Macro',       tagline: 'Craft detail, materials in focus',       brands: 'Hermès · Loewe · ARC’TERYX',          useFor: 'pdp · reel detail · craft story' },
   // ANIMATED — subject can move, identity / garment / scene preserved
-  { id: 'campaign-hero',       name: 'Campaign Hero',       tagline: 'Narrative cinematic walk-in' },
-  { id: 'runway-reveal',       name: 'Runway Reveal',       tagline: 'Rotation showcase, full silhouette' },
-  { id: 'playful-bounce',      name: 'Playful Bounce',      tagline: 'Social-native, kinetic joy' },
-  { id: 'street-kinetic',      name: 'Street Kinetic',      tagline: 'Urban documentary energy' },
-  { id: 'slow-reveal',         name: 'Slow Reveal',         tagline: 'Luxury patience, build-up' },
+  { id: 'campaign-hero',       name: 'Campaign Hero',       tagline: 'Narrative cinematic walk-in',            brands: 'Hereu · Loewe · Jacquemus',           useFor: 'campaign launch · reel hero' },
+  { id: 'runway-reveal',       name: 'Runway Reveal',       tagline: 'Rotation showcase, full silhouette',     brands: 'Net-a-Porter · runway b-roll',        useFor: 'pdp · lookbook · reel' },
+  { id: 'playful-bounce',      name: 'Playful Bounce',      tagline: 'Social-native, kinetic joy',             brands: 'Jacquemus · Diesel · JW Anderson',    useFor: 'tiktok · ig reel · stories' },
+  { id: 'street-kinetic',      name: 'Street Kinetic',      tagline: 'Urban documentary energy',               brands: 'Off-White · Carhartt WIP · Heaven',   useFor: 'tiktok · behind-scenes' },
+  { id: 'slow-reveal',         name: 'Slow Reveal',         tagline: 'Luxury patience, build-up',              brands: 'Cartier · Hermès · The Row',          useFor: 'campaign launch · hero film' },
 ];
 
 /* ── Failure-mode taxonomy ─────────────────────────────────────────────── */
@@ -2508,7 +2514,7 @@ function OutputLightbox({
                               key={s.id}
                               type="button"
                               onClick={() => setVideoStyle(s.id)}
-                              className={`text-left px-3 py-2.5 rounded-[10px] transition-colors ${
+                              className={`text-left px-3 py-2.5 rounded-[10px] transition-colors flex flex-col gap-1 ${
                                 active
                                   ? 'bg-carbon text-white'
                                   : 'bg-carbon/[0.04] text-carbon hover:bg-carbon/[0.08]'
@@ -2517,10 +2523,20 @@ function OutputLightbox({
                               <p className="text-[11px] font-semibold tracking-[-0.01em] leading-tight">
                                 {s.name}
                               </p>
-                              <p className={`text-[9px] mt-0.5 leading-tight tracking-[-0.005em] ${
-                                active ? 'text-white/70' : 'text-carbon/50'
+                              <p className={`text-[9px] leading-snug tracking-[-0.005em] ${
+                                active ? 'text-white/80' : 'text-carbon/55'
                               }`}>
                                 {s.tagline}
+                              </p>
+                              <p className={`text-[8.5px] leading-tight italic tracking-[-0.005em] mt-0.5 ${
+                                active ? 'text-white/55' : 'text-carbon/35'
+                              }`}>
+                                {s.brands}
+                              </p>
+                              <p className={`text-[7.5px] uppercase tracking-[0.08em] font-medium leading-tight mt-0.5 ${
+                                active ? 'text-white/45' : 'text-carbon/30'
+                              }`}>
+                                {s.useFor}
                               </p>
                             </button>
                           );
