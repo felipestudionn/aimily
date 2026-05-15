@@ -79,6 +79,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   ctxPalettePh: string;
   ctxConsumerLabel: string;
   ctxConsumerPh: string;
+  variationsTitle: string;
+  varColorLabel: string;
+  varBgLabel: string;
+  varModelLabel: string;
+  varColorPh: string;
+  varBgPh: string;
+  varGenerate: string;
+  varProcessing: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -134,6 +142,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'cream · navy · burnt orange…',
     ctxConsumerLabel: 'Consumer',
     ctxConsumerPh: 'urban professional 25-35…',
+    variationsTitle: 'Variations on this photo',
+    varColorLabel: 'Change color',
+    varBgLabel: 'Change background',
+    varModelLabel: 'Change model',
+    varColorPh: 'burnt orange linen · forest green silk…',
+    varBgPh: 'warm beige plaster wall · afternoon light…',
+    varGenerate: 'Generate variation',
+    varProcessing: 'Generating variation…',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -189,6 +205,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'crudo · marino · naranja quemado…',
     ctxConsumerLabel: 'Cliente',
     ctxConsumerPh: 'profesional urbano 25-35…',
+    variationsTitle: 'Variaciones sobre esta foto',
+    varColorLabel: 'Cambiar color',
+    varBgLabel: 'Cambiar fondo',
+    varModelLabel: 'Cambiar modelo',
+    varColorPh: 'lino naranja quemado · seda verde bosque…',
+    varBgPh: 'pared yeso beige · luz de tarde…',
+    varGenerate: 'Generar variación',
+    varProcessing: 'Generando variación…',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -244,6 +268,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'crème · marine · orange brûlé…',
     ctxConsumerLabel: 'Client',
     ctxConsumerPh: 'professionnel urbain 25-35…',
+    variationsTitle: 'Variations sur cette photo',
+    varColorLabel: 'Changer la couleur',
+    varBgLabel: "Changer l'arrière-plan",
+    varModelLabel: 'Changer le mannequin',
+    varColorPh: 'lin orange brûlé · soie vert forêt…',
+    varBgPh: 'mur en plâtre beige · lumière après-midi…',
+    varGenerate: 'Générer la variation',
+    varProcessing: 'Génération de la variation…',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -299,6 +331,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'crema · blu navy · arancio bruciato…',
     ctxConsumerLabel: 'Cliente',
     ctxConsumerPh: 'professionista urbano 25-35…',
+    variationsTitle: 'Variazioni su questa foto',
+    varColorLabel: 'Cambia colore',
+    varBgLabel: 'Cambia sfondo',
+    varModelLabel: 'Cambia modello',
+    varColorPh: 'lino arancio bruciato · seta verde bosco…',
+    varBgPh: 'muro in intonaco beige · luce pomeridiana…',
+    varGenerate: 'Genera variazione',
+    varProcessing: 'Generazione variazione…',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -354,6 +394,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'creme · marine · gebranntes Orange…',
     ctxConsumerLabel: 'Kunde',
     ctxConsumerPh: 'urbaner Professional 25-35…',
+    variationsTitle: 'Variationen dieses Fotos',
+    varColorLabel: 'Farbe ändern',
+    varBgLabel: 'Hintergrund ändern',
+    varModelLabel: 'Modell ändern',
+    varColorPh: 'verbranntes orange Leinen · waldgrüne Seide…',
+    varBgPh: 'warme beige Putzwand · Nachmittagslicht…',
+    varGenerate: 'Variation erstellen',
+    varProcessing: 'Variation wird erstellt…',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -409,6 +457,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'creme · marinho · laranja queimado…',
     ctxConsumerLabel: 'Cliente',
     ctxConsumerPh: 'profissional urbano 25-35…',
+    variationsTitle: 'Variações sobre esta foto',
+    varColorLabel: 'Mudar cor',
+    varBgLabel: 'Mudar fundo',
+    varModelLabel: 'Mudar modelo',
+    varColorPh: 'linho laranja queimado · seda verde floresta…',
+    varBgPh: 'parede de estuque bege · luz de tarde…',
+    varGenerate: 'Gerar variação',
+    varProcessing: 'A gerar variação…',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -464,6 +520,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'crème · marineblauw · gebrand oranje…',
     ctxConsumerLabel: 'Klant',
     ctxConsumerPh: 'urban professional 25-35…',
+    variationsTitle: 'Variaties op deze foto',
+    varColorLabel: 'Kleur wijzigen',
+    varBgLabel: 'Achtergrond wijzigen',
+    varModelLabel: 'Model wijzigen',
+    varColorPh: 'gebrand oranje linnen · bosgroene zijde…',
+    varBgPh: 'warme beige pleisterwand · middaglicht…',
+    varGenerate: 'Variatie genereren',
+    varProcessing: 'Variatie wordt gegenereerd…',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -519,6 +583,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'gräddvit · marin · bränd orange…',
     ctxConsumerLabel: 'Kund',
     ctxConsumerPh: 'urban professional 25-35…',
+    variationsTitle: 'Variationer av denna bild',
+    varColorLabel: 'Ändra färg',
+    varBgLabel: 'Ändra bakgrund',
+    varModelLabel: 'Ändra modell',
+    varColorPh: 'bränd orange linne · skogsgrönt siden…',
+    varBgPh: 'varm beige putsvägg · eftermiddagsljus…',
+    varGenerate: 'Generera variation',
+    varProcessing: 'Genererar variation…',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -574,6 +646,14 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     ctxPalettePh: 'krem · marine · brent oransje…',
     ctxConsumerLabel: 'Kunde',
     ctxConsumerPh: 'urban profesjonell 25-35…',
+    variationsTitle: 'Variasjoner av dette bildet',
+    varColorLabel: 'Endre farge',
+    varBgLabel: 'Endre bakgrunn',
+    varModelLabel: 'Endre modell',
+    varColorPh: 'brent oransje lin · skogsgrønn silke…',
+    varBgPh: 'varm beige pussvegg · ettermiddagslys…',
+    varGenerate: 'Generer variasjon',
+    varProcessing: 'Genererer variasjon…',
   },
 };
 
@@ -901,6 +981,12 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [brandPalette, setBrandPalette] = useState('');
   const [targetConsumer, setTargetConsumer] = useState('');
   const [castingPickerOpen, setCastingPickerOpen] = useState(false);
+  // When set, the casting picker is in "variation" mode — selecting a model
+  // fires applyVariation('model', ..., newId) for the asset whose id is stored.
+  const [castingPickerForVariationAssetId, setCastingPickerForVariationAssetId] = useState<string | null>(null);
+  // Variation in-flight indicator (shown in the lightbox while a /variation
+  // request is running). null = idle.
+  const [variationInFlight, setVariationInFlight] = useState<'color' | 'background' | 'model' | null>(null);
   // Derived so the lightbox re-renders when the underlying asset changes
   // (e.g. after a Style Memory toggle updates recentAssets).
   const lightboxAsset = lightboxAssetId
@@ -1094,6 +1180,84 @@ export default function ProjectWorkspaceClient(props: Props) {
       return;
     }
     await runGenerate(lastPayloadRef.current);
+  };
+
+  /* Called from the lightbox when the user wants a variation of the
+   * confirmed image (color / background / model swap). Hits the new
+   * /api/studio/variation endpoint, which uses the source image as the
+   * new "input reference" instead of regenerating from the original
+   * product/model/reference. On success, prepends the new asset and
+   * switches the lightbox to it. */
+  type VariationType = 'color' | 'background' | 'model';
+  const applyVariation = async (
+    sourceAsset: Asset,
+    variationType: VariationType,
+    targetValue?: string,
+    newModelId?: string
+  ): Promise<{ ok: boolean; error?: StudioError }> => {
+    setVariationInFlight(variationType);
+    try {
+      const res = await fetch('/api/studio/variation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_asset_id: sourceAsset.id,
+          variation_type: variationType,
+          target_value: targetValue,
+          new_model_id: newModelId,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const code: StudioErrorCode =
+          res.status === 401 ? 'unauthorized' :
+          res.status === 402 ? 'pool_empty' :
+          res.status === 429 ? 'rate_limit' :
+          res.status === 502 || res.status === 500 ? 'ai_failed' : 'generic';
+        const detail = typeof errBody.details === 'string' && errBody.details
+          ? errBody.details
+          : typeof errBody.error === 'string' ? errBody.error : undefined;
+        return { ok: false, error: { code, detail } };
+      }
+      const json = await res.json();
+      const sourceMeta = (sourceAsset.metadata || {}) as Record<string, unknown>;
+      const newAsset: Asset = {
+        id: json.asset_id,
+        asset_type: sourceAsset.asset_type,
+        name: `${variationType} — ${sourceAsset.name}`,
+        url: json.master_url,
+        metadata: {
+          provider: json.provider,
+          variation_type: variationType,
+          target_value: targetValue,
+          new_model_id: newModelId,
+          parent_asset_id: sourceAsset.id,
+          // Carry forward so further variations on this new asset still work
+          product_image_url: sourceMeta.product_image_url,
+          reference_image_url: sourceAsset.url,
+          model_id: newModelId || sourceMeta.model_id,
+          product_name: sourceMeta.product_name,
+          category: sourceMeta.category,
+          orientation: sourceMeta.orientation,
+          framing: sourceMeta.framing,
+          light: sourceMeta.light,
+          type: sourceMeta.type,
+        },
+        is_style_memory: false,
+        style_memory_role: null,
+        created_at: new Date().toISOString(),
+      };
+      setRecentAssets((prev) => [newAsset, ...prev]);
+      if (typeof json.outputs_remaining === 'number') setOutputsRemaining(json.outputs_remaining);
+      setLightboxAssetId(newAsset.id);
+      return { ok: true };
+    } catch (e) {
+      console.error('[Studio] applyVariation threw:', e);
+      const code: StudioErrorCode = e instanceof TypeError ? 'network' : 'generic';
+      return { ok: false, error: { code } };
+    } finally {
+      setVariationInFlight(null);
+    }
   };
 
   /* Called from inside the lightbox when the user clicks a variation pill.
@@ -1627,20 +1791,35 @@ export default function ProjectWorkspaceClient(props: Props) {
             onClose={() => setLightboxAssetId(null)}
             onToggleStyleMemory={() => toggleStyleMemory(lightboxAsset.id, lightboxAsset.is_style_memory)}
             onRegenerate={(variation) => regenerateVariation(lightboxAsset, variation)}
+            onApplyVariation={(type, target) => applyVariation(lightboxAsset, type, target)}
+            onOpenCastingForVariation={() => setCastingPickerForVariationAssetId(lightboxAsset.id)}
+            variationInFlight={variationInFlight}
           />
         )}
 
-        {/* Casting picker — grid + filter + click instant-selects */}
-        {castingPickerOpen && (
+        {/* Casting picker — two modes:
+              • castingPickerOpen=true → "select" mode, sets the form's modelId
+              • castingPickerForVariationAssetId=set → "variation" mode, fires
+                applyVariation('model', undefined, newId) for that asset */}
+        {(castingPickerOpen || castingPickerForVariationAssetId) && (
           <CastingPicker
             models={props.models}
-            selectedId={modelId}
+            selectedId={castingPickerForVariationAssetId ? null : modelId}
             initialGenderFilter={genderFilter}
             t={t}
-            onClose={() => setCastingPickerOpen(false)}
-            onSelect={(id) => {
-              setModelId(id);
+            onClose={() => {
               setCastingPickerOpen(false);
+              setCastingPickerForVariationAssetId(null);
+            }}
+            onSelect={(id) => {
+              if (castingPickerForVariationAssetId) {
+                const sourceAsset = recentAssets.find((a) => a.id === castingPickerForVariationAssetId);
+                setCastingPickerForVariationAssetId(null);
+                if (sourceAsset) void applyVariation(sourceAsset, 'model', undefined, id);
+              } else {
+                setModelId(id);
+                setCastingPickerOpen(false);
+              }
             }}
             onFilterChange={setGenderFilter}
           />
@@ -1835,14 +2014,24 @@ interface OutputLightboxProps {
   onClose: () => void;
   onToggleStyleMemory: () => void;
   onRegenerate: (variation: VariationKey) => Promise<{ ok: boolean; error?: StudioError }>;
+  onApplyVariation: (type: 'color' | 'background', target: string) => Promise<{ ok: boolean; error?: StudioError }>;
+  onOpenCastingForVariation: () => void;
+  variationInFlight: 'color' | 'background' | 'model' | null;
 }
 
-function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }: OutputLightboxProps) {
+function OutputLightbox({
+  asset, t, onClose, onToggleStyleMemory, onRegenerate,
+  onApplyVariation, onOpenCastingForVariation, variationInFlight,
+}: OutputLightboxProps) {
   const [formats, setFormats] = useState<FormatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setReloadKey] = useState(0);
   const [regenInFlight, setRegenInFlight] = useState<VariationKey | null>(null);
   const [regenError, setRegenError] = useState<StudioError | null>(null);
+  // Inline mini-form state for color / background variations.
+  const [variationFormType, setVariationFormType] = useState<'color' | 'background' | null>(null);
+  const [variationInput, setVariationInput] = useState('');
+  const [variationError, setVariationError] = useState<StudioError | null>(null);
 
   const canRegenerate = (() => {
     const meta = (asset.metadata || {}) as Record<string, unknown>;
@@ -1857,6 +2046,19 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
     if (!result.ok && result.error) setRegenError(result.error);
     // On success the parent updates lightboxAssetId → this component
     // remounts with the new asset (key changes), so no extra cleanup needed.
+  };
+
+  const submitColorBgVariation = async () => {
+    if (!variationFormType || !variationInput.trim()) return;
+    setVariationError(null);
+    const result = await onApplyVariation(variationFormType, variationInput.trim());
+    if (result.ok) {
+      // Parent will remount this component with the new asset
+      setVariationFormType(null);
+      setVariationInput('');
+    } else if (result.error) {
+      setVariationError(result.error);
+    }
   };
 
   // Lazy-load formats. Re-runs when reloadKey changes (manual retry).
@@ -1959,14 +2161,117 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
             </div>
           </div>
 
-          {/* RIGHT — formats panel + regenerate variations.
+          {/* RIGHT — formats panel + regenerate variations + ON-IMAGE variations.
               On mobile the aside expands naturally and the OUTER overlay
               handles scroll. On lg+ the aside scrolls internally so the
               image area stays anchored. */}
           <aside className="bg-white rounded-[20px] p-6 md:p-7 lg:overflow-y-auto lg:max-h-[85vh]">
+
+            {/* Variation in-flight overlay — takes over the panel while a
+                /variation call is in flight. Simpler than the full shooting
+                checklist since variations finish in 20-40s typically. */}
+            {variationInFlight && (
+              <div className="py-10 flex flex-col items-center text-center">
+                <Loader2 className="h-7 w-7 text-carbon/50 animate-spin mb-4" />
+                <p className="text-[14px] font-medium text-carbon mb-1">
+                  {t.varProcessing}
+                </p>
+                <p className="text-[12px] text-carbon/50">
+                  {variationInFlight === 'color' ? t.varColorLabel :
+                   variationInFlight === 'background' ? t.varBgLabel :
+                   t.varModelLabel}
+                </p>
+              </div>
+            )}
+
+            {/* Variations on this confirmed photo (color / bg / model). */}
+            {!variationInFlight && (
+              <div className="mb-6 pb-6 border-b border-carbon/[0.06]">
+                <h3 className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
+                  {t.variationsTitle}
+                </h3>
+
+                {variationFormType ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={variationInput}
+                      onChange={(e) => setVariationInput(e.target.value)}
+                      placeholder={variationFormType === 'color' ? t.varColorPh : t.varBgPh}
+                      autoFocus
+                      className="w-full px-4 py-3 text-[13px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none transition-colors placeholder:text-carbon/30"
+                      onKeyDown={(e) => { if (e.key === 'Enter' && variationInput.trim()) void submitColorBgVariation(); }}
+                    />
+                    {variationError && (
+                      <p className="text-[12px] text-red-700 leading-relaxed">
+                        {variationError.code === 'pool_empty' ? t.errPoolEmpty :
+                         variationError.code === 'ai_failed' ? t.errAiFailed :
+                         variationError.code === 'rate_limit' ? t.errRateLimit :
+                         variationError.code === 'network' ? t.errNetwork :
+                         t.errGeneric}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setVariationFormType(null); setVariationInput(''); setVariationError(null); }}
+                        className="px-4 py-2 rounded-full text-[12px] font-medium text-carbon/55 hover:text-carbon transition-colors"
+                      >
+                        {t.castingCancel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void submitColorBgVariation()}
+                        disabled={!variationInput.trim()}
+                        className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 disabled:opacity-50 transition-colors"
+                      >
+                        {t.varGenerate}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setVariationFormType('color'); setVariationError(null); }}
+                      className="flex flex-col items-center gap-2 px-2 py-4 rounded-[14px] bg-carbon/[0.03] hover:bg-carbon/[0.06] text-carbon transition-colors text-center"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-400 to-rose-500" />
+                      <span className="text-[11px] font-medium tracking-[-0.01em] leading-tight">
+                        {t.varColorLabel}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVariationFormType('background'); setVariationError(null); }}
+                      className="flex flex-col items-center gap-2 px-2 py-4 rounded-[14px] bg-carbon/[0.03] hover:bg-carbon/[0.06] text-carbon transition-colors text-center"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-stone-300 to-stone-500" />
+                      <span className="text-[11px] font-medium tracking-[-0.01em] leading-tight">
+                        {t.varBgLabel}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onOpenCastingForVariation()}
+                      className="flex flex-col items-center gap-2 px-2 py-4 rounded-[14px] bg-carbon/[0.03] hover:bg-carbon/[0.06] text-carbon transition-colors text-center"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-carbon/[0.1] flex items-center justify-center">
+                        <User className="h-4 w-4 text-carbon/55" />
+                      </div>
+                      <span className="text-[11px] font-medium tracking-[-0.01em] leading-tight">
+                        {t.varModelLabel}
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Quick variation regen pills (only when source metadata
                 preserves the inputs — legacy assets hide the row). */}
-            {canRegenerate && (
+            {!variationInFlight && canRegenerate && (
               <div className="mb-6 pb-6 border-b border-carbon/[0.06]">
                 <h3 className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
                   {t.regenerateLabel}
@@ -2021,7 +2326,7 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
               </div>
             )}
 
-            {loading ? (
+            {!variationInFlight && (loading ? (
               <div className="flex items-center gap-3 text-carbon/55 py-4">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-[13px]">{t.lightboxLoading}</span>
@@ -2082,7 +2387,7 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
                   );
                 })}
               </div>
-            )}
+            ))}
           </aside>
         </div>
       </div>
