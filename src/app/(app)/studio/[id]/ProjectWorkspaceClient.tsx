@@ -981,7 +981,13 @@ export default function ProjectWorkspaceClient(props: Props) {
     }
     let body: Record<string, unknown> = {};
     try { body = await res.json(); } catch { /* leave empty */ }
-    const detail = typeof body.error === 'string' ? body.error : undefined;
+    // Prefer the OpenAI/server "details" field when present — it carries the
+    // actual upstream error text. Fall back to "error" (which is just our
+    // own generic label). This is critical for debugging — without exposing
+    // details we only ever see "AI generation failed".
+    const detail = typeof body.details === 'string' && body.details
+      ? body.details
+      : typeof body.error === 'string' ? body.error : undefined;
     if (res.status === 401) return { code: 'unauthorized' };
     if (res.status === 402) return { code: 'pool_empty' };
     if (res.status === 429) return { code: 'rate_limit' };

@@ -547,11 +547,10 @@ function buildStudioGptPrompt(p: {
       style_reference_url
         ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
         : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
-      // HEAD INTEGRATION — fixes the "pasted-on head" artefact when Image 3
-      // has dynamic body movement. Tells GPT to keep face identity but
-      // re-generate head angle/tilt/gaze to flow with the body.
+      // HEAD ANGLE — softer wording. Tells the model to keep face identity
+      // but let the head tilt/gaze follow the body's natural movement.
       style_reference_url
-        ? `HEAD INTEGRATION (critical): the face is the identity from Image 2 — same features, same hair, same skin tone. But the HEAD POSITION, ANGLE, TILT, and GAZE must be GENERATED to flow naturally with the body's pose and energy in Image 3. The neck must read as continuous with the shoulders. If the body twists, reaches, or leans, the head follows organically. Do NOT paste a locked front-facing head onto a body in motion. Generate the head's angle from the body's energy; the face's identity from Image 2.`
+        ? `HEAD ANGLE: keep the facial features, hair, and skin tone identical to Image 2 (this is the identity). The head's angle, tilt, and gaze should flow naturally with the body's pose in Image 3 — if the shoulders twist or the arms reach, the head turns or tilts organically with them. The head must read as part of the body's movement, not as a frontal portrait sitting on top of a moving body.`
         : '',
       category === 'CALZADO'
         ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
@@ -573,9 +572,9 @@ function buildStudioGptPrompt(p: {
       style_reference_url
         ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
         : `Clean editorial studio setting with soft professional lighting.`,
-      // HEAD INTEGRATION — same fix as editorial (see comment above).
+      // HEAD ANGLE — same softer wording as editorial.
       style_reference_url
-        ? `HEAD INTEGRATION (critical): the face is the identity from Image 2 — same features, same hair, same skin tone. But the HEAD POSITION, ANGLE, TILT, and GAZE must be GENERATED to flow naturally with the body's pose and energy in Image 3. The neck must read as continuous with the shoulders. If the body twists, reaches, or leans, the head follows organically. Do NOT paste a locked front-facing head onto a body in motion. Generate the head's angle from the body's energy; the face's identity from Image 2.`
+        ? `HEAD ANGLE: keep the facial features, hair, and skin tone identical to Image 2 (this is the identity). The head's angle, tilt, and gaze should flow naturally with the body's pose in Image 3 — if the shoulders twist or the arms reach, the head turns or tilts organically with them. The head must read as part of the body's movement, not as a frontal portrait sitting on top of a moving body.`
         : '',
       `The model is wearing or carrying the product from Image 1. Natural fit, realistic draping, appropriate shadows where the product meets the body.`,
       category === 'CALZADO'
