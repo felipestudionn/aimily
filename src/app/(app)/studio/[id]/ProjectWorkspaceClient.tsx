@@ -976,8 +976,8 @@ export default function ProjectWorkspaceClient(props: Props) {
           Studio
         </Link>
 
-        {/* Header */}
-        <header className="mb-10 flex items-end justify-between gap-6">
+        {/* Header — stacks on mobile so the CTA never collides with the title */}
+        <header className="mb-10 flex flex-col sm:flex-row sm:items-end items-start justify-between gap-4">
           <div>
             <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
               {props.project.brand_name}
@@ -1015,7 +1015,7 @@ export default function ProjectWorkspaceClient(props: Props) {
 
         {/* Generator panel (inline) — renders form, progress, or error state */}
         {generatorOpen && (
-          <div className="bg-white rounded-[20px] p-10 mb-10">
+          <div className="bg-white rounded-[20px] p-6 md:p-10 mb-10">
             {studioError ? (
               <GenerationError
                 t={t}
@@ -1165,7 +1165,7 @@ export default function ProjectWorkspaceClient(props: Props) {
                       size="sm"
                     />
                   </div>
-                  <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-3 max-h-[680px] overflow-y-auto p-3 bg-carbon/[0.02] rounded-[14px]">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-3 max-h-[680px] overflow-y-auto p-3 bg-carbon/[0.02] rounded-[14px]">
                     {filteredModels.map((m) => (
                       <button
                         key={m.id}
@@ -1293,7 +1293,7 @@ export default function ProjectWorkspaceClient(props: Props) {
 
         {/* Empty gallery state */}
         {recentAssets.length === 0 && !generatorOpen && (
-          <div className="mx-auto max-w-2xl rounded-[20px] bg-white p-12 md:p-16 text-center">
+          <div className="mx-auto max-w-2xl rounded-[20px] bg-white p-8 md:p-16 text-center">
             <div className="mx-auto h-16 w-16 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-6">
               <ImageIcon className="h-7 w-7 text-carbon/40" />
             </div>
@@ -1677,13 +1677,14 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
                 className="max-h-[80vh] max-w-full object-contain"
               />
             </div>
-            {/* Master meta + primary actions */}
+            {/* Master meta + primary actions — wraps individually on narrow
+                screens so CTAs never get clipped by the master thumb caption */}
             <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
               <div className="text-white">
                 <p className="text-[14px] font-medium tracking-[-0.01em]">{asset.name}</p>
                 <p className="text-[12px] text-white/55 capitalize">{asset.asset_type}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={onToggleStyleMemory}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium transition-colors ${
@@ -1713,8 +1714,11 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
             </div>
           </div>
 
-          {/* RIGHT — formats panel + regenerate variations */}
-          <aside className="bg-white rounded-[20px] p-6 md:p-7 overflow-y-auto max-h-[85vh]">
+          {/* RIGHT — formats panel + regenerate variations.
+              On mobile the aside expands naturally and the OUTER overlay
+              handles scroll. On lg+ the aside scrolls internally so the
+              image area stays anchored. */}
+          <aside className="bg-white rounded-[20px] p-6 md:p-7 lg:overflow-y-auto lg:max-h-[85vh]">
             {/* Quick variation regen pills (only when source metadata
                 preserves the inputs — legacy assets hide the row). */}
             {canRegenerate && (
