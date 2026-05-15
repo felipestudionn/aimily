@@ -21,7 +21,11 @@ import {
 import { normalizeAiError } from '@/lib/ai/error-messages';
 
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+/* Vercel Pro plan allows up to 800s. Video providers (Kling, Happy Horse)
+ * can take 5-10 min at peak load — we set the function ceiling near the
+ * Pro max so the polling has room to run without prematurely abandoning
+ * a paid generation that's still processing upstream. */
+export const maxDuration = 800;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Aimily Studio · /api/studio/video

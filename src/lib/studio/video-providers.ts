@@ -320,14 +320,13 @@ export const klingProvider: VideoProvider = {
     const taskId: string | undefined = data?.task_id;
     if (!taskId) throw new Error('Kling create returned no task_id');
 
-    /* Kling 2.1 Pro takes 2-5 min typically, up to 7 min at peak. We
-     * cap at ~4.6 min to stay under Vercel's 300s function maxDuration.
-     * If we still timeout at peak Magnific load, we lose €1 to Magnific
-     * but the Studio user's pack output is still refunded by the route's
-     * catch-all refund path. That's a cost-of-doing-business issue with
-     * Kling at peak; longer term the fix is webhook-based async retrieval. */
-    for (let i = 0; i < 56; i++) {
-      await new Promise((r) => setTimeout(r, 5000)); // 5s × 56 = 280s = 4m40s
+    /* Kling 2.1 Pro takes 2-5 min typically, up to 7 min at peak. The
+     * route's maxDuration is 800s (Vercel Pro ceiling) so we have room
+     * to poll generously. 5s × 140 = 700s = 11m40s covers even worst-
+     * case peak load on Magnific — the function still has 100s of
+     * headroom to upload the video to Supabase after the poll succeeds. */
+    for (let i = 0; i < 140; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
       const statusRes = await fetch(`${endpoint}/${taskId}`, {
         headers: { 'x-freepik-api-key': apiKey },
       });
@@ -348,7 +347,7 @@ export const klingProvider: VideoProvider = {
       }
       if (status === 'FAILED') throw new Error('Kling FAILED');
     }
-    throw new Error(`Kling polling timed out after 4m40s (task_id: ${taskId})`);
+    throw new Error(`Kling polling timed out after 11m40s (task_id: ${taskId})`);
   },
 };
 
@@ -386,9 +385,13 @@ export const soraProvider: VideoProvider = {
     const { default: sharp } = await import('sharp');
     const client = new OpenAI({ apiKey });
 
-    /* Sora 2 has aggressive image-to-video moderation on faces → use the
-     * SAFE camera-first prompt vocabulary to minimise refusals. */
-    const prompt = buildVideoPrompt(input, 'safe');
+    /* Sora 2 originally needed SAFE camera-only prompts to dodge its
+     * image-to-video moderation classifier. With the new RICH path that
+     * uses preserve-mode preambles ("subject stays in pose, micro-motion
+     * only"), the language is much milder than the old "model walks
+     * forward, head lifts mid-step" — worth retesting if Sora accepts
+     * it. If moderation refuses again, swap back to 'safe'. */
+    const prompt = buildVideoPrompt(input, 'rich');
     /* Sora 2 only accepts 4, 8, or 12. Map UI pills:
      *   5  → 4  · 10 → 8 · 15 → 12 (closest legal Sora duration each). */
     const seconds: '4' | '8' | '12' =
@@ -449,10 +452,12 @@ export const soraProvider: VideoProvider = {
 
     if (!job?.id) throw new Error('Sora create returned no job id');
 
-    // Poll status — Sora 2 video gen is async, typical 60-180s for 4s clips.
+    /* Sora 2 typically completes in 1-3 min for 4s clips, 3-6 min for
+     * 12s. With Vercel maxDuration of 800s we can poll generously:
+     * 5s × 144 = 720s = 12 min cap. */
     let last = job;
     if (last.status !== 'completed') {
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0; i < 144; i++) {
         await new Promise((r) => setTimeout(r, 5000));
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -468,7 +473,7 @@ export const soraProvider: VideoProvider = {
     }
 
     if (last.status !== 'completed') {
-      throw new Error(`Sora polling timed out after 5 min, last status: ${last.status}`);
+      throw new Error(`Sora polling timed out after 12 min, last status: ${last.status}`);
     }
 
     /* Download the video bytes. Using raw fetch instead of the SDK's
@@ -578,9 +583,11 @@ export const happyHorseProvider: VideoProvider = {
     const taskId: string | undefined = data?.task_id;
     if (!taskId) throw new Error('Happy Horse create returned no task_id');
 
-    /* Poll for completion. 15s clips at 1080p can take 4-6 minutes server-
-     * side, so we go to ~6 min cap (8s intervals × 45 = 6 min). */
-    for (let i = 0; i < 45; i++) {
+    /* Poll for completion. 15s clips at 1080p typically take 4-6 min,
+     * up to 8-10 min at peak. With Vercel maxDuration of 800s we have
+     * headroom: 8s × 80 = 640s = 10m40s covers all observed cases plus
+     * margin for the Supabase upload after. */
+    for (let i = 0; i < 80; i++) {
       await new Promise((r) => setTimeout(r, 8000));
       const statusRes = await fetch(`${HAPPY_HORSE_ENDPOINT}/${taskId}`, {
         headers: {
@@ -608,7 +615,7 @@ export const happyHorseProvider: VideoProvider = {
         throw new Error(`Happy Horse FAILED: ${sd.data?.error || 'no detail'}`);
       }
     }
-    throw new Error('Happy Horse polling timed out after 6 minutes');
+    throw new Error('Happy Horse polling timed out after 10m40s');
   },
 };
 
