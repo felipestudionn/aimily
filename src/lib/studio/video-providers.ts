@@ -272,14 +272,48 @@ export const soraProvider: VideoProvider = {
       throw new Error(`Sora polling timed out after 5 min, last status: ${last.status}`);
     }
 
-    // Download the actual video bytes. /v1/videos/{id}/content requires
-    // Bearer auth, so we can't hand back a URL — we return a Buffer.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contentRes: Response = await (client.videos as any).downloadContent(job.id);
-    const videoBuffer = Buffer.from(await contentRes.arrayBuffer());
-    const mimeType = contentRes.headers.get('content-type') || 'video/mp4';
+    /* Download the video bytes. Using raw fetch instead of the SDK's
+     * downloadContent() because the SDK's return shape is opaque and
+     * we kept getting unplayable buffers — direct fetch lets us inspect
+     * status, content-type and byte count predictably.
+     *
+     * `?variant=video` is explicit so Sora returns the MP4 binary, not
+     * an alternate output (thumbnail / spritesheet) that may share the
+     * same endpoint family. */
+    const downloadRes = await fetch(
+      `https://api.openai.com/v1/videos/${job.id}/content?variant=video`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
 
-    return { videoBuffer, mimeType, providerLabel: 'openai-sora-2' };
+    if (!downloadRes.ok) {
+      const errBody = await downloadRes.text().catch(() => '');
+      throw new Error(
+        `Sora content download failed (${downloadRes.status}): ${errBody.slice(0, 300)}`
+      );
+    }
+
+    const mimeType = downloadRes.headers.get('content-type') || 'video/mp4';
+    const videoBuffer = Buffer.from(await downloadRes.arrayBuffer());
+
+    console.log(
+      `[Sora] downloaded ${videoBuffer.length} bytes, content-type: ${mimeType}`
+    );
+
+    /* Sanity check — if the body is suspiciously small, it's almost
+     * certainly a JSON error response that slipped past the !ok check
+     * (some OpenAI error paths return 200 with an error object). */
+    if (videoBuffer.length < 10_000) {
+      const preview = videoBuffer.toString('utf-8').slice(0, 200);
+      throw new Error(
+        `Sora download returned ${videoBuffer.length} bytes (expected video, got: ${preview})`
+      );
+    }
+
+    /* Defensive: if Sora returns video/* but a generic application/octet-
+     * stream, normalise to mp4 since Sora 2's output is always H.264 MP4. */
+    const finalMime = mimeType.startsWith('video/') ? mimeType : 'video/mp4';
+
+    return { videoBuffer, mimeType: finalMime, providerLabel: 'openai-sora-2' };
   },
 };
 
