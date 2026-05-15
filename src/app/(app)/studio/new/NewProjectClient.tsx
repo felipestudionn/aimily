@@ -41,7 +41,11 @@ const PACK_TIERS: PackTier[] = [
   },
 ];
 
-export default function NewProjectClient() {
+interface NewProjectClientProps {
+  isAdmin?: boolean;
+}
+
+export default function NewProjectClient({ isAdmin = false }: NewProjectClientProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [brandName, setBrandName] = useState('');
@@ -68,7 +72,9 @@ export default function NewProjectClient() {
   };
 
   const handleCreateAndCheckout = async () => {
-    if (!brandName.trim() || !selectedTier) return;
+    if (!brandName.trim()) return;
+    // For non-admin users we require a tier (they must pay). Admin can skip.
+    if (!isAdmin && !selectedTier) return;
     setSubmitting(true);
     setError(null);
 
@@ -88,7 +94,13 @@ export default function NewProjectClient() {
       }
       const projectId = projectJson.project.id;
 
-      // 2. Create checkout session
+      // 2a. Admin path: skip checkout entirely, go straight to workspace
+      if (isAdmin) {
+        router.push(`/studio/${projectId}`);
+        return;
+      }
+
+      // 2b. Regular path: create Stripe checkout session
       const checkoutRes = await fetch('/api/studio/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,14 +210,34 @@ export default function NewProjectClient() {
               </div>
 
               <div className="pt-4 flex justify-end">
-                <button
-                  onClick={() => brandName.trim() && setStep(2)}
-                  disabled={!brandName.trim()}
-                  className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90 disabled:opacity-50"
-                >
-                  Continuar
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                {isAdmin ? (
+                  <button
+                    onClick={handleCreateAndCheckout}
+                    disabled={!brandName.trim() || submitting}
+                    className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90 disabled:opacity-50"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Creando...
+                      </>
+                    ) : (
+                      <>
+                        Crear proyecto (admin)
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => brandName.trim() && setStep(2)}
+                    disabled={!brandName.trim()}
+                    className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90 disabled:opacity-50"
+                  >
+                    Continuar
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>

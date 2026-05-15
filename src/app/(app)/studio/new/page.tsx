@@ -14,6 +14,8 @@
 
 import { redirect } from 'next/navigation';
 import { getServerSession } from '@/lib/auth/server-session';
+import { ADMIN_EMAILS } from '@/lib/stripe';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import NewProjectClient from './NewProjectClient';
 
 export const dynamic = 'force-dynamic';
@@ -22,5 +24,20 @@ export default async function NewStudioProjectPage() {
   const { user } = await getServerSession();
   if (!user) redirect('/');
 
-  return <NewProjectClient />;
+  // Admin bypass: skip the pack selector (no Stripe checkout). Admin user
+  // creates a project and goes straight to the workspace, where the ★
+  // generation panel works without consuming a pack output.
+  const isAdminByEmail = ADMIN_EMAILS.includes(user.email || '');
+  let isAdminByDb = false;
+  if (!isAdminByEmail) {
+    const { data: sub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('is_admin')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    isAdminByDb = !!sub?.is_admin;
+  }
+  const isAdmin = isAdminByEmail || isAdminByDb;
+
+  return <NewProjectClient isAdmin={isAdmin} />;
 }

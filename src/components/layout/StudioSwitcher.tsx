@@ -10,15 +10,17 @@ interface UserProducts {
   hasStudio: boolean;
   active360Id?: string;
   activeStudioId?: string;
+  isAdmin?: boolean;
 }
 
 /**
- * Top-bar product switcher — only renders when the user has BOTH
- * Aimily 360 (a collection) AND Aimily Studio (a project).
+ * Top-bar product switcher — renders when the user has BOTH products
+ * OR is an admin (admins see the switcher regardless of project state).
  *
- * Strict rule from business plan §5.6 ("solo ves lo tuyo"):
- *   If only one product → render nothing.
- *   If both → render two pills, current product highlighted.
+ * Rule from business plan §5.6 ("solo ves lo tuyo"):
+ *   Regular user with only one product → render nothing.
+ *   Regular user with both → render two pills.
+ *   Admin user → always render so they can dogfood both products.
  *
  * Mounted in app/(app)/layout.tsx so it appears on every authenticated
  * route. Style: subtle floating top-right strip; never invades content.
@@ -40,14 +42,18 @@ export function StudioSwitcher() {
     };
   }, []);
 
-  // Only render if the user genuinely has BOTH products
-  if (!products || !products.has360 || !products.hasStudio) {
-    return null;
-  }
+  if (!products) return null;
+  const shouldRender = products.isAdmin || (products.has360 && products.hasStudio);
+  if (!shouldRender) return null;
 
   const currentlyStudio = pathname?.startsWith('/studio') || pathname?.startsWith('/(app)/studio');
   const studioHref = products.activeStudioId ? `/studio/${products.activeStudioId}` : '/studio';
-  const collectionHref = products.active360Id ? `/collection/${products.active360Id}` : '/my-collections';
+  // Admin without a 360 collection still gets a meaningful link
+  const collectionHref = products.active360Id
+    ? `/collection/${products.active360Id}`
+    : products.has360
+      ? '/my-collections'
+      : '/my-collections';
 
   return (
     <div className="fixed top-4 right-4 z-50 inline-flex items-center gap-1 rounded-full bg-white border border-carbon/[0.08] shadow-sm p-1 backdrop-blur">

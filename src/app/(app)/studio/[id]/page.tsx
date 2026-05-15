@@ -10,6 +10,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { getServerSession } from '@/lib/auth/server-session';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { ADMIN_EMAILS } from '@/lib/stripe';
 import ProjectWorkspaceClient from './ProjectWorkspaceClient';
 
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,19 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
     0
   );
 
+  // Admin bypass detection (must mirror /api/studio/generate logic)
+  const isAdminByEmail = ADMIN_EMAILS.includes(user.email || '');
+  let isAdminByDb = false;
+  if (!isAdminByEmail) {
+    const { data: sub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('is_admin')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    isAdminByDb = !!sub?.is_admin;
+  }
+  const isAdmin = isAdminByEmail || isAdminByDb;
+
   return (
     <ProjectWorkspaceClient
       project={project}
@@ -65,6 +79,7 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
       models={models}
       outputs_remaining={outputs_remaining}
       pack_count={purchases.length}
+      isAdmin={isAdmin}
     />
   );
 }

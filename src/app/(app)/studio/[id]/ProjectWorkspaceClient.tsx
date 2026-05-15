@@ -49,6 +49,7 @@ interface Props {
   models: AimilyModel[];
   outputs_remaining: number;
   pack_count: number;
+  isAdmin?: boolean;
 }
 
 type OutputType = 'still_life' | 'editorial' | 'tryon';
@@ -104,7 +105,10 @@ export default function ProjectWorkspaceClient(props: Props) {
       setError('Selecciona un modelo del casting');
       return;
     }
-    if (outputsRemaining <= 0) {
+    // Admin bypass: skip the local budget check. The endpoint will also
+    // bypass consume_studio_output for admin, so this is just the UI
+    // matching the backend reality.
+    if (!props.isAdmin && outputsRemaining <= 0) {
       setError('No tienes outputs disponibles. Compra otro pack.');
       return;
     }
@@ -199,13 +203,15 @@ export default function ProjectWorkspaceClient(props: Props) {
               Campañas
             </h1>
             <p className="mt-3 text-[14px] text-carbon/50">
-              {outputsRemaining > 0
-                ? `${outputsRemaining} outputs disponibles · ${props.pack_count} ${props.pack_count === 1 ? 'pack' : 'packs'}`
-                : '0 outputs · compra un pack para generar'}
+              {props.isAdmin
+                ? 'Admin · outputs ilimitados (sin descuento de pack)'
+                : outputsRemaining > 0
+                  ? `${outputsRemaining} outputs disponibles · ${props.pack_count} ${props.pack_count === 1 ? 'pack' : 'packs'}`
+                  : '0 outputs · compra un pack para generar'}
             </p>
           </div>
 
-          {outputsRemaining > 0 ? (
+          {props.isAdmin || outputsRemaining > 0 ? (
             <button
               onClick={() => setGeneratorOpen(!generatorOpen)}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
@@ -436,7 +442,7 @@ export default function ProjectWorkspaceClient(props: Props) {
               Sube una foto de tu producto, elige un modelo del casting Aimily,
               y recibe el editorial en minutos.
             </p>
-            {outputsRemaining > 0 ? (
+            {props.isAdmin || outputsRemaining > 0 ? (
               <button
                 onClick={() => setGeneratorOpen(true)}
                 className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[14px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
