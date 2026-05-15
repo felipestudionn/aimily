@@ -893,6 +893,33 @@ const FORMAT_GROUPS: Array<{ label: string; formats: string[] }> = [
   { label: 'Email', formats: ['email-banner'] },
 ];
 
+/* ── 10 fashion video styles for the lightbox picker ─────────────────────
+ * Mirror of backend VideoStyle enum. PRESERVE styles first (image stays
+ * anchored, only micro-motion) → safer defaults. ANIMATED styles second
+ * (subject moves, more dramatic but more drift risk).
+ * Names + taglines stay English (fashion industry brand vocabulary —
+ * same convention as Tier names and FORMAT_NAMES). */
+type VideoStyleCard = {
+  id: 'editorial-stillness' | 'direct-address' | 'wind-light' | 'avant-garde' | 'product-macro'
+    | 'campaign-hero' | 'runway-reveal' | 'playful-bounce' | 'street-kinetic' | 'slow-reveal';
+  name: string;
+  tagline: string;
+};
+const VIDEO_STYLE_CARDS: VideoStyleCard[] = [
+  // PRESERVE — input image anchored, micro-motion only
+  { id: 'editorial-stillness', name: 'Editorial Stillness', tagline: 'Painterly tableau, alive with breath' },
+  { id: 'direct-address',      name: 'Direct Address',      tagline: 'Eye contact, the look' },
+  { id: 'wind-light',          name: 'Wind & Light',        tagline: 'Atmospheric, dream-like loop' },
+  { id: 'avant-garde',         name: 'Avant-Garde',         tagline: 'Sculptural, monumental tension' },
+  { id: 'product-macro',       name: 'Product Macro',       tagline: 'Craft detail, materials in focus' },
+  // ANIMATED — subject can move, identity / garment / scene preserved
+  { id: 'campaign-hero',       name: 'Campaign Hero',       tagline: 'Narrative cinematic walk-in' },
+  { id: 'runway-reveal',       name: 'Runway Reveal',       tagline: 'Rotation showcase, full silhouette' },
+  { id: 'playful-bounce',      name: 'Playful Bounce',      tagline: 'Social-native, kinetic joy' },
+  { id: 'street-kinetic',      name: 'Street Kinetic',      tagline: 'Urban documentary energy' },
+  { id: 'slow-reveal',         name: 'Slow Reveal',         tagline: 'Luxury patience, build-up' },
+];
+
 /* ── Failure-mode taxonomy ─────────────────────────────────────────────── */
 type StudioErrorCode =
   | 'unauthorized'
@@ -1319,7 +1346,9 @@ export default function ProjectWorkspaceClient(props: Props) {
    * to it so the video player auto-shows. */
   const applyVideo = async (
     sourceAsset: Asset,
-    motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
+    style:
+      | 'editorial-stillness' | 'direct-address' | 'wind-light' | 'avant-garde' | 'product-macro'
+      | 'campaign-hero' | 'runway-reveal' | 'playful-bounce' | 'street-kinetic' | 'slow-reveal',
     duration: '5' | '10' | '15',
     userPrompt?: string
   ): Promise<{ ok: boolean; error?: StudioError }> => {
@@ -1330,7 +1359,7 @@ export default function ProjectWorkspaceClient(props: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           source_asset_id: sourceAsset.id,
-          motion,
+          video_style: style,
           duration,
           tier: 'pro',
           user_prompt: userPrompt || undefined,
@@ -1357,7 +1386,7 @@ export default function ProjectWorkspaceClient(props: Props) {
         url: json.master_url,
         metadata: {
           provider: json.provider,
-          motion,
+          video_style: style,
           duration,
           parent_asset_id: sourceAsset.id,
           product_image_url: sourceMeta.product_image_url,
@@ -1933,7 +1962,7 @@ export default function ProjectWorkspaceClient(props: Props) {
             onApplyVariation={(type, target) => applyVariation(lightboxAsset, type, target)}
             onOpenCastingForVariation={() => setCastingPickerForVariationAssetId(lightboxAsset.id)}
             variationInFlight={variationInFlight}
-            onApplyVideo={(motion, duration, userPrompt) => applyVideo(lightboxAsset, motion, duration, userPrompt)}
+            onApplyVideo={(style, duration, userPrompt) => applyVideo(lightboxAsset, style, duration, userPrompt)}
             videoInFlight={videoInFlight}
           />
         )}
@@ -2159,7 +2188,9 @@ interface OutputLightboxProps {
   onOpenCastingForVariation: () => void;
   variationInFlight: 'color' | 'background' | 'model' | null;
   onApplyVideo: (
-    motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
+    style:
+      | 'editorial-stillness' | 'direct-address' | 'wind-light' | 'avant-garde' | 'product-macro'
+      | 'campaign-hero' | 'runway-reveal' | 'playful-bounce' | 'street-kinetic' | 'slow-reveal',
     duration: '5' | '10' | '15',
     userPrompt?: string
   ) => Promise<{ ok: boolean; error?: StudioError }>;
@@ -2182,7 +2213,22 @@ function OutputLightbox({
   const [variationError, setVariationError] = useState<StudioError | null>(null);
   // Video form state
   const [videoFormOpen, setVideoFormOpen] = useState(false);
-  const [videoMotion, setVideoMotion] = useState<'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly'>('subtle');
+  // Canonical 10 fashion video styles (mirror of backend VideoStyle type).
+  // Order: PRESERVE modes first (safer — input image preserved), then
+  // ANIMATED modes (more dramatic motion, more drift risk). Default is
+  // editorial-stillness (most universal, lowest risk).
+  type VideoStyleId =
+    | 'editorial-stillness'
+    | 'direct-address'
+    | 'wind-light'
+    | 'avant-garde'
+    | 'product-macro'
+    | 'campaign-hero'
+    | 'runway-reveal'
+    | 'playful-bounce'
+    | 'street-kinetic'
+    | 'slow-reveal';
+  const [videoStyle, setVideoStyle] = useState<VideoStyleId>('editorial-stillness');
   const [videoDuration, setVideoDuration] = useState<'5' | '10' | '15'>('5');
   const [videoPrompt, setVideoPrompt] = useState('');
   const [videoError, setVideoError] = useState<StudioError | null>(null);
@@ -2219,7 +2265,7 @@ function OutputLightbox({
 
   const submitVideo = async () => {
     setVideoError(null);
-    const result = await onApplyVideo(videoMotion, videoDuration, videoPrompt.trim() || undefined);
+    const result = await onApplyVideo(videoStyle, videoDuration, videoPrompt.trim() || undefined);
     if (result.ok) {
       setVideoFormOpen(false);
       setVideoPrompt('');
@@ -2446,28 +2492,36 @@ function OutputLightbox({
                       />
                     </div>
                     <div>
-                      <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
+                      <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-2">
                         {t.vidMotionLabel}
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {(['subtle', 'walk', 'pan', 'zoom', 'turn', 'dolly'] as const).map((m) => {
-                          const active = videoMotion === m;
+                      {/* 10 canonical fashion video styles. Each card maps to a
+                          backend VideoStyle with its own image-preservation
+                          preamble + motion vocabulary + brand-film references.
+                          PRESERVE styles first (input image stays anchored, only
+                          micro-motion), then ANIMATED (subject can move). */}
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {VIDEO_STYLE_CARDS.map((s) => {
+                          const active = videoStyle === s.id;
                           return (
                             <button
-                              key={m}
+                              key={s.id}
                               type="button"
-                              onClick={() => setVideoMotion(m)}
-                              className={`px-3 py-1.5 rounded-full text-[11px] font-medium capitalize transition-colors ${
+                              onClick={() => setVideoStyle(s.id)}
+                              className={`text-left px-3 py-2.5 rounded-[10px] transition-colors ${
                                 active
                                   ? 'bg-carbon text-white'
                                   : 'bg-carbon/[0.04] text-carbon hover:bg-carbon/[0.08]'
                               }`}
                             >
-                              {m === 'subtle' ? 'Subtle' :
-                               m === 'walk' ? 'Walk' :
-                               m === 'pan' ? 'Pan' :
-                               m === 'zoom' ? 'Zoom' :
-                               m === 'turn' ? 'Turn' : 'Dolly'}
+                              <p className="text-[11px] font-semibold tracking-[-0.01em] leading-tight">
+                                {s.name}
+                              </p>
+                              <p className={`text-[9px] mt-0.5 leading-tight tracking-[-0.005em] ${
+                                active ? 'text-white/70' : 'text-carbon/50'
+                              }`}>
+                                {s.tagline}
+                              </p>
                             </button>
                           );
                         })}
