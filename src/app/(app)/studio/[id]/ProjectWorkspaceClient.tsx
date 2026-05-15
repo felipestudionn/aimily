@@ -54,6 +54,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   lightboxLoading: string;
   lightboxFormatsProcessing: string;
   lightboxOpenAria: string;
+  moreOptions: string;
+  hideOptions: string;
+  optOrientation: string;
+  optFraming: string;
+  optLight: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -85,6 +90,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Loading formats…',
     lightboxFormatsProcessing: 'Formats are still processing — try again in a moment.',
     lightboxOpenAria: 'Open output',
+    moreOptions: 'More options',
+    hideOptions: 'Hide options',
+    optOrientation: 'Orientation',
+    optFraming: 'Framing',
+    optLight: 'Light',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -116,6 +126,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Cargando formatos…',
     lightboxFormatsProcessing: 'Los formatos siguen procesándose — vuelve en un momento.',
     lightboxOpenAria: 'Abrir output',
+    moreOptions: 'Más opciones',
+    hideOptions: 'Ocultar opciones',
+    optOrientation: 'Orientación',
+    optFraming: 'Encuadre',
+    optLight: 'Luz',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -147,6 +162,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Chargement des formats…',
     lightboxFormatsProcessing: "Les formats sont encore en traitement — réessaie dans un instant.",
     lightboxOpenAria: "Ouvrir l'output",
+    moreOptions: 'Plus d’options',
+    hideOptions: 'Masquer les options',
+    optOrientation: 'Orientation',
+    optFraming: 'Cadrage',
+    optLight: 'Lumière',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -178,6 +198,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Caricamento formati…',
     lightboxFormatsProcessing: 'I formati sono ancora in elaborazione — riprova tra un momento.',
     lightboxOpenAria: 'Apri output',
+    moreOptions: 'Più opzioni',
+    hideOptions: 'Nascondi opzioni',
+    optOrientation: 'Orientamento',
+    optFraming: 'Inquadratura',
+    optLight: 'Luce',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -209,6 +234,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Formate werden geladen…',
     lightboxFormatsProcessing: 'Die Formate werden noch verarbeitet — versuche es gleich erneut.',
     lightboxOpenAria: 'Output öffnen',
+    moreOptions: 'Weitere Optionen',
+    hideOptions: 'Optionen ausblenden',
+    optOrientation: 'Ausrichtung',
+    optFraming: 'Bildausschnitt',
+    optLight: 'Licht',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -240,6 +270,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'A carregar formatos…',
     lightboxFormatsProcessing: 'Os formatos ainda estão a ser processados — tenta de novo num momento.',
     lightboxOpenAria: 'Abrir output',
+    moreOptions: 'Mais opções',
+    hideOptions: 'Ocultar opções',
+    optOrientation: 'Orientação',
+    optFraming: 'Enquadramento',
+    optLight: 'Luz',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -271,6 +306,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Formaten laden…',
     lightboxFormatsProcessing: 'Formaten worden nog verwerkt — probeer het zo opnieuw.',
     lightboxOpenAria: 'Output openen',
+    moreOptions: 'Meer opties',
+    hideOptions: 'Opties verbergen',
+    optOrientation: 'Oriëntatie',
+    optFraming: 'Kadrering',
+    optLight: 'Licht',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -302,6 +342,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Laddar format…',
     lightboxFormatsProcessing: 'Formaten bearbetas fortfarande — försök igen om ett ögonblick.',
     lightboxOpenAria: 'Öppna output',
+    moreOptions: 'Fler alternativ',
+    hideOptions: 'Dölj alternativ',
+    optOrientation: 'Orientering',
+    optFraming: 'Bildutsnitt',
+    optLight: 'Ljus',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -333,6 +378,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     lightboxLoading: 'Laster formater…',
     lightboxFormatsProcessing: 'Formatene behandles fortsatt — prøv igjen om et øyeblikk.',
     lightboxOpenAria: 'Åpne output',
+    moreOptions: 'Flere alternativer',
+    hideOptions: 'Skjul alternativer',
+    optOrientation: 'Retning',
+    optFraming: 'Bildeutsnitt',
+    optLight: 'Lys',
   },
 };
 
@@ -390,6 +440,10 @@ interface StudioError {
   detail?: string;
 }
 
+type Orientation = 'vertical' | 'horizontal' | 'square';
+type Framing = 'close' | 'medium' | 'full';
+type LightDirection = 'soft' | 'golden' | 'studio' | 'dramatic';
+
 interface GeneratePayload {
   studio_project_id: string;
   type: 'still_life' | 'editorial' | 'tryon';
@@ -400,6 +454,9 @@ interface GeneratePayload {
   category: 'ROPA' | 'CALZADO' | 'ACCESORIO';
   product_name?: string;
   user_prompt?: string;
+  orientation?: Orientation;
+  framing?: Framing;
+  light?: LightDirection;
 }
 
 interface Asset {
@@ -493,6 +550,10 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [recentAssets, setRecentAssets] = useState<Asset[]>(props.assets);
   const [outputsRemaining, setOutputsRemaining] = useState(props.outputs_remaining);
   const [lightboxAssetId, setLightboxAssetId] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [orientation, setOrientation] = useState<Orientation>('vertical');
+  const [framing, setFraming] = useState<Framing>('medium');
+  const [light, setLight] = useState<LightDirection>('soft');
   // Derived so the lightbox re-renders when the underlying asset changes
   // (e.g. after a Style Memory toggle updates recentAssets).
   const lightboxAsset = lightboxAssetId
@@ -558,6 +619,9 @@ export default function ProjectWorkspaceClient(props: Props) {
       category,
       product_name: productName || undefined,
       user_prompt: userPrompt || undefined,
+      orientation,
+      framing,
+      light,
     };
   };
 
@@ -922,6 +986,63 @@ export default function ProjectWorkspaceClient(props: Props) {
                   placeholder="Toques específicos: mood, paleta, atmósfera..."
                   className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 resize-none"
                 />
+              </div>
+
+              {/* "More options" accordion — orientation / framing / light. Closed
+                  by default so first-time users aren't overwhelmed. */}
+              <div className="md:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((v) => !v)}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-medium text-carbon/55 hover:text-carbon transition-colors"
+                >
+                  {moreOpen ? t.hideOptions : t.moreOptions}
+                  <ArrowRight className={`h-3 w-3 transition-transform ${moreOpen ? 'rotate-90' : ''}`} />
+                </button>
+                {moreOpen && (
+                  <div className="mt-4 space-y-4 bg-carbon/[0.02] rounded-[14px] p-5">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <span className="text-[12px] font-medium text-carbon/70">{t.optOrientation}</span>
+                      <SegmentedPill<Orientation>
+                        options={[
+                          { id: 'vertical', label: 'Vertical' },
+                          { id: 'horizontal', label: 'Horizontal' },
+                          { id: 'square', label: 'Square' },
+                        ]}
+                        value={orientation}
+                        onChange={setOrientation}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <span className="text-[12px] font-medium text-carbon/70">{t.optFraming}</span>
+                      <SegmentedPill<Framing>
+                        options={[
+                          { id: 'close', label: 'Close-up' },
+                          { id: 'medium', label: 'Medium' },
+                          { id: 'full', label: 'Full' },
+                        ]}
+                        value={framing}
+                        onChange={setFraming}
+                        size="sm"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <span className="text-[12px] font-medium text-carbon/70">{t.optLight}</span>
+                      <SegmentedPill<LightDirection>
+                        options={[
+                          { id: 'soft', label: 'Soft' },
+                          { id: 'golden', label: 'Golden' },
+                          { id: 'studio', label: 'Studio' },
+                          { id: 'dramatic', label: 'Dramatic' },
+                        ]}
+                        value={light}
+                        onChange={setLight}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -54,6 +54,10 @@ interface ModelDirectives {
   hair?: string;
 }
 
+type Orientation = 'vertical' | 'horizontal' | 'square';
+type Framing = 'close' | 'medium' | 'full';
+type LightDirection = 'soft' | 'golden' | 'studio' | 'dramatic';
+
 interface StudioGenerateBody {
   studio_project_id: string;
   type: StudioOutputType;
@@ -65,7 +69,18 @@ interface StudioGenerateBody {
   model_id?: string;
   user_prompt?: string;
   model_directives?: ModelDirectives;
+  orientation?: Orientation;
+  framing?: Framing;
+  light?: LightDirection;
 }
+
+/* OpenAI gpt-image-1.5 size map. The model accepts these three aspect-ratio
+ * buckets at quality=high — we ship one per orientation choice. */
+const SIZE_BY_ORIENTATION: Record<Orientation, string> = {
+  vertical: '1024x1536',
+  horizontal: '1536x1024',
+  square: '1024x1024',
+};
 
 interface AimilyModel {
   id: string;
@@ -211,6 +226,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 8. Build GPT prompt by type ───────────────────────────────────────
+    const orientation = body.orientation || 'vertical';
+    const framing = body.framing;
+    const light = body.light;
     const gptPrompt = buildStudioPrompt({
       type: body.type,
       productName: body.product_name || 'fashion product',
@@ -229,6 +247,9 @@ export async function POST(req: NextRequest) {
       hasModel: !!aiModel,
       hasStyleReference: !!body.reference_image_url,
       hasStyleMemory: (studioCtx.style_memory_urls?.length || 0) > 0,
+      orientation,
+      framing,
+      light,
     });
 
     // ── 9. Fetch + downsize all reference images to PNG ──────────────────
@@ -282,7 +303,7 @@ export async function POST(req: NextRequest) {
 
     formData.append('prompt', gptPrompt);
     formData.append('n', '1');
-    formData.append('size', '1024x1536');
+    formData.append('size', SIZE_BY_ORIENTATION[orientation]);
     formData.append('quality', 'high');
     formData.append('input_fidelity', 'high');
 
@@ -385,6 +406,29 @@ export async function POST(req: NextRequest) {
 // preservation. We localise it to the 3 Studio output types.
 // ─────────────────────────────────────────────────────────────────────────
 
+/* Hard-coded prompt fragments per creative-control value. Lines are
+ * appended to the prompt in `buildStudioPrompt` when the user passes the
+ * corresponding field. Phrasing is intentionally specific (a fashion
+ * creative director would phrase it the same way). */
+const FRAMING_PROMPT: Record<Framing, string> = {
+  close: 'FRAMING: tight close-up, product fills the frame, detail-focused crop emphasising materials and construction.',
+  medium: 'FRAMING: medium shot, product and immediate context visible, balanced negative space.',
+  full: 'FRAMING: full wide shot, full body or full scene visible, generous environment around the subject.',
+};
+
+const LIGHT_PROMPT: Record<LightDirection, string> = {
+  soft: 'LIGHTING: soft diffused natural daylight, even shadow tones, north-facing window quality.',
+  golden: 'LIGHTING: golden hour warm low-angle sunlight, long natural shadows, amber highlights.',
+  studio: 'LIGHTING: clean studio strobe lighting, controlled fill, neutral colour temperature, crisp definition.',
+  dramatic: 'LIGHTING: high-contrast directional key light, deep shadows, single-source mood, low-key tonal range.',
+};
+
+const ORIENTATION_PROMPT: Record<Orientation, string> = {
+  vertical: 'COMPOSITION: vertical (portrait) aspect ratio composition.',
+  horizontal: 'COMPOSITION: horizontal (landscape) aspect ratio composition.',
+  square: 'COMPOSITION: square 1:1 aspect ratio composition.',
+};
+
 function buildStudioPrompt(p: {
   type: StudioOutputType;
   productName: string;
@@ -397,6 +441,9 @@ function buildStudioPrompt(p: {
   hasModel: boolean;
   hasStyleReference: boolean;
   hasStyleMemory: boolean;
+  orientation?: Orientation;
+  framing?: Framing;
+  light?: LightDirection;
 }): string {
   const productType =
     p.category === 'CALZADO'
@@ -463,6 +510,12 @@ function buildStudioPrompt(p: {
   if (p.hasStyleMemory) {
     lines.push(`STYLE MEMORY: the last reference images are previously-approved outputs from this brand. Align composition, lighting mood, and overall feel with those — they encode the brand's preferred visual vocabulary.`);
   }
+
+  // Creative controls (orientation / framing / light) — appended before
+  // the user prompt so the user's free-text always wins on conflicts.
+  if (p.orientation) lines.push(ORIENTATION_PROMPT[p.orientation]);
+  if (p.framing) lines.push(FRAMING_PROMPT[p.framing]);
+  if (p.light) lines.push(LIGHT_PROMPT[p.light]);
 
   // User art direction
   if (p.userPrompt) lines.push(`ADDITIONAL ART DIRECTION: ${p.userPrompt}.`);
