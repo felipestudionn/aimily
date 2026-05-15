@@ -13,7 +13,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { ArrowRight, Plus, Sparkles } from 'lucide-react';
+import { ArrowRight, Plus, Camera } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +110,7 @@ export default async function StudioDashboardPage() {
                       />
                     ) : (
                       <div className="h-14 w-14 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-4">
-                        <Sparkles className="h-5 w-5 text-carbon/30" />
+                        <Camera className="h-5 w-5 text-carbon/30" />
                       </div>
                     )}
                   </div>
@@ -158,7 +158,7 @@ function EmptyState() {
   return (
     <div className="mx-auto max-w-2xl rounded-[20px] bg-white p-12 md:p-16 text-center">
       <div className="mx-auto h-16 w-16 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-6">
-        <Sparkles className="h-7 w-7 text-carbon/40" />
+        <Camera className="h-7 w-7 text-carbon/40" />
       </div>
       <h2 className="text-[28px] md:text-[36px] font-medium text-carbon tracking-[-0.03em] leading-[1.1] mb-4">
         Tu primera campaña

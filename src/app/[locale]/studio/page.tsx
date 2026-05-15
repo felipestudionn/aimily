@@ -9,7 +9,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { ArrowRight, Check, Sparkles, Camera, Layers, Globe } from 'lucide-react';
+import { ArrowRight, Check, Camera, Layers, Globe } from 'lucide-react';
 
 export default async function StudioLandingPage(props: {
   params: Promise<{ locale: string }>;
@@ -28,8 +28,7 @@ export default async function StudioLandingPage(props: {
       {/* Hero */}
       <section className="px-6 py-20 md:px-12 md:py-32">
         <div className="mx-auto max-w-5xl text-center">
-          <p className="inline-flex items-center gap-2 text-[13px] font-medium text-carbon/50 tracking-[-0.02em] mb-6">
-            <Sparkles className="h-3.5 w-3.5" />
+          <p className="text-[13px] font-medium text-carbon/50 tracking-[-0.02em] mb-6">
             Aimily Studio
           </p>
           <h1 className="text-[44px] md:text-[64px] lg:text-[80px] font-medium text-carbon tracking-[-0.04em] leading-[1.02] mb-6">

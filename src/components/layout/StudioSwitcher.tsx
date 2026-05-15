@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Sparkles, Layers } from 'lucide-react';
+import { Camera, Layers } from 'lucide-react';
 
 interface UserProducts {
   has360: boolean;
@@ -72,7 +72,7 @@ export function StudioSwitcher() {
           currentlyStudio ? 'bg-carbon text-white' : 'text-carbon/50 hover:text-carbon'
         }`}
       >
-        <Sparkles className="h-3.5 w-3.5" />
+        <Camera className="h-3.5 w-3.5" />
         Studio
       </Link>
     </div>

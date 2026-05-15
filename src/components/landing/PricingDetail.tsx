@@ -23,7 +23,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useHomeTranslation } from '@/i18n/home';
-import { ArrowRight, Check, GraduationCap, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, GraduationCap } from 'lucide-react';
 
 type PlanId = 'founder' | 'team' | 'enterprise';
 
@@ -371,12 +371,9 @@ function ContentStudioCard() {
   return (
     <div className="relative rounded-[20px] p-7 flex flex-col h-full min-h-[600px] bg-white border border-carbon/[0.08] hover:border-carbon/25 transition-colors">
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-carbon/85" />
-          <h3 className="text-[28px] font-medium tracking-[-0.02em] leading-none text-carbon">
-            Content Studio
-          </h3>
-        </div>
+        <h3 className="text-[28px] font-medium tracking-[-0.02em] leading-none text-carbon mb-2">
+          Content Studio
+        </h3>
         <p className="text-[13px] leading-[1.5] text-carbon/65 min-h-[3rem]">
           AI fashion content, brand-locked. Pay-per-campaign, no subscription.
         </p>
