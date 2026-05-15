@@ -57,8 +57,8 @@ export default async function StudioDashboardPage() {
   }, {} as Record<string, number>);
 
   return (
-    <main className="min-h-screen bg-shade px-6 py-12 md:px-12">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
+      <div className="mx-auto max-w-[2200px]">
         {/* Header */}
         <header className="mb-12 flex items-end justify-between gap-6">
           <div>
@@ -91,7 +91,7 @@ export default async function StudioDashboardPage() {
 
         {/* Project grid (gold standard) */}
         {projects.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
             {projects.map((p) => {
               const remaining = outputsByProject[p.id] || 0;
               return (

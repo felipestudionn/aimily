@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -12,7 +12,9 @@ import {
   Image as ImageIcon,
   ShoppingBag,
   ArrowRight,
+  X,
 } from 'lucide-react';
+import { SegmentedPill } from '@/components/ui/segmented-pill';
 
 interface Asset {
   id: string;
@@ -78,13 +80,18 @@ const EDITORIAL_SCENES = [
   { key: 'gradient', label: 'Gradient' },
 ];
 
+type GenderFilter = 'all' | 'female' | 'male';
+
 export default function ProjectWorkspaceClient(props: Props) {
   const router = useRouter();
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [type, setType] = useState<OutputType>('editorial');
   const [productImageUrl, setProductImageUrl] = useState('');
+  const [productUploading, setProductUploading] = useState(false);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [referenceUploading, setReferenceUploading] = useState(false);
   const [modelId, setModelId] = useState<string | null>(null);
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('all');
   const [scene, setScene] = useState('');
   const [category, setCategory] = useState<'ROPA' | 'CALZADO' | 'ACCESORIO'>('ROPA');
   const [productName, setProductName] = useState('');
@@ -93,6 +100,26 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [recentAssets, setRecentAssets] = useState<Asset[]>(props.assets);
   const [outputsRemaining, setOutputsRemaining] = useState(props.outputs_remaining);
+
+  const filteredModels = genderFilter === 'all'
+    ? props.models
+    : props.models.filter((m) => m.gender === genderFilter);
+
+  const uploadImage = async (file: File, kind: 'product' | 'reference'): Promise<string | null> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('studio_project_id', props.project.id);
+    fd.append('kind', kind);
+    try {
+      const res = await fetch('/api/studio/upload', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Upload failed');
+      return json.url as string;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+      return null;
+    }
+  };
 
   const scenes = type === 'still_life' ? STILL_LIFE_SCENES : type === 'editorial' ? EDITORIAL_SCENES : [];
 
@@ -182,8 +209,11 @@ export default function ProjectWorkspaceClient(props: Props) {
   };
 
   return (
-    <main className="min-h-screen bg-shade px-6 py-12 md:px-12">
-      <div className="mx-auto max-w-7xl">
+    <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
+      {/* Full-width container — content-first workspaces use the entire viewport
+          on widescreen monitors. Soft cap at 2200px so 4K/5K monitors don't end
+          up with absurdly wide flow. */}
+      <div className="mx-auto max-w-[2200px]">
         {/* Back */}
         <Link
           href="/studio"
@@ -244,84 +274,75 @@ export default function ProjectWorkspaceClient(props: Props) {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Type selector */}
+              {/* Type selector — canonical SegmentedPill (CLAUDE.md gold standard) */}
               <div>
-                <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
+                <label className="block text-[13px] font-medium text-carbon/70 mb-3 tracking-[-0.02em]">
                   Tipo
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['still_life', 'editorial', 'tryon'] as OutputType[]).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setType(t)}
-                      className={`px-3 py-2.5 rounded-[12px] text-[12px] font-medium transition-colors ${
-                        type === t
-                          ? 'bg-carbon text-white'
-                          : 'bg-carbon/[0.03] text-carbon/60 hover:bg-carbon/[0.06]'
-                      }`}
-                    >
-                      {t === 'still_life' ? 'Still life' : t === 'editorial' ? 'Editorial' : 'Try-on'}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedPill<OutputType>
+                  options={[
+                    { id: 'still_life', label: 'Still life' },
+                    { id: 'editorial', label: 'Editorial' },
+                    { id: 'tryon', label: 'Try-on' },
+                  ]}
+                  value={type}
+                  onChange={setType}
+                  size="md"
+                />
               </div>
 
-              {/* Category */}
+              {/* Category — same canonical pill */}
               <div>
-                <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
+                <label className="block text-[13px] font-medium text-carbon/70 mb-3 tracking-[-0.02em]">
                   Categoría
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['ROPA', 'CALZADO', 'ACCESORIO'] as const).map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setCategory(c)}
-                      className={`px-3 py-2.5 rounded-[12px] text-[12px] font-medium transition-colors ${
-                        category === c
-                          ? 'bg-carbon text-white'
-                          : 'bg-carbon/[0.03] text-carbon/60 hover:bg-carbon/[0.06]'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Product upload URL */}
-              <div className="md:col-span-2">
-                <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
-                  Foto del producto (URL pública)
-                </label>
-                <input
-                  type="url"
-                  value={productImageUrl}
-                  onChange={(e) => setProductImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+                <SegmentedPill
+                  options={[
+                    { id: 'ROPA', label: 'Ropa' },
+                    { id: 'CALZADO', label: 'Calzado' },
+                    { id: 'ACCESORIO', label: 'Accesorio' },
+                  ]}
+                  value={category}
+                  onChange={(v) => setCategory(v as 'ROPA' | 'CALZADO' | 'ACCESORIO')}
+                  size="md"
                 />
-                <p className="mt-1.5 text-[11px] text-carbon/40">
-                  Para mejor resultado: fondo limpio, buena iluminación. Sin fondo desordenado.
-                </p>
               </div>
 
-              {/* Reference (optional, only editorial) */}
-              {type === 'editorial' && (
-                <div className="md:col-span-2">
-                  <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
-                    Foto de referencia (mood / composición) — opcional
-                  </label>
-                  <input
-                    type="url"
-                    value={referenceImageUrl}
-                    onChange={(e) => setReferenceImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+              {/* Upload squares — product + reference */}
+              <div className="md:col-span-2">
+                <div className={`grid gap-4 ${type === 'editorial' ? 'grid-cols-2' : 'grid-cols-1 max-w-[340px]'}`}>
+                  <UploadSquare
+                    label="Foto del producto"
+                    required
+                    imageUrl={productImageUrl}
+                    uploading={productUploading}
+                    onUpload={async (file) => {
+                      setProductUploading(true);
+                      setError(null);
+                      const url = await uploadImage(file, 'product');
+                      if (url) setProductImageUrl(url);
+                      setProductUploading(false);
+                    }}
+                    onClear={() => setProductImageUrl('')}
                   />
+                  {type === 'editorial' && (
+                    <UploadSquare
+                      label="Foto de referencia"
+                      sublabel="opcional · mood / composición"
+                      imageUrl={referenceImageUrl}
+                      uploading={referenceUploading}
+                      onUpload={async (file) => {
+                        setReferenceUploading(true);
+                        setError(null);
+                        const url = await uploadImage(file, 'reference');
+                        if (url) setReferenceImageUrl(url);
+                        setReferenceUploading(false);
+                      }}
+                      onClear={() => setReferenceImageUrl('')}
+                    />
+                  )}
                 </div>
-              )}
+              </div>
 
               {/* Product name (optional) */}
               <div>
@@ -358,25 +379,37 @@ export default function ProjectWorkspaceClient(props: Props) {
                 </div>
               )}
 
-              {/* Model casting selector */}
+              {/* Model casting selector — filters + larger grid (3+ rows always visible) */}
               {(type === 'editorial' || type === 'tryon') && (
                 <div className="md:col-span-2">
-                  <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
-                    Modelo del casting Aimily ({props.models.length} disponibles)
-                  </label>
-                  <div className="grid grid-cols-4 md:grid-cols-7 gap-2 max-h-72 overflow-y-auto p-2 bg-carbon/[0.02] rounded-[12px]">
-                    {props.models.map((m) => (
+                  <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
+                    <label className="block text-[13px] font-medium text-carbon/70 tracking-[-0.02em]">
+                      Modelo del casting Aimily ({filteredModels.length} de {props.models.length})
+                    </label>
+                    <SegmentedPill<GenderFilter>
+                      options={[
+                        { id: 'all', label: 'Todos' },
+                        { id: 'female', label: 'Mujer' },
+                        { id: 'male', label: 'Hombre' },
+                      ]}
+                      value={genderFilter}
+                      onChange={setGenderFilter}
+                      size="sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-3 max-h-[680px] overflow-y-auto p-3 bg-carbon/[0.02] rounded-[14px]">
+                    {filteredModels.map((m) => (
                       <button
                         key={m.id}
                         type="button"
                         onClick={() => setModelId(m.id)}
                         className={`group relative aspect-[3/4] rounded-[10px] overflow-hidden transition-all ${
-                          modelId === m.id ? 'ring-2 ring-carbon ring-offset-2 ring-offset-shade scale-105' : 'opacity-70 hover:opacity-100'
+                          modelId === m.id ? 'ring-2 ring-carbon ring-offset-2 ring-offset-shade scale-[1.03]' : 'opacity-80 hover:opacity-100'
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={m.headshot_url} alt={m.name} className="h-full w-full object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] py-1 px-1.5 text-center truncate">
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[11px] py-1 px-1.5 text-center truncate">
                           {m.name}
                         </div>
                       </button>
@@ -462,9 +495,9 @@ export default function ProjectWorkspaceClient(props: Props) {
           </div>
         )}
 
-        {/* Gallery */}
+        {/* Gallery — wider grids on widescreen so the user sees more outputs per fold */}
         {recentAssets.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7 gap-4">
             {recentAssets.map((a) => (
               <div key={a.id} className="group relative bg-white rounded-[16px] overflow-hidden">
                 <div className="relative aspect-[3/4]">
@@ -492,5 +525,108 @@ export default function ProjectWorkspaceClient(props: Props) {
         )}
       </div>
     </main>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// UploadSquare — big aspect-square drop zone with preview state.
+// Click-to-pick, drag-and-drop, EXIF rotate handled server-side.
+// ─────────────────────────────────────────────────────────────────────────
+interface UploadSquareProps {
+  label: string;
+  sublabel?: string;
+  required?: boolean;
+  imageUrl: string;
+  uploading: boolean;
+  onUpload: (file: File) => Promise<void> | void;
+  onClear: () => void;
+}
+
+function UploadSquare({ label, sublabel, required, imageUrl, uploading, onUpload, onClear }: UploadSquareProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFile = useCallback((file: File | null | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    void onUpload(file);
+  }, [onUpload]);
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleFile(e.dataTransfer.files?.[0]);
+  };
+
+  const hasImage = !!imageUrl;
+
+  return (
+    <div className="flex flex-col">
+      <div className="mb-2 flex items-baseline gap-1.5">
+        <span className="text-[13px] font-medium text-carbon tracking-[-0.02em]">{label}</span>
+        {required && <span className="text-[11px] text-carbon/40">·  obligatorio</span>}
+        {sublabel && !required && <span className="text-[11px] text-carbon/40">·  {sublabel}</span>}
+      </div>
+
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+        className={`relative aspect-square rounded-[16px] overflow-hidden cursor-pointer transition-all
+          ${hasImage
+            ? 'bg-carbon/[0.04]'
+            : `bg-carbon/[0.03] border-2 border-dashed ${
+                dragOver ? 'border-carbon/50 bg-carbon/[0.06]' : 'border-carbon/15 hover:border-carbon/35'
+              }`}
+        `}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
+          className="hidden"
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+
+        {uploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-carbon/40 z-10">
+            <Loader2 className="h-7 w-7 text-white animate-spin" />
+          </div>
+        )}
+
+        {hasImage ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imageUrl} alt={label} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
+              aria-label="Quitar imagen"
+            >
+              <X className="h-4 w-4 text-carbon" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 hover:bg-white text-[11px] font-medium text-carbon shadow-sm transition-colors"
+            >
+              <Upload className="h-3 w-3" /> Cambiar
+            </button>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <div className="h-12 w-12 rounded-full bg-carbon/[0.06] flex items-center justify-center">
+              <Upload className="h-5 w-5 text-carbon/50" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-[13px] font-medium text-carbon">Arrastra una foto aquí</p>
+              <p className="text-[11px] text-carbon/45">o haz click para elegir un archivo</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
