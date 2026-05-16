@@ -447,10 +447,14 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setAnalyzing(true);
     setMoodboardAnalyzeMsg('');
     try {
-      const res = await fetch('/api/ai/analyze-moodboard', {
+      // Strategy-specific endpoint · stricter prompt:
+      //   · NO brand invention (only visually-identifiable)
+      //   · silhouettes/materials as accurate trend labels, not photo-specific detail
+      // Felipe's rule: accuracy > coverage; empty arrays better than noise.
+      const res = await fetch('/api/strategy/analyze-moodboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrls: images, language: 'es' }),
+        body: JSON.stringify({ imageUrls: images, language: 'es', tenantSlug: tenant.slug }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
