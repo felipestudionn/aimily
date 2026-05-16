@@ -1,0 +1,24 @@
+-- ========================================================================
+-- Migration 064b · Extend strategy_scenario_type with category_transition
+--
+-- Adds the 7th value to the strategy_scenario_type enum so the engine can
+-- emit scenarios for archetype D (Category Transition / Adjacency Push).
+--
+-- Why a separate file:
+--   Postgres ALTER TYPE ... ADD VALUE was historically not allowed inside
+--   a transaction block. Even though PG 12+ relaxed this in many cases, the
+--   restriction still applies when the new value is referenced in the same
+--   transaction. Keeping the ADD VALUE in its own migration file avoids
+--   ambiguity with the surrounding 064 work.
+--
+-- Rollback note:
+--   Postgres does not support DROP VALUE on an enum. Rolling back this
+--   migration requires a forward-only path: create a new type with the
+--   reduced enum set, ALTER COLUMN ... USING the new type, drop the old
+--   type. Do not deploy code that depends on this value until this
+--   migration has landed in the target environment.
+--
+-- Source: .planning/strategy/plan_strategy-restructure-v3-2026-05-16.md §4.3
+-- ========================================================================
+
+ALTER TYPE strategy_scenario_type ADD VALUE IF NOT EXISTS 'category_transition';
