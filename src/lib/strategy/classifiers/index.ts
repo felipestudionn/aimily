@@ -169,20 +169,23 @@ export async function loadScoringInputs(
   // We do this in one go for the tenant; for very large tenants v2 will
   // paginate per analysis_run scope.
 
+  // PostgREST auto-resolves the join by FK; we don't need to name the
+  // relationship hint (those were INDEX names, not FK names, which broke
+  // schema lookup at runtime).
   let query = supabaseAdmin
     .from('strategy_product_facts')
     .select(
       `
       id, model_ref, color_ref, family_code, pvp, pvp_compare, markup_pct, on_promo,
       cost_estimate, margin_pct_list, source_id, season_tag,
-      strategy_inventory_facts!strategy_inventory_facts_product_idx (
+      strategy_inventory_facts (
         days_in_store, stores_with_stock, stores_active, stock_store,
         stock_warehouse, stock_in_transit, stock_pending, pipeline_total
       ),
-      strategy_sales_windows!strategy_sales_windows_product_window_idx (
+      strategy_sales_windows (
         window_type, units, max_sale_no_promo, max_sale_promo, emptying_rate, emptying_rate_available
       ),
-      strategy_efficiency_facts!strategy_efficiency_facts_product_idx (
+      strategy_efficiency_facts (
         total_bought, total_sold, sell_through_shipped_pct, sell_through_bought_pct, returns_pct
       )
     `

@@ -23,12 +23,20 @@ import type { ParserResult, ParsedRecord } from './types';
 const PARSER_VERSION = '1.0.0';
 const MODEL_ID = 'claude-sonnet-4-5';
 
-const EXTRACTION_PROMPT = `You are an extraction engine. Extract every SKU row from this Zara internal ranking PDF (RNK TOTAL) into structured JSON.
+const EXTRACTION_PROMPT = `You are an extraction engine. Extract every SKU row from this Zara internal ranking PDF (RNK TOTAL) as NDJSON (newline-delimited JSON).
 
-OUTPUT FORMAT: ONE JSON object. NO prose, NO markdown, NO explanation. Schema:
+OUTPUT FORMAT:
+- One complete JSON object per line.
+- ONE row per line. NO outer wrapping array. NO comma between lines.
+- NO prose, NO markdown fences, NO commentary.
+- After the LAST row, emit exactly one line: {"_end":true}
+- Lines look like:
+{"row_index":1,"page":1,"model_ref":"4786 166 401","product_name":"…","family_code":"…","season_tag":"…","pvp":29.95,…}
+{"row_index":2,"page":1,…}
+…
+{"_end":true}
 
-{
-  "rows": [
+ROW SCHEMA (use null for missing values):
     {
       "row_index": 1,
       "page": 1,
@@ -80,9 +88,6 @@ OUTPUT FORMAT: ONE JSON object. NO prose, NO markdown, NO explanation. Schema:
       "extraction_confidence": 0.95,
       "parser_warnings": []
     }
-  ],
-  "parser_warnings": []
-}
 
 RULES:
 1. Extract EVERY SKU row visible in the PDF (typically 8-10 per page).
@@ -99,7 +104,7 @@ RULES:
 12. row_index is global across pages (1, 2, 3... not per page).
 13. Skip empty/total/header rows.
 
-Return ONLY the JSON object. No markdown fences, no prose.`;
+Begin output NOW with the first row JSON object. Do not say anything before it.`;
 
 /**
  * Parse a Zara RNK TOTAL PDF using Claude vision-aware document extraction.
@@ -117,47 +122,116 @@ export async function parseZaraRnkPdf(
 
   const base64 = Buffer.from(pdfBytes).toString('base64');
 
-  const response = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 16000,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: {
-              type: 'base64',
-              media_type: 'application/pdf',
-              data: base64,
-            },
+  // Claude Sonnet 4.5 supports up to 64K output tokens. A Zara RNK PDF
+  // with ~120 SKUs needs ~80K output chars (~20K tokens), so we run at
+  // 32K and fall back to a continuation call if the first response hits
+  // the cap (`stop_reason === 'max_tokens'`).
+  const messages: Array<{ role: 'user' | 'assistant'; content: any }> = [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: base64,
           },
-          {
-            type: 'text',
-            text: EXTRACTION_PROMPT,
-          },
-        ],
-      },
-    ],
-  });
+        },
+        { type: 'text', text: EXTRACTION_PROMPT },
+      ],
+    },
+  ];
 
-  const textBlock = response.content.find((c) => c.type === 'text');
-  if (!textBlock || textBlock.type !== 'text') {
-    throw new Error('Claude returned no text content');
-  }
-  const text = textBlock.text.trim();
+  let accumulated = '';
+  const log = (msg: string) => {
+    // Surface progress on stderr without polluting structured stdout.
+    if (process.env.STRATEGY_PARSER_VERBOSE) {
+      process.stderr.write(`[zara-pdf-parser] ${msg}\n`);
+    }
+  };
 
-  let json: any;
-  try {
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
-    json = JSON.parse(cleaned);
-  } catch (err) {
-    throw new Error(`Claude returned non-JSON output (first 500 chars): ${text.slice(0, 500)}`);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    log(`stream attempt ${attempt + 1} starting (max_tokens=16000)`);
+    // Use a tighter cap to keep each stream under the SDK's 10-min ceiling
+    // and rely on continuation when Claude wants more room.
+    const stream = client.messages.stream({
+      model: MODEL_ID,
+      max_tokens: 16000,
+      messages,
+    });
+    let chunkText = '';
+    let stopReason: string | null = null;
+    let tokensReceived = 0;
+    const t0 = Date.now();
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        chunkText += event.delta.text;
+        tokensReceived += 1;
+        if (tokensReceived % 200 === 0) {
+          log(
+            `  +200 deltas (total ${tokensReceived}, ${(chunkText.length / 1024).toFixed(1)}KB, ${((Date.now() - t0) / 1000).toFixed(0)}s)`
+          );
+        }
+      } else if (event.type === 'message_delta' && (event as any).delta?.stop_reason) {
+        stopReason = (event as any).delta.stop_reason as string;
+      }
+    }
+    log(
+      `stream done: stop_reason=${stopReason}, ${(chunkText.length / 1024).toFixed(1)}KB in ${((Date.now() - t0) / 1000).toFixed(0)}s`
+    );
+    accumulated += chunkText;
+    // NDJSON: stop when we see the end marker, even if Claude hits max_tokens
+    // on an unrelated continuation. Always stop when end_turn arrives.
+    if (accumulated.includes('"_end":true') || accumulated.includes('"_end": true')) break;
+    if (stopReason !== 'max_tokens') break;
+    messages.push({ role: 'assistant', content: chunkText });
+    messages.push({
+      role: 'user',
+      content:
+        'Continue emitting more NDJSON rows. Start a NEW line. Do NOT repeat any row already emitted. Each line is a complete JSON object. End with {"_end":true} on its own line.',
+    });
   }
+  log(`accumulated ${(accumulated.length / 1024).toFixed(1)}KB total`);
 
-  if (!Array.isArray(json.rows)) {
-    throw new Error('Claude response missing rows[] array');
+  const text = accumulated.trim();
+
+  // NDJSON parsing — each line is a complete JSON object. Robust to:
+  //   - markdown fences (lines that don't start with `{` are skipped)
+  //   - mid-stream truncation (a partial last line is dropped)
+  //   - continuation seams (no merging across line breaks)
+  //   - prose interjections from Claude
+  const rows: any[] = [];
+  const parserWarnings: string[] = [];
+  let skippedLines = 0;
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim().replace(/,$/, ''); // strip trailing comma if Claude added one
+    if (!line || !line.startsWith('{')) continue;
+    if (!line.endsWith('}')) continue; // partial / truncated line — drop
+    try {
+      const obj = JSON.parse(line);
+      if (obj && typeof obj === 'object') {
+        if (obj._end === true) continue;
+        if (typeof obj.model_ref === 'string' && obj.model_ref.length > 0) {
+          rows.push(obj);
+        } else {
+          parserWarnings.push(`Skipped row without model_ref: ${line.slice(0, 80)}`);
+        }
+      }
+    } catch {
+      skippedLines += 1;
+    }
   }
+  if (skippedLines > 0) {
+    parserWarnings.push(`Skipped ${skippedLines} unparseable line(s) during NDJSON extraction`);
+  }
+  if (rows.length === 0) {
+    throw new Error(
+      `NDJSON extraction yielded zero rows (length ${text.length}, first 400 / last 400 chars):\n${text.slice(0, 400)}\n…\n${text.slice(-400)}`
+    );
+  }
+  // Backfill the shape expected by the rest of this function.
+  const json = { rows, parser_warnings: parserWarnings };
 
   const records: ParsedRecord[] = json.rows.map((r: any, i: number) => ({
     row_index: r.row_index ?? i + 1,
@@ -175,10 +249,10 @@ export async function parseZaraRnkPdf(
     description_raw: r.product_name ?? null,
     pvp: numOrNull(r.pvp),
     pvp_compare: numOrNull(r.pvp_compare),
-    markup_pct: numOrNull(r.markup_pct),
+    markup_pct: normalizeMarkupPct(r.markup_pct),
     on_promo: Boolean(r.on_promo),
-    cost_estimate: derivedCost(r.pvp, r.markup_pct),
-    margin_pct_list: derivedMargin(r.markup_pct),
+    cost_estimate: derivedCost(r.pvp, normalizeMarkupPct(r.markup_pct)),
+    margin_pct_list: derivedMargin(normalizeMarkupPct(r.markup_pct)),
     stock_store: numOrNull(r.stock_store),
     stock_warehouse: numOrNull(r.stock_warehouse),
     stock_available: numOrNull(r.stock_available),
@@ -282,6 +356,22 @@ function derivedMargin(markup: unknown): number | null {
   const m = numOrNull(markup);
   if (m == null) return null;
   return Math.round((m / (100 + m)) * 10000) / 10000;
+}
+
+/**
+ * Normalize markup to percentage form (e.g. 178.0 for 178%).
+ *
+ * Claude tends to apply the prompt's "percentages to decimal" rule to
+ * the `Mk 178%` value too, returning 1.78. Downstream classifier math
+ * expects the percent-form value (178.0), so we coerce.
+ *
+ * Markups under 10% would not appear in fashion retail; the threshold
+ * is a safe disambiguator between ratio and percent forms.
+ */
+function normalizeMarkupPct(raw: unknown): number | null {
+  const n = numOrNull(raw);
+  if (n == null) return null;
+  return n < 10 ? n * 100 : n;
 }
 
 function extractColorRef(modelRef: unknown): string | null {

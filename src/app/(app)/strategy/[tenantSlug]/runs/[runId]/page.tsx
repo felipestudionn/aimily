@@ -153,6 +153,7 @@ export default async function RunDetailPage({ params }: PageProps) {
             runId={run.id}
             runStatus={run.run_status}
             hasBacktest={!!backtest.data}
+            tenantSlug={tenant.slug}
           />
         </header>
 

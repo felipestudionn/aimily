@@ -1,20 +1,22 @@
 'use client';
 
-/* Run action panel: execute pipeline, run backtest, generate narratives.
-   Client because we POST + then router.refresh() so the page repaints with
-   fresh data from the server. */
+/* Run action panel: execute pipeline, run backtest, generate narratives,
+   open decision pack for PDF export. Client because we POST + then
+   router.refresh() so the page repaints with fresh data from the server. */
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlayCircle, Activity, Brain, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { PlayCircle, Activity, Brain, Loader2, FileDown } from 'lucide-react';
 
 interface Props {
   runId: string;
   runStatus: string;
   hasBacktest: boolean;
+  tenantSlug: string;
 }
 
-export function RunActionsClient({ runId, runStatus, hasBacktest }: Props) {
+export function RunActionsClient({ runId, runStatus, hasBacktest, tenantSlug }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<'execute' | 'backtest' | 'narrate' | null>(null);
   const [err, setErr] = useState<string>('');
@@ -85,6 +87,14 @@ export function RunActionsClient({ runId, runStatus, hasBacktest }: Props) {
               )}
               Generate narrative
             </button>
+            <Link
+              href={`/strategy/${tenantSlug}/runs/${runId}/decision-pack`}
+              target="_blank"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              Decision pack PDF
+            </Link>
           </>
         )}
       </div>
