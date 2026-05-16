@@ -31,9 +31,31 @@ export async function POST(req: NextRequest) {
   const access = await requireStrategyAccess({ tenantSlug, minRole: 'analyst' });
   if (!access.ok) return access.response;
 
+  // Moodboard input (NEW · vision-driven primary mode):
+  // { moodboard: { images?: [{base64, mimeType}], imageUrls?: string[] } }
+  const moodboard =
+    body.moodboard && typeof body.moodboard === 'object'
+      ? {
+          images: Array.isArray(body.moodboard.images)
+            ? body.moodboard.images
+                .filter(
+                  (img: any) =>
+                    img && typeof img.base64 === 'string' && typeof img.mimeType === 'string'
+                )
+                .slice(0, 12)
+            : undefined,
+          imageUrls: Array.isArray(body.moodboard.imageUrls)
+            ? body.moodboard.imageUrls
+                .filter((u: any) => typeof u === 'string' && u.startsWith('http'))
+                .slice(0, 12)
+            : undefined,
+        }
+      : undefined;
+
   try {
     const result = await discoverCreativeBrief({
       tenantId: access.tenant.id,
+      moodboard,
       season: typeof body.season === 'string' ? body.season : undefined,
       language: body.language === 'es' || body.language === 'en' ? body.language : undefined,
     });

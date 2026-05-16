@@ -29,6 +29,7 @@
  * draft will be conservative; we surface that via `data_sufficiency_warning`.
  */
 
+import Anthropic from '@anthropic-ai/sdk';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   loadStrategyTenantContext,
@@ -69,21 +70,137 @@ export interface DraftCreativeBrief {
   };
 }
 
+export interface MoodboardInput {
+  /** Base64-encoded images (without data: prefix). Max 8 per call. */
+  images?: Array<{ base64: string; mimeType: string }>;
+  /** Public image URLs (Supabase Storage signed URLs, Pinterest pin images, etc.). Server fetches them. */
+  imageUrls?: string[];
+}
+
+export interface MoodboardAnalysis {
+  keyColors: string[];
+  keyMaterials: string[];
+  keySilhouettes: string[];
+  keyArchetypes: string[];
+  keyMoodAdjectives: string[];
+  moodDescription: string;
+  targetCustomerHint: string;
+  detectedBrandReferences: string[];
+}
+
 export interface DiscoverCreativeBriefOptions {
   tenantId: string;
+  /** When supplied, the moodboard becomes the PRIMARY input. Brand DNA + trends still feed the synthesis as supporting context. */
+  moodboard?: MoodboardInput;
   season?: string;
   language?: 'en' | 'es';
 }
 
 export interface DiscoverCreativeBriefResult {
   draft: DraftCreativeBrief;
+  moodboard_analysis: MoodboardAnalysis | null;
   context_used: {
     has_brand_profile: boolean;
     has_active_brief: boolean;
     latest_run_id: string | null;
     top_family_codes: string[];
     top_winner_count: number;
+    moodboard_image_count: number;
   };
+}
+
+/**
+ * Vision analysis of an uploaded moodboard. Mirrors Block 1's
+ * `/api/ai/analyze-moodboard` flow: Claude Sonnet 4 vision over batched
+ * images (max 8). Produces a tight structured shape that the Strategy
+ * brief synthesizer can fold into a DraftCreativeBrief.
+ *
+ * Accepts either base64 images directly OR public image URLs that we
+ * fetch server-side. Returns null if all images fail to load.
+ */
+async function analyzeMoodboard(
+  moodboard: MoodboardInput,
+  language?: 'en' | 'es'
+): Promise<MoodboardAnalysis | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+
+  // Resolve URLs → base64 server-side (same pattern as analyze-moodboard).
+  const fromBase64 = moodboard.images ?? [];
+  let fromUrls: Array<{ base64: string; mimeType: string }> = [];
+  if (moodboard.imageUrls && moodboard.imageUrls.length > 0) {
+    const fetched = await Promise.all(
+      moodboard.imageUrls.slice(0, 12).map(async (url) => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const buf = Buffer.from(await res.arrayBuffer());
+          const mimeType = (res.headers.get('content-type') || 'image/jpeg').split(';')[0];
+          if (!/^image\//i.test(mimeType)) return null;
+          return { base64: buf.toString('base64'), mimeType };
+        } catch {
+          return null;
+        }
+      })
+    );
+    fromUrls = fetched.filter((x): x is { base64: string; mimeType: string } => x !== null);
+  }
+  const images = [...fromBase64, ...fromUrls].slice(0, 8);
+  if (images.length === 0) return null;
+
+  const lang = language === 'es' ? 'Spanish (Castilian)' : 'English';
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const system = `You are a senior creative director decoding a fashion moodboard. Extract structured design codes only. No prose, no markdown fences. Output language: ${lang}.`;
+
+  const userText = `These are ${images.length} reference images from a fashion moodboard. Decode the visual signals into structured creative codes. Be SPECIFIC — name real construction techniques, real brands when relevant, Pantone-style color names with hex when possible.
+
+# SCHEMA (emit one JSON object)
+{
+  "keyColors": ["3-7 color names with hex, e.g. 'Dusty Rose (#DCAE96)'"],
+  "keyMaterials": ["3-6 specific material descriptions, e.g. 'Bouclé wool 320gsm', 'Silk crêpe de chine'"],
+  "keySilhouettes": ["3-6 silhouette descriptions, e.g. 'Cropped boxy blazer, raglan sleeve', 'Bias-cut midi slip dress'"],
+  "keyArchetypes": ["2-4 from this list: editorial-heritage, minimal-architect, streetwear-drop, romantic-feminine, resort-luxe, sustainable-craft, workwear-heritage, performance-tech, y2k-digital-native, avant-garde-concept"],
+  "keyMoodAdjectives": ["4-8 adjectives that describe the emotional tone"],
+  "moodDescription": "2-3 sentences capturing the overall mood and direction",
+  "targetCustomerHint": "1 sentence describing the consumer this moodboard speaks to",
+  "detectedBrandReferences": ["real brand names that the styling/aesthetic visually references, max 5; empty array if none clear"]
+}
+
+Begin output now with the JSON object.`;
+
+  const content: any[] = images.map((img) => ({
+    type: 'image',
+    source: { type: 'base64', media_type: img.mimeType, data: img.base64 },
+  }));
+  content.push({ type: 'text', text: userText });
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4000,
+      system,
+      messages: [{ role: 'user', content }],
+    });
+    const textBlock = response.content.find((c) => c.type === 'text');
+    if (!textBlock || textBlock.type !== 'text') return null;
+    const text = textBlock.text;
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace < 0 || lastBrace <= firstBrace) return null;
+    const parsed = JSON.parse(text.slice(firstBrace, lastBrace + 1));
+    return {
+      keyColors: Array.isArray(parsed.keyColors) ? parsed.keyColors.filter(Boolean) : [],
+      keyMaterials: Array.isArray(parsed.keyMaterials) ? parsed.keyMaterials.filter(Boolean) : [],
+      keySilhouettes: Array.isArray(parsed.keySilhouettes) ? parsed.keySilhouettes.filter(Boolean) : [],
+      keyArchetypes: Array.isArray(parsed.keyArchetypes) ? parsed.keyArchetypes.filter(Boolean) : [],
+      keyMoodAdjectives: Array.isArray(parsed.keyMoodAdjectives) ? parsed.keyMoodAdjectives.filter(Boolean) : [],
+      moodDescription: typeof parsed.moodDescription === 'string' ? parsed.moodDescription : '',
+      targetCustomerHint: typeof parsed.targetCustomerHint === 'string' ? parsed.targetCustomerHint : '',
+      detectedBrandReferences: Array.isArray(parsed.detectedBrandReferences) ? parsed.detectedBrandReferences.filter(Boolean) : [],
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -151,6 +268,22 @@ export async function discoverCreativeBrief(
   if (!ctx) throw new Error(`Tenant ${opts.tenantId} not found`);
 
   const warnings: string[] = [];
+
+  // ── Step 0 · Moodboard analysis (vision-driven, PRIMARY when supplied) ─
+  // When the user uploads a moodboard / pastes Pinterest URLs, the moodboard
+  // becomes the primary creative input. Trend research still runs as
+  // supporting context but the synthesis prefers what the user can SEE.
+  let moodboardAnalysis: MoodboardAnalysis | null = null;
+  const moodboardImageCount =
+    (opts.moodboard?.images?.length ?? 0) + (opts.moodboard?.imageUrls?.length ?? 0);
+  if (moodboardImageCount > 0) {
+    moodboardAnalysis = await analyzeMoodboard(opts.moodboard!, opts.language);
+    if (!moodboardAnalysis) {
+      warnings.push(
+        'Moodboard provided but vision analysis failed (could not load images or model returned malformed output). Falling back to brand-DNA-driven discovery.'
+      );
+    }
+  }
 
   // ── Step 1 · Brand DNA ────────────────────────────────────────────────
   let autoDiscovered = false;
@@ -225,14 +358,41 @@ export async function discoverCreativeBrief(
 
   const system = `You are a senior fashion merchandiser + brand strategist synthesising a creative direction brief from real portfolio performance + brand DNA + market trends. You emit ONLY structured JSON matching the schema. No prose, no markdown fences. Output language: ${lang}.`;
 
+  const moodboardBlock = moodboardAnalysis
+    ? `# Moodboard analysis (PRIMARY INPUT — visual signals from ${moodboardImageCount} reference image${moodboardImageCount === 1 ? '' : 's'})
+- Mood: ${moodboardAnalysis.moodDescription}
+- Target customer signal: ${moodboardAnalysis.targetCustomerHint}
+- Colors visible: ${moodboardAnalysis.keyColors.join(', ')}
+- Materials visible: ${moodboardAnalysis.keyMaterials.join(', ')}
+- Silhouettes visible: ${moodboardAnalysis.keySilhouettes.join(', ')}
+- Archetypes detected: ${moodboardAnalysis.keyArchetypes.join(', ')}
+- Mood adjectives: ${moodboardAnalysis.keyMoodAdjectives.join(', ')}
+${moodboardAnalysis.detectedBrandReferences.length > 0 ? `- Brand references in the styling: ${moodboardAnalysis.detectedBrandReferences.join(', ')}` : ''}
+`
+    : '';
+
+  const synthesisGuidance = moodboardAnalysis
+    ? `MOODBOARD-DRIVEN MODE:
+- The moodboard above is the PRIMARY direction. color_story and silhouette_preferences must REFLECT what was extracted from the images.
+- Use brand DNA + portfolio winners + trend signals to GROUND the moodboard codes against business reality. If the moodboard pushes hard away from a top family, surface that as a family_pivot tension.
+- creative_narrative must explicitly reference what's visible in the moodboard (e.g. "the bias-cut midi silhouettes + bouclé references signal a romantic-feminine pivot into tailored knit").`
+    : `DATA-DRIVEN MODE (no moodboard supplied):
+- Build the direction on portfolio winners + brand DNA + trend signals.
+- Conservative: prefer small pivots over bold ones when data is thin.`;
+
   const user = `Synthesise a DRAFT creative direction brief that:
-- Builds on the TOP WINNING SKUs and FAMILIES in this tenant's current portfolio (do not contradict the data).
+- ${moodboardAnalysis ? 'Reflects the MOODBOARD codes as the primary direction.' : 'Builds on the top winners as the primary direction.'}
+- Stays grounded in the TOP WINNING SKUs and FAMILIES (do not contradict the data without explaining).
 - Aligns with the BRAND DNA (if available).
 - Reflects the CURRENT TREND SIGNALS (if available) without slavishly chasing them.
 - Surfaces 1-3 family pivots (positive or negative) the merchandiser should consider.
 - Proposes a tight color story (3-5 colors).
 - Proposes 2-4 archetype focuses from the available vocabulary.
 - Writes a 3-4 sentence creative narrative explaining the strategic intent.
+
+${synthesisGuidance}
+
+${moodboardBlock}
 
 ${contextBlock}
 
@@ -302,7 +462,10 @@ Begin output now with the JSON object.`;
       typeof synthesis.material_direction === 'object' && synthesis.material_direction
         ? synthesis.material_direction
         : {},
-    customer_segment_shift: synthesis.customer_segment_shift ?? null,
+    customer_segment_shift:
+      synthesis.customer_segment_shift ??
+      moodboardAnalysis?.targetCustomerHint ??
+      null,
     creative_narrative: synthesis.creative_narrative ?? '',
     data_sufficiency_warning: warnings.length > 0 ? warnings.join(' / ') : null,
     sources: {
@@ -320,12 +483,14 @@ Begin output now with the JSON object.`;
 
   return {
     draft,
+    moodboard_analysis: moodboardAnalysis,
     context_used: {
       has_brand_profile: ctx.has_brand_profile,
       has_active_brief: ctx.active_brief != null,
       latest_run_id: ctx.latest_run?.id ?? null,
       top_family_codes: ctx.top_families.map((f) => f.family_code),
       top_winner_count: ctx.top_winners.length,
+      moodboard_image_count: moodboardImageCount,
     },
   };
 }

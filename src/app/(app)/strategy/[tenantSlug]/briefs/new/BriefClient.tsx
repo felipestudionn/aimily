@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, Wand2, AlertCircle } from 'lucide-react';
+import { Save, Loader2, Wand2, AlertCircle, ChevronDown } from 'lucide-react';
+import {
+  MoodboardBriefUploader,
+  type MoodboardExtractionResult,
+} from './MoodboardBriefUploader';
 
 interface Props {
   tenantSlug: string;
@@ -28,9 +32,35 @@ export function BriefClient({
   const [discovering, setDiscovering] = useState(false);
   const [discoverNote, setDiscoverNote] = useState<string | null>(null);
   const [discoverWarning, setDiscoverWarning] = useState<string | null>(null);
+  const [moodboardAnalysis, setMoodboardAnalysis] = useState<
+    MoodboardExtractionResult['moodboard_analysis'] | null
+  >(null);
+  const [showDataDrivenFallback, setShowDataDrivenFallback] = useState(false);
   const [err, setErr] = useState('');
 
-  const handleDiscover = async () => {
+  /** Apply a discovery result to empty form fields. Used by both the
+      moodboard extraction flow AND the data-driven fallback. */
+  const applyDraft = (result: MoodboardExtractionResult, sourceLabel: string) => {
+    const draft = result.draft;
+    if (!name) setName(draft.name || 'AI-discovered direction');
+    if (!description) setDescription(draft.description || '');
+    if (colorStory.length === 0 && Array.isArray(draft.color_story))
+      setColorStory(draft.color_story);
+    if (archetypes.length === 0 && Array.isArray(draft.archetypes_focus))
+      setArchetypes(draft.archetypes_focus);
+    if (!familyPivotJson && draft.family_pivot && Object.keys(draft.family_pivot).length > 0) {
+      setFamilyPivotJson(JSON.stringify(draft.family_pivot, null, 2));
+    }
+    if (!narrative && draft.creative_narrative) setNarrative(draft.creative_narrative);
+    setMoodboardAnalysis(result.moodboard_analysis ?? null);
+    setDiscoverNote(`Draft filled from ${sourceLabel}.`);
+    if (draft.data_sufficiency_warning) setDiscoverWarning(draft.data_sufficiency_warning);
+  };
+
+  /** Data-driven fallback: brand DNA + portfolio winners + Perplexity trends.
+      No moodboard input. Surfaces only when the merchandiser explicitly
+      opts in (collapsed by default — the moodboard flow is the primary). */
+  const handleDataDrivenDiscover = async () => {
     setDiscovering(true);
     setErr('');
     setDiscoverNote(null);
@@ -45,34 +75,33 @@ export function BriefClient({
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error || `Failed (${res.status})`);
       }
-      const json = await res.json();
-      const draft = json.draft || {};
-      if (!name) setName(draft.name || 'AI-discovered direction');
-      if (!description) setDescription(draft.description || '');
-      if (colorStory.length === 0 && Array.isArray(draft.color_story))
-        setColorStory(draft.color_story);
-      if (archetypes.length === 0 && Array.isArray(draft.archetypes_focus))
-        setArchetypes(draft.archetypes_focus);
-      if (!familyPivotJson && draft.family_pivot && Object.keys(draft.family_pivot).length > 0) {
-        setFamilyPivotJson(JSON.stringify(draft.family_pivot, null, 2));
-      }
-      if (!narrative && draft.creative_narrative) setNarrative(draft.creative_narrative);
-
-      const sources = draft.sources || {};
-      const noteParts: string[] = [];
-      if (sources.brand_profile_used) noteParts.push('brand DNA used');
+      const json = (await res.json()) as MoodboardExtractionResult;
+      const sources = (json.draft.sources || {}) as Record<string, unknown>;
+      const parts: string[] = [];
+      if (sources.brand_profile_used) parts.push('brand DNA used');
       if (sources.brand_profile_auto_discovered)
-        noteParts.push('brand DNA auto-discovered via Perplexity');
-      if (sources.trends_count > 0) noteParts.push(`${sources.trends_count} trend signals`);
-      if (sources.winners_count > 0)
-        noteParts.push(`${sources.winners_count} portfolio winners`);
-      setDiscoverNote(`Draft filled from ${noteParts.join(', ') || 'tenant context'}.`);
-      if (draft.data_sufficiency_warning) setDiscoverWarning(draft.data_sufficiency_warning);
+        parts.push('brand DNA auto-discovered via Perplexity');
+      if (typeof sources.trends_count === 'number' && sources.trends_count > 0)
+        parts.push(`${sources.trends_count} trend signals`);
+      if (typeof sources.winners_count === 'number' && sources.winners_count > 0)
+        parts.push(`${sources.winners_count} portfolio winners`);
+      applyDraft(json, parts.join(', ') || 'tenant context');
     } catch (e: any) {
       setErr(`AI discovery: ${e.message}`);
     } finally {
       setDiscovering(false);
     }
+  };
+
+  const handleMoodboardExtraction = (result: MoodboardExtractionResult) => {
+    const count =
+      (result.context_used as any)?.moodboard_image_count ??
+      result.moodboard_analysis?.keyColors.length ??
+      0;
+    applyDraft(
+      result,
+      `${count} reference image${count === 1 ? '' : 's'}${result.moodboard_analysis ? ' · vision decoded' : ''}`
+    );
   };
 
   const toggle = (
@@ -123,26 +152,88 @@ export function BriefClient({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-[20px] p-8 md:p-10 space-y-5">
-      {/* AI discovery — fills empty fields with a draft from brand DNA + trends + winners */}
-      <div className="flex flex-wrap items-center justify-between gap-3 -mb-1">
-        <p className="text-[12px] text-carbon/55 leading-[1.5] max-w-md">
-          Empty form? Click <strong>Discover with AI</strong> to draft from your brand DNA,
-          current trend signals, and current portfolio winners. Only empty fields will be filled.
-        </p>
-        <button
-          type="button"
-          onClick={handleDiscover}
-          disabled={busy || discovering}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-carbon/[0.15] text-carbon/80 text-[12px] font-semibold hover:bg-carbon/[0.04] disabled:opacity-50"
-        >
-          {discovering ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Wand2 className="h-3.5 w-3.5" />
+      {/* PRIMARY · Moodboard → brief — drag images / paste Pinterest URLs.
+          Mirrors Block 1's moodboard analyse loop, scoped to Strategy. */}
+      <MoodboardBriefUploader
+        tenantSlug={tenantSlug}
+        busy={busy}
+        onExtracted={handleMoodboardExtraction}
+      />
+
+      {/* Surface the moodboard analysis the model extracted from the images */}
+      {moodboardAnalysis && (
+        <div className="rounded-[12px] bg-carbon/[0.03] p-4 space-y-2 text-[11px] text-carbon/70 leading-[1.5]">
+          <p className="text-[10px] uppercase tracking-[0.08em] text-carbon/45">
+            Vision decoded · the visual signals behind this draft
+          </p>
+          {moodboardAnalysis.moodDescription && <p>{moodboardAnalysis.moodDescription}</p>}
+          {moodboardAnalysis.keyColors.length > 0 && (
+            <p>
+              <strong className="text-carbon">Colors:</strong>{' '}
+              {moodboardAnalysis.keyColors.join(' · ')}
+            </p>
           )}
-          Discover with AI
-        </button>
-      </div>
+          {moodboardAnalysis.keyMaterials.length > 0 && (
+            <p>
+              <strong className="text-carbon">Materials:</strong>{' '}
+              {moodboardAnalysis.keyMaterials.join(' · ')}
+            </p>
+          )}
+          {moodboardAnalysis.keySilhouettes.length > 0 && (
+            <p>
+              <strong className="text-carbon">Silhouettes:</strong>{' '}
+              {moodboardAnalysis.keySilhouettes.join(' · ')}
+            </p>
+          )}
+          {moodboardAnalysis.keyArchetypes.length > 0 && (
+            <p>
+              <strong className="text-carbon">Archetypes:</strong>{' '}
+              {moodboardAnalysis.keyArchetypes.join(' · ')}
+            </p>
+          )}
+          {moodboardAnalysis.detectedBrandReferences.length > 0 && (
+            <p>
+              <strong className="text-carbon">Brand refs detected:</strong>{' '}
+              {moodboardAnalysis.detectedBrandReferences.join(' · ')}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* SECONDARY · Data-driven fallback (no moodboard available) */}
+      <button
+        type="button"
+        onClick={() => setShowDataDrivenFallback((s) => !s)}
+        className="inline-flex items-center gap-1 text-[11px] text-carbon/50 hover:text-carbon/80 transition-colors"
+      >
+        <ChevronDown
+          className={`h-3 w-3 transition-transform ${showDataDrivenFallback ? 'rotate-180' : ''}`}
+        />
+        No moodboard yet? Use brand DNA + trends instead
+      </button>
+      {showDataDrivenFallback && (
+        <div className="rounded-[12px] bg-carbon/[0.03] p-4 -mt-2 space-y-3">
+          <p className="text-[12px] text-carbon/65 leading-[1.5]">
+            Drafts from your brand DNA, current Perplexity trend signals, and your portfolio winners.
+            Slower (~30s) and less visual than uploading a moodboard, but works when you have no
+            references yet.
+          </p>
+          <button
+            type="button"
+            onClick={handleDataDrivenDiscover}
+            disabled={busy || discovering}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-carbon/[0.15] text-carbon/75 text-[12px] font-semibold hover:bg-carbon/[0.04] disabled:opacity-50"
+          >
+            {discovering ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wand2 className="h-3.5 w-3.5" />
+            )}
+            Discover from brand DNA + trends
+          </button>
+        </div>
+      )}
+
       {discoverNote && (
         <p className="text-[11px] text-emerald-700 bg-emerald-50 px-3 py-2 rounded-[8px]">
           {discoverNote}
@@ -154,6 +245,8 @@ export function BriefClient({
           {discoverWarning}
         </p>
       )}
+
+      <div className="h-px bg-carbon/[0.06] -mx-2" />
 
       <Field label="Name *">
         <input
