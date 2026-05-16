@@ -36,6 +36,13 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
       .select('id, asset_type, name, url, metadata, is_style_memory, style_memory_role, created_at')
       .eq('studio_project_id', id)
       .is('deleted_at', null)
+      /* Hide failed/orphan video rows whose `url` is still the
+       * `pending:<task_id>` placeholder — they render as broken
+       * <video> thumbnails in the gallery. The status endpoint
+       * rewrites url to the signed Supabase URL on success, so a
+       * row that still starts with `pending:` is either currently
+       * in-flight (covered by the client poll) or terminally failed. */
+      .not('url', 'like', 'pending:%')
       .order('created_at', { ascending: false })
       .limit(60),
     supabaseAdmin
