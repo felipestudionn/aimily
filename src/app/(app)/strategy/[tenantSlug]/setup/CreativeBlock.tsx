@@ -454,58 +454,70 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
 
       const added: UITrend[] = [];
 
-      // Silhouettes (analysis returns plain strings)
-      for (const s of (result.keySilhouettes as string[] | undefined) || []) {
+      // The shared /api/ai/analyze-moodboard endpoint returns:
+      //   keyColors · keyMaterials · keyItems · keyStyles · keyBrands ·
+      //   keyTrends · seasonalFit · moodDescription · targetAudience
+      // (NOT keySilhouettes / detectedBrandReferences / keyArchetypes —
+      // those were wrong field names in my previous mapping).
+
+      // keyItems → silhouette (each item is a specific garment + construction)
+      for (const s of (result.keyItems as string[] | undefined) || []) {
+        const { title, spec } = splitTitleAndSpec(s);
         added.push({
           origin: 'moodboard',
           dimension: 'silhouette',
-          title: s,
-          product_spec: 'Detectada en tu moodboard.',
+          title,
+          product_spec: spec || 'Detectado en tu moodboard.',
           reference_brands: [],
         });
       }
-      // Materials
+      // keyStyles → pattern (style descriptions of pattern/print)
+      for (const s of (result.keyStyles as string[] | undefined) || []) {
+        const { title, spec } = splitTitleAndSpec(s);
+        added.push({
+          origin: 'moodboard',
+          dimension: 'pattern',
+          title,
+          product_spec: spec || 'Detectado en tu moodboard.',
+          reference_brands: [],
+        });
+      }
+      // keyMaterials → material
       for (const m of (result.keyMaterials as string[] | undefined) || []) {
+        const { title, spec } = splitTitleAndSpec(m);
         added.push({
           origin: 'moodboard',
           dimension: 'material',
-          title: m,
-          product_spec: 'Detectado en tu moodboard.',
+          title,
+          product_spec: spec || 'Detectado en tu moodboard.',
           reference_brands: [],
         });
       }
-      // Colors — analyze-moodboard returns strings like "Dusty Rose (#DCAE96)"
+      // keyColors — format "Color Name (#HEX) — optional description"
       for (const c of (result.keyColors as string[] | undefined) || []) {
-        const match = c.match(/^(.+?)\s*\(?(#[0-9a-fA-F]{6})\)?\s*$/);
-        if (match) {
-          added.push({
-            origin: 'moodboard',
-            dimension: 'color',
-            title: match[1].trim(),
-            product_spec: 'Detectado en tu moodboard.',
-            reference_brands: [],
-            color_hex: match[2].toUpperCase(),
-            color_name: match[1].trim(),
-          });
-        } else {
-          added.push({
-            origin: 'moodboard',
-            dimension: 'color',
-            title: c,
-            product_spec: 'Detectado en tu moodboard.',
-            reference_brands: [],
-            color_name: c,
-          });
-        }
+        const hexMatch = c.match(/(#[0-9a-fA-F]{6})/);
+        const hex = hexMatch?.[1]?.toUpperCase();
+        // Color name = everything before "(" or first " — "; spec = anything after the dash.
+        const beforeParen = c.split('(')[0].trim();
+        const afterDash = c.includes(' — ') ? c.split(' — ').slice(1).join(' — ').trim() : '';
+        added.push({
+          origin: 'moodboard',
+          dimension: 'color',
+          title: beforeParen || c,
+          product_spec: afterDash || 'Detectado en tu moodboard.',
+          reference_brands: [],
+          ...(hex ? { color_hex: hex, color_name: beforeParen || c } : { color_name: beforeParen || c }),
+        });
       }
-      // Brand references
-      for (const b of (result.detectedBrandReferences as string[] | undefined) || []) {
+      // keyBrands → reference_brand. Format may be "Brand — why it connects"
+      for (const b of (result.keyBrands as string[] | undefined) || []) {
+        const { title, spec } = splitTitleAndSpec(b);
         added.push({
           origin: 'moodboard',
           dimension: 'reference_brand',
-          title: b,
-          product_spec: 'Detectada en tu moodboard.',
-          reference_brands: [b],
+          title,
+          product_spec: spec || 'Detectada en tu moodboard.',
+          reference_brands: [title],
         });
       }
       // Append, dedupe by (title, dimension).
@@ -970,6 +982,24 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
 }
 
 // ── TrendCard ─────────────────────────────────────────────────────────────
+
+// Split strings like "Brand — why it connects to this aesthetic" or
+// "Bouclé wool 320gsm — used for boxy oversize blazers" into a short title
+// and a descriptive product spec.
+function splitTitleAndSpec(raw: string): { title: string; spec: string } {
+  const trimmed = raw.trim();
+  // Prefer em-dash separator; fallback to colon or hyphen.
+  for (const sep of [' — ', ' – ', ' - ', ': ']) {
+    const idx = trimmed.indexOf(sep);
+    if (idx > 0 && idx < 50) {
+      return {
+        title: trimmed.slice(0, idx).trim(),
+        spec: trimmed.slice(idx + sep.length).trim(),
+      };
+    }
+  }
+  return { title: trimmed, spec: '' };
+}
 
 function TrendCard({
   trend,
