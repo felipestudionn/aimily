@@ -271,7 +271,8 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          failed.push(`${file.name}: ${err.error || `HTTP ${res.status}`}`);
+          const detail = err.detail ? ` — ${err.detail}` : '';
+          failed.push(`${file.name}: ${err.error || `HTTP ${res.status}`}${detail}`);
           console.error('[CreativeBlock upload]', err);
           continue;
         }

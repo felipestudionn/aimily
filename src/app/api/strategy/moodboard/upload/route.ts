@@ -163,7 +163,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const path = `${access.tenant.id}/moodboards/${Date.now()}-${image.sourceName}.jpg`;
+    // Strip any trailing extension from sourceName since we always re-encode as JPEG.
+    const stem = image.sourceName.replace(/\.[a-zA-Z0-9]+$/, '');
+    const path = `${access.tenant.id}/moodboards/${Date.now()}-${stem}.jpg`;
     const { error: upErr } = await supabaseAdmin.storage
       .from(BUCKET)
       .upload(path, image.buffer, { contentType: 'image/jpeg', upsert: false });
@@ -244,7 +246,8 @@ export async function POST(req: NextRequest) {
   }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 200) || 'mood.jpg';
-  const path = `${access.tenant.id}/moodboards/${Date.now()}-${safeName}.jpg`;
+  const stem = safeName.replace(/\.[a-zA-Z0-9]+$/, '');
+  const path = `${access.tenant.id}/moodboards/${Date.now()}-${stem}.jpg`;
 
   const { error: upErr } = await supabaseAdmin.storage
     .from(BUCKET)
