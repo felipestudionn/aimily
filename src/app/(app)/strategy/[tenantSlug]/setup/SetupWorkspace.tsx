@@ -84,8 +84,34 @@ export function SetupWorkspace({
     router.replace(`?${newParams.toString()}`, { scroll: false });
   };
 
+  const headline =
+    block === 'creative'
+      ? {
+          title: 'Creative Direction & Market Trends',
+          description:
+            'Conecta Pinterest, sube tu moodboard y valida las tendencias relevantes para tu temporada. Aimily ya propuso un primer set basado en tu producto.',
+        }
+      : {
+          title: 'Buy Strategy',
+          description:
+            'Elige el arquetipo que mejor se alinea con tu margen, saturación y runway. Aimily pre-llena el mix de replenish, nuevos SKUs, extensiones y kills.',
+        };
+
   return (
     <div className="space-y-8">
+      {/* Contextual header — switches with the active block */}
+      <div className="text-center mb-2">
+        <div className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em]">
+          {tenant.display_name}
+        </div>
+        <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05] mt-2">
+          {headline.title}
+        </h1>
+        <p className="text-[14px] text-carbon/55 leading-relaxed italic mt-3 max-w-2xl mx-auto">
+          {headline.description}
+        </p>
+      </div>
+
       {/* SegmentedPill — centered */}
       <div className="flex justify-center">
         <div className="inline-flex p-1 bg-carbon/[0.04] rounded-full">

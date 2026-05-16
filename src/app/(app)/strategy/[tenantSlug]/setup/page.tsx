@@ -101,20 +101,6 @@ export default async function SetupPage({ params, searchParams }: PageProps) {
         >
           ← {tenant.display_name}
         </Link>
-        <div className="text-center mb-10">
-          <div className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em]">
-            {tenant.display_name}
-          </div>
-          <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05] mt-2">
-            Strategy setup
-          </h1>
-          <p className="text-[14px] text-carbon/55 leading-relaxed italic mt-3 max-w-2xl mx-auto">
-            Define your creative direction and buy-strategy posture for the next season.
-            Aimily crosses both inputs with your sales history to recommend exactly what
-            to replenish, refresh, or kill.
-          </p>
-        </div>
-
         <SetupWorkspace
           tenant={{ id: tenant.id, slug: tenant.slug, display_name: tenant.display_name }}
           initialBlock={initialBlock}
