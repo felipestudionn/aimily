@@ -9,7 +9,7 @@
      01. Sources         — sales feeds ingested
      02. Analysis        — runs scored + scenarios assembled
      03. Buy strategy    — archetype A/B/C/D + action mix confirmed
-     04. Creative brief  — moodboard + color story + archetype focus
+     04. Creative direction — moodboard + color story + archetype focus
 
    When all four are filled, the latest run's decision pack becomes the output.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -125,7 +125,7 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
 
   const briefCard: HubCard = {
     number: 2,
-    title: 'Creative brief',
+    title: 'Creative direction',
     description:
       'Moodboard + market research + selected trends. Aimily reads your visual codes and grounds the narrative direction the recommendations follow.',
     href: `/strategy/${tenant.slug}/setup?block=creative`,

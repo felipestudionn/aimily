@@ -258,7 +258,7 @@ export function CreativeBlock({ tenant, existingBrief, gatingBlocked, onSaved }:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenant_id: tenant.id,
-          name: name || 'Creative brief',
+          name: name || 'Creative direction',
           description: description || null,
           color_story: colorStory.split(',').map((s) => s.trim()).filter(Boolean),
           archetypes_focus: archetypesFocus.split(',').map((s) => s.trim()).filter(Boolean),

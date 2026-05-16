@@ -3,7 +3,7 @@
 /**
  * SetupWorkspace — client shell for /strategy/[tenantSlug]/setup
  *
- * SegmentedPill switches between the two sub-blocks (Creative input ·
+ * SegmentedPill switches between the two sub-blocks (Creative direction ·
  * Buy strategy). The two child components own their own state machines;
  * this shell only routes the active block and surfaces gating banners.
  *
@@ -90,7 +90,7 @@ export function SetupWorkspace({
       <div className="flex justify-center">
         <div className="inline-flex p-1 bg-carbon/[0.04] rounded-full">
           {([
-            { key: 'creative' as const, label: 'Creative input' },
+            { key: 'creative' as const, label: 'Creative direction' },
             { key: 'buy-strategy' as const, label: 'Buy strategy' },
           ]).map((opt) => {
             const active = block === opt.key;
