@@ -27,7 +27,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type VideoTier = 'pro' | 'std';
-export type VideoDuration = '5' | '10' | '15';
+export type VideoDuration = '5' | '8' | '10' | '15';
 
 /* ── Legacy motion presets (kept for backwards compat in old assets) ── */
 export type VideoMotion = 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly';
@@ -341,6 +341,7 @@ export const klingProvider: VideoProvider = {
 
     const endpoint = klingEndpoint(input.tier);
     const prompt = buildVideoPrompt(input, 'rich');
+    /* Kling only ships 5s and 10s natively. Map 8 → 10, 15 → 10. */
     const klingDuration: '5' | '10' = input.duration === '5' ? '5' : '10';
 
     const createRes = await fetch(endpoint, {
@@ -438,8 +439,14 @@ export const soraProvider: VideoProvider = {
     const client = new OpenAI({ apiKey });
 
     const prompt = buildVideoPrompt(input, 'rich');
+    /* Sora 2 legal durations: 4 | 8 | 12. UI maps:
+     *   '5'  → '4'   (closest short)
+     *   '8'  → '8'   (native, exposed for direct A/B vs other providers)
+     *   '10' → '8'   (closest mid)
+     *   '15' → '12'  (closest long) */
     const seconds: '4' | '8' | '12' =
       input.duration === '15' ? '12' :
+      input.duration === '8' ? '8' :
       input.duration === '10' ? '8' : '4';
 
     /* Sora 2 requires input_reference dimensions to EXACTLY match `size`.
@@ -570,7 +577,11 @@ export const happyHorseProvider: VideoProvider = {
     if (!apiKey) throw new Error('FREEPIK_API_KEY not configured');
 
     const prompt = buildVideoPrompt(input, 'rich');
-    const duration = input.duration === '15' ? 15 : input.duration === '10' ? 10 : 5;
+    /* Happy Horse accepts 3-15s — map 8 directly. */
+    const duration =
+      input.duration === '15' ? 15 :
+      input.duration === '10' ? 10 :
+      input.duration === '8' ? 8 : 5;
 
     const createRes = await fetch(HAPPY_HORSE_ENDPOINT, {
       method: 'POST',

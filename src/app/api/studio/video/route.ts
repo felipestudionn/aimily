@@ -92,7 +92,8 @@ export async function POST(req: NextRequest) {
       : undefined;
     const duration: VideoDuration =
       body.duration === '15' ? '15' :
-      body.duration === '10' ? '10' : '5';
+      body.duration === '10' ? '10' :
+      body.duration === '8' ? '8' : '5';
     const tier: VideoTier = body.tier === 'std' ? 'std' : 'pro';
 
     // ── 2. Source asset + ownership ──────────────────────────────────────

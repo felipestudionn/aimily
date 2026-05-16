@@ -1378,7 +1378,7 @@ export default function ProjectWorkspaceClient(props: Props) {
     style:
       | 'editorial-stillness' | 'direct-address' | 'wind-light' | 'avant-garde' | 'product-macro'
       | 'campaign-hero' | 'runway-reveal' | 'playful-bounce' | 'street-kinetic' | 'slow-reveal',
-    duration: '5' | '10' | '15',
+    duration: '5' | '8' | '10' | '15',
     userPrompt?: string
   ): Promise<{ ok: boolean; error?: StudioError }> => {
     setVideoInFlight(true);
@@ -2089,8 +2089,9 @@ const IMAGE_EXPECTED_SECONDS = 48; // image gen: 12 stages × 4s
  * stages pacing AND the "approximately N minutes" subtitle. Picked to
  * land in the middle of the real-world distribution (Kling Pro / Happy
  * Horse / Sora all fall within these envelopes). */
-const VIDEO_EXPECTED_SECONDS_BY_DURATION: Record<'5' | '10' | '15', number> = {
+const VIDEO_EXPECTED_SECONDS_BY_DURATION: Record<'5' | '8' | '10' | '15', number> = {
   '5': 4 * 60,   // 4 min
+  '8': 5 * 60,   // 5 min  (Sora native length)
   '10': 6 * 60,  // 6 min
   '15': 9 * 60,  // 9 min
 };
@@ -2283,7 +2284,7 @@ interface OutputLightboxProps {
     style:
       | 'editorial-stillness' | 'direct-address' | 'wind-light' | 'avant-garde' | 'product-macro'
       | 'campaign-hero' | 'runway-reveal' | 'playful-bounce' | 'street-kinetic' | 'slow-reveal',
-    duration: '5' | '10' | '15',
+    duration: '5' | '8' | '10' | '15',
     userPrompt?: string
   ) => Promise<{ ok: boolean; error?: StudioError }>;
   videoInFlight: boolean;
@@ -2335,7 +2336,7 @@ function OutputLightbox({
     | 'street-kinetic'
     | 'slow-reveal';
   const [videoStyle, setVideoStyle] = useState<VideoStyleId>('editorial-stillness');
-  const [videoDuration, setVideoDuration] = useState<'5' | '10' | '15'>('5');
+  const [videoDuration, setVideoDuration] = useState<'5' | '8' | '10' | '15'>('5');
   const [videoPrompt, setVideoPrompt] = useState('');
   const [videoError, setVideoError] = useState<StudioError | null>(null);
 
@@ -2597,9 +2598,10 @@ function OutputLightbox({
                       <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
                         {t.vidDurationLabel}
                       </p>
-                      <SegmentedPill<'5' | '10' | '15'>
+                      <SegmentedPill<'5' | '8' | '10' | '15'>
                         options={[
                           { id: '5', label: '5s' },
+                          { id: '8', label: '8s' },
                           { id: '10', label: '10s' },
                           { id: '15', label: '15s' },
                         ]}
