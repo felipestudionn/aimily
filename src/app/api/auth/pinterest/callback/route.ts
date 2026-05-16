@@ -64,10 +64,13 @@ export async function GET(req: NextRequest) {
     // Return an HTML page that notifies the opener window and closes itself
     // This supports popup-based OAuth without leaving the parent page
     // In PWA standalone mode, window.opener is null, so we redirect directly
+    // targetOrigin '*' — necessary because aimily.app vs www.aimily.app
+    // host mismatch otherwise rejects the postMessage. The payload is a
+    // harmless flag (no token or PII), the cookie is httpOnly + sameSite.
     const html = `<!DOCTYPE html><html><head><title>Pinterest Connected</title></head><body>
 <script>
   if (window.opener) {
-    window.opener.postMessage({ type: 'pinterest_connected' }, window.location.origin);
+    window.opener.postMessage({ type: 'pinterest_connected' }, '*');
     window.close();
   } else {
     window.location.href = '${returnPath}?pinterest_connected=true';
@@ -95,7 +98,7 @@ export async function GET(req: NextRequest) {
     const html = `<!DOCTYPE html><html><head><title>Pinterest Error</title></head><body>
 <script>
   if (window.opener) {
-    window.opener.postMessage({ type: 'pinterest_error' }, window.location.origin);
+    window.opener.postMessage({ type: 'pinterest_error' }, '*');
     window.close();
   } else {
     window.location.href = '${returnPath}?error=auth_failed';

@@ -60,15 +60,33 @@ export function buildStrategyMarketTrendsPrompt(
 ): { system: string; user: string } {
   const lang = opts.language === 'en' ? 'English' : 'Spanish (Castilian)';
 
-  const system = `You are a senior fashion product strategist. Your job: extract MARKET TRENDS that are actionable at the product-design level for a brand making buying decisions for the next season. You emit ONLY structured JSON matching the schema. NO marketing storytelling, NO narrative prose, NO romantic descriptions. Output language: ${lang}.
+  const system = `You are a senior FASHION EDITOR writing for Vogue Business / Business of Fashion. You decode market trends for buyers in fluent fashion-industry vocabulary. You emit ONLY structured JSON matching the schema. NO marketing storytelling, NO romantic descriptions, NO literal translations. Output language: ${lang}.
 
 CRITICAL OUTPUT RULES:
-- Every "product_spec" field is a tight, technical sentence (max 20 words) describing the CONCRETE product feature: silhouette shape, fabric spec, pattern technique, color, or material construction.
-- NEVER write feel/mood/vibe descriptions. Write only what a pattern-maker, fabric buyer, or merchandiser could act on.
-- Bad: "Lap Welcome 2.0 — The rebirth of bouclé tailoring evokes warmth and craft."
-- Good: "Bouclé wool jacket, boxy oversized fit, raglan sleeve, double-breasted with notched collar."
-- Reference brands: 2-4 brand names actually driving the trend on runway/retail/social RIGHT NOW.
-- Group every trend under exactly ONE dimension from the schema.`;
+
+TITLES — sound like a Vogue editor caption, NOT a literal translation:
+- USE established fashion vocabulary: "oversize", "cropped", "bias-cut", "boxy", "tailored",
+  "double-breasted", "raglan", "kimono sleeve", "wrap", "shirtdress", "tunic", "pleated",
+  "structured", "tonal jacquard", "fluid drape", "ribbed knit", "compact knit", "bouclé".
+- USE Spanish fashion lexicon when ${lang === 'Spanish (Castilian)' ? 'true' : 'false'}:
+  "sastre relajado", "trench corto estructurado", "vestido midi al bies", "camisa túnica",
+  "falda tubo midi", "abrigo cocoon", "punto compacto", "jacquard tonal", "drapeado fluido".
+- NEVER use awkward literal nouns like "Blazer caja relajado" (BAD — should be
+  "Blazer cropped relajado" or "Blazer sastre oversize" or "Sastre relajado").
+- NEVER use 3-noun stacks. Use ADJ + ARTICLE + NOUN or "[Garment] [stylistic
+  qualifier]" structure. "Trench corto estructurado" ✓ "Trench corto crop estructurado" ✗
+- Max 5 words.
+- Title case: capitalize first word only ("Trench corto estructurado", not "Trench Corto Estructurado").
+
+PRODUCT_SPEC — tight technical line (max 20 words). What a pattern-maker / buyer would act on.
+- Bad: "The rebirth of bouclé tailoring evokes warmth and craft."
+- Good: "Bouclé wool 320gsm, oversize boxy fit, raglan sleeve, double-breasted notched collar."
+
+REFERENCE BRANDS — 2-4 brands actually driving the trend on runway/retail/social right now.
+- Real, specific names. Khaite · Toteme · The Row · Lemaire · Jil Sander · COS · Massimo
+  Dutti · Proenza Schouler · Max Mara · Burberry · Stella McCartney · Saint Laurent.
+
+Each trend belongs to exactly ONE dimension from the schema.`;
 
   const refsBlock = opts.referenceBrands && opts.referenceBrands.length > 0
     ? `\n- Reference brands already in this brand's orbit: ${opts.referenceBrands.join(', ')}`
