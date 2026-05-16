@@ -17,6 +17,8 @@ import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { RunActionsClient } from './RunActionsClient';
 import { AllocateReplenishmentTrigger } from './AllocateReplenishmentTrigger';
+import { RunScenariosEditor } from './RunScenariosEditor';
+import { BUY_STRATEGY_ARCHETYPES, type BuyStrategyArchetypeId } from '@/lib/strategy/sales-archetypes';
 import {
   CheckCircle2,
   Clock3,
@@ -83,6 +85,38 @@ export default async function RunDetailPage({ params }: PageProps) {
     .single();
   if (!run) notFound();
 
+  // Pull constraint's chosen_archetype_id so the inline scenario editor
+  // can seed its default action mix from the archetype's defaults.
+  let runArchetypeDefaults = BUY_STRATEGY_ARCHETYPES[1].default_action_mix; // fallback B
+  if (run.constraint_id) {
+    const { data: cRow } = await supabaseAdmin
+      .from('strategy_constraints')
+      .select('chosen_archetype_id, action_mix')
+      .eq('id', run.constraint_id)
+      .maybeSingle();
+    const aid = cRow?.chosen_archetype_id as BuyStrategyArchetypeId | null;
+    if (aid) {
+      const arch = BUY_STRATEGY_ARCHETYPES.find((a) => a.id === aid);
+      if (arch) runArchetypeDefaults = arch.default_action_mix;
+    }
+    if (cRow?.action_mix && typeof cRow.action_mix === 'object') {
+      const mix = cRow.action_mix as Record<string, number>;
+      if (
+        typeof mix.replenish_pct === 'number' &&
+        typeof mix.new_sku_proposal_pct === 'number' &&
+        typeof mix.family_extension_pct === 'number' &&
+        typeof mix.kill_pct === 'number'
+      ) {
+        runArchetypeDefaults = {
+          replenish_pct: mix.replenish_pct,
+          new_sku_proposal_pct: mix.new_sku_proposal_pct,
+          family_extension_pct: mix.family_extension_pct,
+          kill_pct: mix.kill_pct,
+        };
+      }
+    }
+  }
+
   const [algoVer, families, candidates, scenarios, backtest, palettesRes, allocationsRes] = await Promise.all([
     supabaseAdmin
       .from('strategy_algorithm_versions')
@@ -104,7 +138,9 @@ export default async function RunDetailPage({ params }: PageProps) {
       .from('strategy_scenarios')
       .select('*')
       .eq('run_id', runId)
-      .order('is_default', { ascending: false }),
+      .order('is_selected', { ascending: false })
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: true }),
     supabaseAdmin
       .from('strategy_backtests')
       .select('*')
@@ -185,6 +221,9 @@ export default async function RunDetailPage({ params }: PageProps) {
   const coverage = (run.data_coverage_summary || {}) as any;
   const learningsNarrative = coverage.learnings_narrative as string | undefined;
   const creativeApplication = coverage.creative_application as string | undefined;
+  const softWarnings = Array.isArray(coverage.warnings)
+    ? (coverage.warnings as unknown[]).filter((w): w is string => typeof w === 'string')
+    : [];
 
   return (
     <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
@@ -236,6 +275,19 @@ export default async function RunDetailPage({ params }: PageProps) {
           </div>
         )}
 
+        {softWarnings.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-[16px] p-5 mb-8">
+            <h2 className="text-[13px] font-semibold text-amber-900 mb-2 uppercase tracking-[0.08em]">
+              Coverage warnings
+            </h2>
+            <ul className="text-[13px] text-amber-800 space-y-1.5 leading-[1.5]">
+              {softWarnings.map((w, i) => (
+                <li key={i}>· {w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* LLM narratives */}
         {(learningsNarrative || creativeApplication) && (
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
@@ -256,33 +308,28 @@ export default async function RunDetailPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Scenarios */}
+        {/* Scenarios · editable inline */}
         {scenarios.data && scenarios.data.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em] mb-5">
-              Scenarios
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {scenarios.data.map((s: any) => {
-                const allocCount = allocations.filter(
-                  (a: any) => a.scenario_id === s.id && a.recommended_buy_units > 0
-                ).length;
-                const allocBudget = allocations
-                  .filter((a: any) => a.scenario_id === s.id)
-                  .reduce((acc: number, a: any) => acc + (Number(a.projected_cost) || 0), 0);
-                return (
-                  <ScenarioCard
-                    key={s.id}
-                    scenario={s}
-                    tenantSlug={tenant.slug}
-                    runId={run.id}
-                    allocationsCount={allocCount}
-                    allocationsBudget={allocBudget}
-                  />
-                );
-              })}
-            </div>
-          </section>
+          <RunScenariosEditor
+            tenantSlug={tenant.slug}
+            runId={run.id}
+            scenarios={(scenarios.data as any[]).map((s) => ({
+              id: s.id,
+              name: s.name,
+              scenario_type: s.scenario_type,
+              description: s.description ?? null,
+              is_selected: !!s.is_selected,
+              is_default: !!s.is_default,
+              parent_scenario_id: s.parent_scenario_id ?? null,
+              total_predicted_revenue: s.total_predicted_revenue != null ? Number(s.total_predicted_revenue) : null,
+              total_predicted_margin: s.total_predicted_margin != null ? Number(s.total_predicted_margin) : null,
+              total_predicted_buy_budget: s.total_predicted_buy_budget != null ? Number(s.total_predicted_buy_budget) : null,
+              predicted_sku_count: s.predicted_sku_count ?? null,
+              custom_action_mix:
+                (s.constraint_satisfaction_summary as any)?.custom_action_mix ?? null,
+            }))}
+            defaultMix={runArchetypeDefaults}
+          />
         )}
 
         {/* Family scoreboard */}

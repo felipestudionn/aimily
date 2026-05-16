@@ -1,10 +1,18 @@
-/* /strategy/[tenantSlug]/constraints/new — create Bucket A constraints */
+/**
+ * /strategy/[tenantSlug]/constraints/new — REDIRECT to the unified setup workspace
+ *
+ * The old flat constraints form (raw inputs for SKUs, budget, margin %,
+ * positioning, family_share_targets as JSON) is replaced by the
+ * archetype-driven Buy Strategy block inside the Setup workspace. Same
+ * archetype-kickoff + multi-axis editor pattern as Block 2's
+ * ScenariosContent.
+ *
+ * Kept for one release as a 301-style redirect.
+ *
+ * Source: .planning/strategy/plan_strategy-restructure-v3-2026-05-16.md §7
+ */
 
-import { redirect, notFound } from 'next/navigation';
-import Link from 'next/link';
-import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
-import { ConstraintsClient } from './ConstraintsClient';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,34 +20,7 @@ interface PageProps {
   params: Promise<{ tenantSlug: string }>;
 }
 
-export default async function NewConstraintsPage({ params }: PageProps) {
-  const { user } = await getServerSession();
-  if (!user) redirect('/');
-
+export default async function NewConstraintsRedirect({ params }: PageProps) {
   const { tenantSlug } = await params;
-  const tenants = await listUserTenants(user.id);
-  const tenant = tenants.find((t) => t.slug === tenantSlug);
-  if (!tenant) notFound();
-
-  return (
-    <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
-      <div className="mx-auto max-w-3xl">
-        <Link
-          href={`/strategy/${tenant.slug}`}
-          className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em] mb-3 inline-block"
-        >
-          ← {tenant.display_name}
-        </Link>
-        <h1 className="text-[36px] md:text-[42px] font-medium text-carbon tracking-[-0.03em] leading-[1.1] mb-3">
-          New constraints · Bucket A
-        </h1>
-        <p className="text-[14px] text-carbon/50 leading-[1.6] mb-10 max-w-xl">
-          Hard or semi-hard commercial constraints. Margin, SKU count, budget,
-          family share targets, positioning. The recommendation engine must
-          respect these — violations are rejected outright.
-        </p>
-        <ConstraintsClient tenantSlug={tenant.slug} tenantId={tenant.id} />
-      </div>
-    </main>
-  );
+  redirect(`/strategy/${tenantSlug}/setup?block=buy-strategy`);
 }

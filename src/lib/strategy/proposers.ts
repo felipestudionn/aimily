@@ -39,6 +39,14 @@ export interface ProposeNewSKUsOptions {
   runId: string;
   count?: number;
   language?: 'en' | 'es';
+  /**
+   * v3 · Archetype D (Category Transition) input. When non-empty, the
+   * proposer biases generation toward these family codes — even if they are
+   * not in the tenant's top winning families. Each generated candidate
+   * carries `evidence.target_family` set to one of these codes so the
+   * scenario assembler can detect adjacent-category picks.
+   */
+  targetAdjacentFamilies?: string[];
 }
 
 export interface ProposeNewSKUsResult {
@@ -74,6 +82,19 @@ export async function proposeNewSKUs(opts: ProposeNewSKUsOptions): Promise<Propo
 
   const lang = opts.language === 'es' ? 'Spanish (Castilian)' : 'English';
 
+  // v3 · Archetype D adjacency push. When the user picks "Category
+  // Transition" in the setup workspace, the buy-strategy-confirm endpoint
+  // writes target_adjacent_families into strategy_constraints, the
+  // orchestrator forwards them into the proposers, and the prompt
+  // explicitly biases generation toward those families. Behaves like a
+  // soft override of "extend the winning families" — the proposer still
+  // anchors to a source winner, but it can pivot the family_code into an
+  // adjacent target.
+  const adjacent = (opts.targetAdjacentFamilies ?? []).filter(
+    (f) => typeof f === 'string' && f.trim().length > 0
+  );
+  const hasAdjacencyTarget = adjacent.length > 0;
+
   const system = `You are a senior fashion merchandiser. You propose NEW SKUs that EXTEND proven winners in alignment with the active creative direction. You emit ONLY structured JSON matching the schema. Output language: ${lang}.`;
 
   const winnersBlock = ctx.top_winners
@@ -93,9 +114,19 @@ export async function proposeNewSKUs(opts: ProposeNewSKUsOptions): Promise<Propo
     : `# Active creative brief
 (none — propose extensions purely from portfolio winners, conservative on novelty)`;
 
+  const adjacencyBlock = hasAdjacencyTarget
+    ? `# Category-transition target families (BUY-STRATEGY ARCHETYPE D)
+The user explicitly chose "Category Transition / Adjacency Push" in the setup workspace. They want to push into these adjacent families:
+${adjacent.map((f) => `- ${f}`).join('\n')}
+
+Bias generation so that AT LEAST half of the proposals pivot a winner into one of these target families (set "family_code" to the target, mark "creative_alignment" as "bridge" or "tension"). The remaining proposals can stay in the winner's home family for portfolio safety. Always cite the source winner — the adjacency is a pivot OF that winner, not a greenfield concept.`
+    : '';
+
   const user = `${formatContextForPrompt(ctx)}
 
 ${briefBlock}
+
+${adjacencyBlock}
 
 # Portfolio winners (current run, ordered by confidence)
 ${winnersBlock}
@@ -104,6 +135,7 @@ ${winnersBlock}
 Propose EXACTLY ${count} new SKU concepts. Each SKU must:
 - BUILD ON one of the listed winners (cite its product_fact_id as source_product_fact_id).
 - Apply the creative brief direction (color story, archetype focus, family pivot) WHEN aligned with the winner's family.
+${hasAdjacencyTarget ? '- BIAS toward the category-transition target families listed above (at least 50% of proposals).' : ''}
 - Stay within the family's existing price ladder unless the brief proposes a positioning shift.
 - Project a realistic demand vs the source winner (decimal ratio: 0.4 means "expect 40% of source's velocity").
 - Include a 1-line rationale that explicitly references the winner being extended.
@@ -198,6 +230,12 @@ Begin output now.`;
           typeof p.projected_demand_ratio === 'number' ? p.projected_demand_ratio : null,
         creative_alignment: p.creative_alignment,
         rationale: p.rationale,
+        // v3 · adjacency provenance for category_transition scenario filter.
+        // target_family is what the assembler checks in scope==='sku' picks.
+        target_family:
+          typeof p.family_code === 'string' && adjacent.includes(p.family_code)
+            ? p.family_code
+            : null,
       },
       counter_evidence: ctx.active_brief
         ? {
@@ -239,6 +277,15 @@ export interface ProposeFamilyExtensionsOptions {
   familyCode?: string;
   count?: number;
   language?: 'en' | 'es';
+  /**
+   * v3 · Archetype D (Category Transition) input. When non-empty, these
+   * family codes are treated as eligible for extension EVEN IF they don't
+   * meet the standard ROI/heroes/positive-pivot bar. The standard
+   * eligibility filter is unioned with this list. Each generated candidate
+   * carries `evidence.target_family = family_code` so the scenario
+   * assembler can detect adjacent-category extensions.
+   */
+  targetAdjacentFamilies?: string[];
 }
 
 export interface ProposeFamilyExtensionsResult {
@@ -263,11 +310,24 @@ export async function proposeFamilyExtensions(
   if (!ctx) throw new Error(`Tenant ${run.tenant_id} not found`);
   const warnings: string[] = [];
 
+  // v3 · Archetype D adjacency push. Targets passed here join the eligible
+  // pool even when their ROI / hero / brief signals don't qualify them.
+  // The proposer still anchors to real family rows from top_families when
+  // available; if a target isn't in the run's top_families, we synthesise
+  // a placeholder row so the prompt still includes it.
+  const adjacentTargets = (opts.targetAdjacentFamilies ?? []).filter(
+    (f) => typeof f === 'string' && f.trim().length > 0
+  );
+  const adjacentSet = new Set(adjacentTargets);
+  const hasAdjacencyTarget = adjacentTargets.length > 0;
+
   // Pick eligible families: high ROI OR ≥2 heroes OR positive family_pivot in brief.
   const briefPivot = ctx.active_brief?.family_pivot ?? {};
   const allFamilies = ctx.top_families;
   let eligible = allFamilies.filter((f) => {
     if (opts.familyCode && f.family_code !== opts.familyCode) return false;
+    // Adjacency targets override the standard eligibility gate.
+    if (adjacentSet.has(f.family_code)) return true;
     const positivePivot = (briefPivot[f.family_code] ?? 0) > 0;
     return (
       positivePivot ||
@@ -275,6 +335,27 @@ export async function proposeFamilyExtensions(
       f.hero_count >= 2
     );
   });
+
+  // Adjacent targets not present in top_families get a synthetic eligible
+  // row so the prompt + downstream candidate generation can still include
+  // them. Marked with sku_count=0 so the LLM knows to propose greenfield
+  // concepts there.
+  if (hasAdjacencyTarget) {
+    const knownCodes = new Set(eligible.map((f) => f.family_code));
+    for (const fc of adjacentTargets) {
+      if (knownCodes.has(fc)) continue;
+      eligible.push({
+        family_code: fc,
+        sku_count: 0,
+        hero_count: 0,
+        dog_count: 0,
+        family_roi: null,
+        share_of_wallet_pct: null,
+        return_drag_score: null,
+        saturation_score: null,
+      } as (typeof allFamilies)[number]);
+    }
+  }
 
   if (eligible.length === 0 && opts.familyCode) {
     warnings.push(`No eligible expansion signal on family ${opts.familyCode}. Proceeding anyway since explicitly requested.`);
@@ -296,7 +377,8 @@ export async function proposeFamilyExtensions(
     .map((f) => {
       const pivot = briefPivot[f.family_code];
       const pivotStr = pivot != null ? ` · brief pivot ${pivot > 0 ? '+' : ''}${(pivot * 100).toFixed(0)}%` : '';
-      return `- ${f.family_code} · ${f.sku_count} SKUs · ${f.hero_count}H/${f.dog_count}D · ROI ${f.family_roi?.toFixed(2) ?? '?'} · share ${f.share_of_wallet_pct != null ? (f.share_of_wallet_pct * 100).toFixed(1) + '%' : '?'}${pivotStr}`;
+      const adjacencyMark = adjacentSet.has(f.family_code) ? ' · ⚐ ADJACENCY TARGET' : '';
+      return `- ${f.family_code} · ${f.sku_count} SKUs · ${f.hero_count}H/${f.dog_count}D · ROI ${f.family_roi?.toFixed(2) ?? '?'} · share ${f.share_of_wallet_pct != null ? (f.share_of_wallet_pct * 100).toFixed(1) + '%' : '?'}${pivotStr}${adjacencyMark}`;
     })
     .join('\n');
 
@@ -304,10 +386,17 @@ export async function proposeFamilyExtensions(
     ? ctx.taxonomies.archetypes
     : ['editorial-heritage', 'minimal-architect', 'streetwear-drop', 'romantic-feminine', 'resort-luxe'];
 
+  const adjacencyBlock = hasAdjacencyTarget
+    ? `# Category-transition target families (BUY-STRATEGY ARCHETYPE D)
+The user explicitly chose "Category Transition / Adjacency Push" in the setup workspace. The families marked "⚐ ADJACENCY TARGET" above are where they want to invest, even though those families may not yet have proven winners. Propose extensions there as exploratory but anchored — cite analog winners from neighbouring families and explain the bridge in the rationale.`
+    : '';
+
   const user = `${formatContextForPrompt(ctx)}
 
 # Eligible families for extension
 ${familiesBlock}
+
+${adjacencyBlock}
 
 # Task
 For EACH eligible family above, propose ${count} NEW CONCEPTS that extend the family in alignment with brand DNA + creative brief + current winners. A "concept" is an archetype + silhouette idea, NOT a finished SKU — the SKU proposer fills that in later.
@@ -372,6 +461,8 @@ CRITICAL: total extensions across all eligible families = ${count * eligible.len
           brief_family_pivot: pivot,
           target_archetype: e.target_archetype,
           rationale: e.rationale,
+          // v3 · adjacency provenance for category_transition scenario.
+          target_family: adjacentSet.has(e.family_code) ? e.family_code : null,
         },
         counter_evidence: {
           family_dog_count: family.dog_count,

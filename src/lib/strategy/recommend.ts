@@ -71,6 +71,21 @@ export interface Constraints {
   family_share_targets: Record<string, number>;
   positioning_tier: 'premium' | 'mid' | 'value' | null;
   hard_exclusions: string[];
+  // v3 · buy-strategy archetype + action mix (migration 064)
+  chosen_archetype_id: 'A' | 'B' | 'C' | 'D' | null;
+  action_mix: {
+    replenish_pct?: number;
+    new_sku_proposal_pct?: number;
+    family_extension_pct?: number;
+    kill_pct?: number;
+  };
+  buy_waves: Array<{
+    name?: string;
+    share_pct?: number;
+    target_lead_time_days?: number;
+    scheduled_at?: string;
+  }>;
+  target_adjacent_families: string[];
 }
 
 /**
@@ -673,6 +688,7 @@ export interface ScenarioBlueprint {
     | 'risk_minimized'
     | 'growth_aggressive'
     | 'kill_heavy'
+    | 'category_transition'
     | 'custom';
   candidate_ids: string[]; // post-persist; pre-persist this is candidate indices
   candidate_indices: number[];
@@ -761,6 +777,63 @@ export function assembleScenarios(
       constraints,
     })
   );
+
+  // Archetype D · Category Transition / Adjacency Push.
+  //
+  // Only emitted when the user explicitly chose archetype D in the setup
+  // workspace AND the orchestrator dispatched generative proposers ahead of
+  // scenario assembly (otherwise the candidates pool has no
+  // new_sku_proposal / family_extension rows for this filter to pick from).
+  //
+  // Posture: overweight new_sku_proposal + family_extension into the target
+  // adjacent families, keep top-N core heroes alive via carryover, exclude
+  // markdown/kill (D reinvests in adjacent, doesn't burn cash on cuts).
+  if (constraints.chosen_archetype_id === 'D') {
+    const adjacentFamilies = new Set(constraints.target_adjacent_families ?? []);
+    const productFamilyByPid = new Map<string, string | null>(
+      inputs.map((i) => [i.product_fact_id, i.family_code])
+    );
+
+    const isInAdjacentFamily = (c: RecommendationCandidate): boolean => {
+      // family_extension candidates carry family_code as scope_ref directly.
+      if (c.scope === 'family') return adjacentFamilies.has(c.scope_ref);
+      // new_sku_proposal + sku-scope rely on the source product's family.
+      if (c.scope === 'sku') {
+        const fam = productFamilyByPid.get(c.scope_ref);
+        return fam != null && adjacentFamilies.has(fam);
+      }
+      // family_code can also live inside evidence (proposer hint).
+      const ev = c.evidence as { family_code?: string; target_family?: string } | undefined;
+      const evFam = ev?.target_family ?? ev?.family_code;
+      return typeof evFam === 'string' && adjacentFamilies.has(evFam);
+    };
+
+    scenarios.push(
+      buildScenario({
+        candidates,
+        inputsByPid,
+        name: 'Category transition',
+        description:
+          'Overweight new SKU + family extensions into the chosen adjacent categories. Keep top heroes alive via carryover; skip kills and markdowns to fund the push.',
+        scenario_type: 'category_transition',
+        filter: (c) => {
+          // Generative proposals into adjacent families — primary lever.
+          if (
+            (c.action_type === 'new_sku_proposal' || c.action_type === 'family_extension') &&
+            (adjacentFamilies.size === 0 || isInAdjacentFamily(c))
+          ) {
+            return c.confidence_action >= 0.5;
+          }
+          // Keep highest-confidence carryovers (top heroes funding the push).
+          if (c.action_type === 'carryover' && c.confidence_action >= 0.85) return true;
+          // Replenish on a small slice of confident heroes only.
+          if (c.action_type === 'replenish' && c.confidence_action >= 0.8) return true;
+          return false;
+        },
+        constraints,
+      })
+    );
+  }
 
   return scenarios;
 }
