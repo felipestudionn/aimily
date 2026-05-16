@@ -12,6 +12,7 @@
  */
 
 import type { BuyStrategyArchetype } from '@/lib/strategy/sales-archetypes';
+import { useTranslation } from '@/i18n';
 import { CreativeBlock } from './CreativeBlock';
 import { BuyStrategyBlock } from './BuyStrategyBlock';
 
@@ -70,6 +71,8 @@ export function SetupWorkspace({
   existingConstraint,
   topFamilyCodes,
 }: Props) {
+  const t = useTranslation();
+
   // Block is fixed by the route query param when the user arrives from
   // the tenant hub's 4 Gold Standard cards. We deliberately do NOT expose
   // a SegmentedPill to switch between blocks here — each block is
@@ -80,14 +83,12 @@ export function SetupWorkspace({
   const headline =
     block === 'creative'
       ? {
-          title: 'Creative Direction & Market Trends',
-          description:
-            'Conecta Pinterest, sube tu moodboard y valida las tendencias relevantes para tu temporada. Aimily ya propuso un primer set basado en tu producto.',
+          title: t.strategy.setup.creative.title,
+          description: t.strategy.setup.creative.description,
         }
       : {
-          title: 'Buy Strategy',
-          description:
-            'Elige el arquetipo que mejor se alinea con tu margen, saturación y runway. Aimily pre-llena el mix de replenish, nuevos SKUs, extensiones y kills.',
+          title: t.strategy.setup.buyStrategy.title,
+          description: t.strategy.setup.buyStrategy.description,
         };
 
   return (
@@ -97,6 +98,7 @@ export function SetupWorkspace({
         <a
           href={`/strategy/${tenant.slug}`}
           className="inline-flex items-center gap-1.5 text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
+          title={t.strategy.hub.back.replace('{name}', tenant.display_name)}
         >
           ← {tenant.display_name}
         </a>
@@ -116,45 +118,42 @@ export function SetupWorkspace({
       {gating.processed_sources === 0 && gating.total_sources === 0 && (
         <div className="mx-auto max-w-2xl bg-carbon/[0.04] border border-carbon/[0.06] rounded-[14px] p-5">
           <p className="text-[14px] text-carbon font-medium mb-1">
-            Upload sales data first
+            {t.strategy.setup.gating.uploadFirstTitle}
           </p>
           <p className="text-[13px] text-carbon/55 mb-3">
-            Strategy reads from processed sources to ground recommendations.
-            Upload at least one historical sales feed to begin.
+            {t.strategy.setup.gating.uploadFirstBody}
           </p>
           <a
             href={`/strategy/${tenant.slug}/upload`}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-carbon hover:underline"
           >
-            Upload now →
+            {t.strategy.setup.gating.uploadNow}
           </a>
         </div>
       )}
       {gating.processed_sources === 0 && gating.total_sources > 0 && (
         <div className="mx-auto max-w-2xl bg-amber-50 border border-amber-200 rounded-[14px] p-5">
           <p className="text-[14px] text-amber-900 font-medium mb-1">
-            Sources still processing
+            {t.strategy.setup.gating.processingTitle}
           </p>
           <p className="text-[13px] text-amber-800">
-            {gating.total_sources} source{gating.total_sources === 1 ? '' : 's'} ingested.
-            Refresh in ~30s to see them processed and unlock both blocks.
+            {t.strategy.setup.gating.processingBody.replace('{count}', String(gating.total_sources))}
           </p>
         </div>
       )}
       {block === 'buy-strategy' && gating.processed_sources > 0 && !gating.has_completed_run && (
         <div className="mx-auto max-w-2xl bg-amber-50 border border-amber-200 rounded-[14px] p-5">
           <p className="text-[14px] text-amber-900 font-medium mb-1">
-            Run a baseline analysis first
+            {t.strategy.setup.gating.runBaselineTitle}
           </p>
           <p className="text-[13px] text-amber-800 mb-3">
-            Buy strategy needs at least one completed run to populate last-season actuals
-            and top winners. Run a quick exploratory analysis with default constraints first.
+            {t.strategy.setup.gating.runBaselineBody}
           </p>
           <a
             href={`/strategy/${tenant.slug}/runs/new`}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-amber-900 hover:underline"
           >
-            Start exploratory run →
+            {t.strategy.setup.gating.startRun}
           </a>
         </div>
       )}

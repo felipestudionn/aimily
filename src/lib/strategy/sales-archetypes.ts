@@ -181,3 +181,46 @@ export function getBuyStrategyArchetype(
 ): BuyStrategyArchetype | undefined {
   return BUY_STRATEGY_ARCHETYPES.find((a) => a.id === id);
 }
+
+/**
+ * Localized view of the 4 archetypes for client rendering. Pure data,
+ * keeps action_mix / benchmarks / primary_scenario_type from the seed
+ * but overrides every user-facing string with the active locale.
+ *
+ * The `t` argument is the Dictionary returned by useTranslation(); we
+ * accept a structural sub-type so this helper stays decoupled from the
+ * full i18n module (server callers can pass `enDict.strategy.archetypes`
+ * directly when they don't have a hook context).
+ */
+export interface LocalizedArchetypeStrings {
+  name: string;
+  tagline: string;
+  narrative: string;
+  best_for: string;
+  failure_mode: string;
+  target_sales_growth: string;
+  target_margin: string;
+  buy_budget: string;
+}
+
+export function localizeArchetypes(
+  strings: Record<'a' | 'b' | 'c' | 'd', LocalizedArchetypeStrings>
+): BuyStrategyArchetype[] {
+  return BUY_STRATEGY_ARCHETYPES.map((a) => {
+    const localeKey = a.id.toLowerCase() as 'a' | 'b' | 'c' | 'd';
+    const s = strings[localeKey];
+    return {
+      ...a,
+      name: s.name,
+      tagline: s.tagline,
+      narrative: s.narrative,
+      best_for: s.best_for,
+      failure_mode: s.failure_mode,
+      levers: {
+        target_sales_growth: s.target_sales_growth,
+        target_margin: s.target_margin,
+        buy_budget: s.buy_budget,
+      },
+    };
+  });
+}

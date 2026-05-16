@@ -12,12 +12,14 @@
  *     "Confirm strategy" (POSTs to buy-strategy-confirm).
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
-import type {
-  BuyStrategyArchetype,
-  BuyStrategyArchetypeId,
+import { useTranslation } from '@/i18n';
+import {
+  localizeArchetypes,
+  type BuyStrategyArchetype,
+  type BuyStrategyArchetypeId,
 } from '@/lib/strategy/sales-archetypes';
 import type {
   BuyStrategyPrefillEditor,
@@ -70,19 +72,31 @@ interface EditorState {
 
 export function BuyStrategyBlock({
   tenant,
-  archetypes,
+  archetypes: archetypesFromServer,
   existingConstraint,
   existingBriefId,
   topFamilyCodes,
   gatingBlocked,
 }: Props) {
   const router = useRouter();
+  const t = useTranslation();
   const [phase, setPhase] = useState<Phase>('archetypes');
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [loadingPrefill, setLoadingPrefill] = useState<BuyStrategyArchetypeId | null>(null);
   const [deepening, setDeepening] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string>('');
+
+  // Localize the 4 archetype cards using the current locale's strings.
+  // Server-rendered `archetypesFromServer` carries action_mix / benchmarks /
+  // primary_scenario_type (locale-invariant); copy comes from the i18n dict.
+  const archetypes = useMemo<BuyStrategyArchetype[]>(
+    () => localizeArchetypes(t.strategy.archetypes),
+    [t]
+  );
+  // archetypesFromServer is retained as a prop for future server-rendered
+  // benchmark hydration, but UI rendering uses the locale-aware array.
+  void archetypesFromServer;
 
   // ── Pick archetype → fetch prefill editor ───────────────────────────────
   const handleSelectArchetype = useCallback(
@@ -261,8 +275,7 @@ export function BuyStrategyBlock({
       <div>
         <div className="max-w-2xl mx-auto text-center mb-10">
           <p className="text-[14px] text-carbon/55 leading-relaxed italic">
-            Four buy-strategy postures for next season. Pick one — Aimily pre-fills the editor
-            with a coherent starting point grounded in your top families + winners.
+            {t.strategy.buyStrategy.archetypesIntro}
           </p>
         </div>
 
@@ -279,7 +292,7 @@ export function BuyStrategyBlock({
               >
                 <div className="min-h-[120px] mb-6">
                   <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
-                    Archetype {a.id}
+                    {t.strategy.buyStrategy.archetypeLabel.replace('{id}', a.id)}
                   </div>
                   <h3 className="text-[22px] md:text-[24px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
                     {a.name}
@@ -289,16 +302,16 @@ export function BuyStrategyBlock({
 
                 {/* Stats 2×2 — action mix tilt */}
                 <div className="grid grid-cols-2 gap-x-3 gap-y-3 mb-6">
-                  <Stat label="Replenish" value={`${a.default_action_mix.replenish_pct}%`} />
-                  <Stat label="New SKUs" value={`${a.default_action_mix.new_sku_proposal_pct}%`} />
-                  <Stat label="Family ext" value={`${a.default_action_mix.family_extension_pct}%`} />
-                  <Stat label="Kill" value={`${a.default_action_mix.kill_pct}%`} />
+                  <Stat label={t.strategy.buyStrategy.actionMixStats.replenish} value={`${a.default_action_mix.replenish_pct}%`} />
+                  <Stat label={t.strategy.buyStrategy.actionMixStats.newSkus} value={`${a.default_action_mix.new_sku_proposal_pct}%`} />
+                  <Stat label={t.strategy.buyStrategy.actionMixStats.familyExt} value={`${a.default_action_mix.family_extension_pct}%`} />
+                  <Stat label={t.strategy.buyStrategy.actionMixStats.kill} value={`${a.default_action_mix.kill_pct}%`} />
                 </div>
 
                 {/* Benchmark brands */}
                 <div className="pt-4 border-t border-carbon/[0.06] mb-5 min-h-[80px]">
                   <div className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-2">
-                    Benchmark moves
+                    {t.strategy.buyStrategy.benchmarkMoves}
                   </div>
                   <p className="text-[12px] text-carbon/65 leading-[1.5] tracking-[-0.01em]">
                     {a.benchmarks.slice(0, 3).map((b) => b.brand).join(' · ')}
@@ -308,7 +321,7 @@ export function BuyStrategyBlock({
                 {/* Best for */}
                 <div className="pt-4 border-t border-carbon/[0.06] mb-6 min-h-[80px]">
                   <div className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
-                    Best for
+                    {t.strategy.buyStrategy.bestFor}
                   </div>
                   <p className="text-[11px] text-carbon/55 leading-[1.5] line-clamp-3">
                     {a.best_for}
@@ -320,7 +333,7 @@ export function BuyStrategyBlock({
                 <div className="flex justify-center mt-2">
                   <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
                     {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                    Work on this strategy
+                    {t.strategy.buyStrategy.workOnThisStrategy}
                     {!isLoading && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
                   </div>
                 </div>
@@ -348,11 +361,11 @@ export function BuyStrategyBlock({
           className="inline-flex items-center gap-1.5 text-[12px] text-carbon/50 hover:text-carbon transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Change strategy
+          {t.strategy.buyStrategy.changeStrategy}
         </button>
         <div className="text-right">
           <div className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/35">
-            Working on archetype {editor.archetype.id}
+            {t.strategy.buyStrategy.workingOnArchetype.replace('{id}', editor.archetype.id)}
           </div>
           <div className="text-[14px] font-semibold text-carbon tracking-[-0.02em]">
             {editor.archetype.name}
@@ -414,7 +427,7 @@ export function BuyStrategyBlock({
           className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-carbon text-white text-[14px] font-semibold hover:bg-carbon/90 disabled:opacity-40 transition-colors"
         >
           {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          Confirm strategy & run analysis
+          {confirming ? t.strategy.buyStrategy.confirming : t.strategy.buyStrategy.confirmStrategyRun}
         </button>
         <button
           type="button"
@@ -422,7 +435,7 @@ export function BuyStrategyBlock({
           className="inline-flex items-center gap-1.5 text-[12px] text-carbon/50 hover:text-carbon transition-colors"
         >
           <RotateCcw className="h-3 w-3" />
-          Change archetype
+          {t.strategy.buyStrategy.changeArchetype}
         </button>
       </div>
     </div>
