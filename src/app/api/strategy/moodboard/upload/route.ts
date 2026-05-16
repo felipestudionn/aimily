@@ -10,9 +10,13 @@
  * segment. Signed URLs valid for 1 year so subsequent runs can reuse the
  * same moodboard images without re-uploading.
  *
- * TWO INPUT MODES:
+ * THREE INPUT MODES:
  *   1. multipart/form-data with `file` + `tenant_slug` — direct user upload.
- *   2. application/json with `{ source_url, tenant_slug, source_name? }` —
+ *   2. application/json with `{ tenant_slug, base64, mimeType, name? }` —
+ *      direct user upload encoded client-side as base64. Matches Block 1's
+ *      /api/storage/upload contract verbatim so the frontend can share the
+ *      same FileReader pattern.
+ *   3. application/json with `{ tenant_slug, source_url, source_name? }` —
  *      server-side fetch (used by Pinterest pin import in CreativeBlock so
  *      we don't expose the user to CORS or pin-token issues).
  *
@@ -66,7 +70,14 @@ export async function POST(req: NextRequest) {
   let image: NormalisedImage | null = null;
 
   if (isJson) {
-    let body: { source_url?: string; tenant_slug?: string; source_name?: string } | null = null;
+    let body: {
+      source_url?: string;
+      tenant_slug?: string;
+      source_name?: string;
+      base64?: string;
+      mimeType?: string;
+      name?: string;
+    } | null = null;
     try {
       body = await req.json();
     } catch {
@@ -74,51 +85,82 @@ export async function POST(req: NextRequest) {
     }
     tenantSlug = typeof body?.tenant_slug === 'string' ? body.tenant_slug : '';
     const sourceUrl = typeof body?.source_url === 'string' ? body.source_url : '';
-    if (!tenantSlug || !sourceUrl) {
+    const base64 = typeof body?.base64 === 'string' ? body.base64 : '';
+
+    if (!tenantSlug) {
+      return NextResponse.json({ error: 'tenant_slug is required' }, { status: 400 });
+    }
+    if (!sourceUrl && !base64) {
       return NextResponse.json(
-        { error: 'tenant_slug and source_url are required' },
+        { error: 'Either base64 (with mimeType) or source_url is required' },
         { status: 400 }
       );
     }
-    // Authorize BEFORE fetching the URL so unauthorized callers can't use
-    // this endpoint as a remote-fetch proxy.
+
     const access = await requireStrategyAccess({ tenantSlug, minRole: 'analyst' });
     if (!access.ok) return access.response;
 
-    // Fetch the remote image server-side. Pinterest pin URLs return plain
-    // image bytes; we keep this generic so any HTTP(S) image URL works.
-    try {
-      const res = await fetch(sourceUrl);
-      if (!res.ok) {
+    // ── Base64 branch · mirrors Block 1's /api/storage/upload ────────────
+    if (base64) {
+      const mime = (body?.mimeType || 'image/jpeg').toLowerCase().split(';')[0];
+      if (!ALLOWED_MIME.has(mime)) {
+        return NextResponse.json({ error: `Unsupported mime type: ${mime}` }, { status: 415 });
+      }
+      try {
+        const buf = Buffer.from(base64, 'base64');
+        if (buf.length > MAX_BYTES) {
+          return NextResponse.json(
+            { error: `File too large (max ${MAX_BYTES / 1024 / 1024} MB)` },
+            { status: 413 }
+          );
+        }
+        const norm = await normaliseBuffer(buf);
+        const baseName = (body?.name || `mood-${Date.now()}.jpg`).replace(
+          /[^a-zA-Z0-9._-]+/g,
+          '_'
+        ).slice(0, 200) || 'mood.jpg';
+        image = { ...norm, sourceName: baseName };
+      } catch (err: any) {
         return NextResponse.json(
-          { error: `Source fetch failed (${res.status})` },
+          { error: 'Failed to decode + normalise base64', detail: err?.message || String(err) },
           { status: 400 }
         );
       }
-      const ct = (res.headers.get('content-type') || '').split(';')[0].toLowerCase();
-      if (!ct.startsWith('image/')) {
+    } else {
+      // ── source_url branch · server-side fetch (Pinterest pins) ─────────
+      try {
+        const res = await fetch(sourceUrl);
+        if (!res.ok) {
+          return NextResponse.json(
+            { error: `Source fetch failed (${res.status})` },
+            { status: 400 }
+          );
+        }
+        const ct = (res.headers.get('content-type') || '').split(';')[0].toLowerCase();
+        if (!ct.startsWith('image/')) {
+          return NextResponse.json(
+            { error: `Source is not an image (content-type: ${ct})` },
+            { status: 415 }
+          );
+        }
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > MAX_BYTES) {
+          return NextResponse.json(
+            { error: `Source too large (max ${MAX_BYTES / 1024 / 1024} MB)` },
+            { status: 413 }
+          );
+        }
+        const norm = await normaliseBuffer(buf);
+        const sourceName =
+          body?.source_name?.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 200) ||
+          `pin-${Date.now()}.jpg`;
+        image = { ...norm, sourceName };
+      } catch (err: any) {
         return NextResponse.json(
-          { error: `Source is not an image (content-type: ${ct})` },
-          { status: 415 }
+          { error: 'Failed to fetch + normalise source image', detail: err?.message || String(err) },
+          { status: 502 }
         );
       }
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length > MAX_BYTES) {
-        return NextResponse.json(
-          { error: `Source too large (max ${MAX_BYTES / 1024 / 1024} MB)` },
-          { status: 413 }
-        );
-      }
-      const norm = await normaliseBuffer(buf);
-      const sourceName =
-        body?.source_name?.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 200) ||
-        `pin-${Date.now()}.jpg`;
-      image = { ...norm, sourceName };
-    } catch (err: any) {
-      return NextResponse.json(
-        { error: 'Failed to fetch + normalise source image', detail: err?.message || String(err) },
-        { status: 502 }
-      );
     }
 
     const path = `${access.tenant.id}/moodboards/${Date.now()}-${image.sourceName}.jpg`;
@@ -140,9 +182,12 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+    // Match Block 1's response shape (publicUrl) AND keep signed_url for
+    // existing callers — the frontend can use either.
     return NextResponse.json({
       storage_path: path,
       signed_url: signed.signedUrl,
+      publicUrl: signed.signedUrl,
       mime_type: 'image/jpeg',
       width: image.width,
       height: image.height,

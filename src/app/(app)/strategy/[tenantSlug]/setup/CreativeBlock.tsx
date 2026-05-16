@@ -242,29 +242,50 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setManualOpen(null);
   };
 
-  // ── Moodboard upload (direct) ──────────────────────────────────────────
+  // ── Moodboard upload · base64 JSON (mirrors Block 1's pattern verbatim) ─
+  const [uploadError, setUploadError] = useState('');
   const handleUpload = async (files: FileList) => {
     setUploading(true);
+    setUploadError('');
     const newUrls: string[] = [];
+    const failed: string[] = [];
     for (let i = 0; i < files.length; i++) {
       setUploadProgress(`Subiendo ${i + 1}/${files.length}…`);
+      const file = files[i];
       try {
-        const form = new FormData();
-        form.append('file', files[i]);
-        form.append('tenant_slug', tenant.slug);
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('FileReader failed'));
+          reader.readAsDataURL(file);
+        });
         const res = await fetch('/api/strategy/moodboard/upload', {
           method: 'POST',
-          body: form,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant_slug: tenant.slug,
+            name: file.name,
+            base64: base64.split(',')[1],
+            mimeType: file.type,
+          }),
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.signed_url) newUrls.push(data.signed_url);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          failed.push(`${file.name}: ${err.error || `HTTP ${res.status}`}`);
+          console.error('[CreativeBlock upload]', err);
+          continue;
         }
-      } catch {
-        /* skip */
+        const data = await res.json();
+        const url = data.signed_url || data.publicUrl;
+        if (url) newUrls.push(url);
+        else failed.push(`${file.name}: missing signed_url in response`);
+      } catch (err) {
+        failed.push(`${file.name}: ${err instanceof Error ? err.message : String(err)}`);
+        console.error('[CreativeBlock upload exception]', err);
       }
     }
     if (newUrls.length > 0) setImages((prev) => [...prev, ...newUrls]);
+    if (failed.length > 0) setUploadError(`No se pudieron subir ${failed.length}: ${failed.join(' · ')}`);
     setUploading(false);
     setUploadProgress('');
   };
@@ -290,8 +311,8 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     if (e.dataTransfer.files?.length) handleUpload(e.dataTransfer.files);
   };
 
-  // ── Pinterest ──────────────────────────────────────────────────────────
-  const handlePinterestConnect = useCallback(async () => {
+  // ── Pinterest · Block 1 pattern verbatim ──────────────────────────────
+  const handlePinterestConnect = async () => {
     setPinterestLoading(true);
     setPinterestError('');
     try {
@@ -304,19 +325,22 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         const scope = 'boards:read,pins:read';
         const state = Math.random().toString(36).substring(2, 15);
         const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
-        window.open(url, '_blank', 'width=600,height=700');
+        const popup = window.open(url, '_blank', 'width=600,height=700');
+        if (!popup) {
+          setPinterestError('El navegador bloqueó el popup. Permite popups para aimily.app y reinténtalo.');
+        }
         setPinterestLoading(false);
         return;
       }
-      if (!res.ok) throw new Error('Pinterest fetch failed');
-      const data = await res.json();
-      setBoards(data.items || []);
+      const boardsData = await res.json();
+      setBoards(boardsData.items || []);
       setPinterestStep('boards');
-    } catch {
+    } catch (err) {
+      console.error('[CreativeBlock pinterest]', err);
       setPinterestError('No se pudo conectar a Pinterest');
     }
     setPinterestLoading(false);
-  }, []);
+  };
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -327,7 +351,8 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [handlePinterestConnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSelectBoard = async (board: PinterestBoard) => {
     setSelectedBoard(board);
@@ -573,122 +598,15 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
   // align flush on the left.
   return (
     <div className="max-w-7xl mx-auto space-y-12">
-      {/* MARKET TRENDS · primary surface, pre-populated */}
-      <section>
-        <div className="flex items-baseline justify-between mb-6">
-          <div>
-            <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-              Market trends
-            </h2>
-            <p className="text-[13px] text-carbon/50 mt-1">
-              Aimily ya propuso tendencias relevantes para tu producto. Selecciona las que
-              quieres adoptar — añade las tuyas con "+" en cada sección.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={loadMarketTrends}
-            disabled={trendsLoading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/70 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors shrink-0"
-          >
-            {trendsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Refrescar
-          </button>
-        </div>
-
-        {trendsError && (
-          <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[13px] text-red-800 mb-6">
-            {trendsError}
-          </div>
-        )}
-
-        {trendsLoading && trends.length === 0 && (
-          <div className="flex items-center justify-center gap-2 py-16 text-carbon/45">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-[13px]">Aimily está leyendo el mercado…</span>
-          </div>
-        )}
-
-        <div className="space-y-10">
-          {DIMENSION_ORDER.map((dim) => {
-            const cards = trendsByDim.get(dim) ?? [];
-            // We always render the section (even empty) so the manual-add
-            // card is always visible — Felipe's explicit ask.
-            const meta = DIMENSION_META[dim];
-            const isManualOpen = manualOpen === dim;
-            const isColorDim = dim === 'color';
-            return (
-              <div key={dim}>
-                <div className="flex items-baseline justify-between mb-3">
-                  <div>
-                    <h3 className="text-[16px] font-semibold text-carbon tracking-[-0.02em]">
-                      {meta.label}
-                    </h3>
-                    <p className="text-[12px] text-carbon/45">{meta.description}</p>
-                  </div>
-                  <span className="text-[11px] text-carbon/35 tabular-nums">{cards.length}</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {/* Manual-add card · always first */}
-                  {isManualOpen ? (
-                    <ManualAddForm
-                      label={meta.addLabel}
-                      isColor={isColorDim}
-                      title={manualTitle}
-                      setTitle={setManualTitle}
-                      spec={manualSpec}
-                      setSpec={setManualSpec}
-                      hex={manualHex}
-                      setHex={setManualHex}
-                      brands={manualBrands}
-                      setBrands={setManualBrands}
-                      onSubmit={submitManual}
-                      onCancel={cancelManual}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => openManual(dim)}
-                      className="group bg-white rounded-[16px] p-5 ring-1 ring-dashed ring-carbon/15 hover:ring-carbon/40 hover:bg-carbon/[0.02] transition-all flex flex-col items-center justify-center min-h-[160px] text-center"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-carbon/[0.05] flex items-center justify-center mb-3 group-hover:bg-carbon/[0.1] transition-colors">
-                        <Plus className="h-4 w-4 text-carbon/55" />
-                      </div>
-                      <p className="text-[13px] font-medium text-carbon/70 leading-tight">
-                        {meta.addLabel}
-                      </p>
-                      <p className="text-[11px] text-carbon/40 mt-1">
-                        Manual — la añades tú
-                      </p>
-                    </button>
-                  )}
-
-                  {/* Auto cards (market + moodboard origin) */}
-                  {cards.map((trend, i) => (
-                    <TrendCard
-                      key={`${dim}-${i}-${trend.title}`}
-                      trend={trend}
-                      selected={selectedTrendTitles.has(trend.title)}
-                      onToggle={() => toggleTrend(trend.title)}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* MORE CONTEXT · Pinterest + upload */}
       <section className="bg-white rounded-[20px] p-8 md:p-12">
         <header className="mb-6">
           <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-            ¿Quieres añadir más contexto?
+            Añadir contexto creativo
           </h2>
           <p className="text-[13px] text-carbon/50 mt-1">
-            Conecta Pinterest o sube imágenes. Al analizar, Aimily añade nuevas pills a las
-            secciones de arriba según las señales visuales que detecte.
+            Conecta Pinterest o sube imágenes antes de revisar las tendencias. Al analizar,
+            Aimily añade pills nuevos a las secciones de Market Trends.
           </p>
         </header>
 
@@ -704,6 +622,13 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
             e.target.value = '';
           }}
         />
+
+        {(pinterestError || uploadError) && (
+          <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[13px] text-red-800 mb-6 space-y-1">
+            {pinterestError && <p>· {pinterestError}</p>}
+            {uploadError && <p>· {uploadError}</p>}
+          </div>
+        )}
 
         {images.length === 0 && pinterestStep === 'idle' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto">
@@ -914,6 +839,113 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
             </div>
           </div>
         )}
+      </section>
+
+      {/* MARKET TRENDS · primary surface, pre-populated */}
+      <section>
+        <div className="flex items-baseline justify-between mb-6">
+          <div>
+            <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
+              Market trends
+            </h2>
+            <p className="text-[13px] text-carbon/50 mt-1">
+              Aimily ya propuso tendencias relevantes para tu producto. Selecciona las que
+              quieres adoptar — añade las tuyas con "+" en cada sección.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadMarketTrends}
+            disabled={trendsLoading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/70 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors shrink-0"
+          >
+            {trendsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Refrescar
+          </button>
+        </div>
+
+        {trendsError && (
+          <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[13px] text-red-800 mb-6">
+            {trendsError}
+          </div>
+        )}
+
+        {trendsLoading && trends.length === 0 && (
+          <div className="flex items-center justify-center gap-2 py-16 text-carbon/45">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-[13px]">Aimily está leyendo el mercado…</span>
+          </div>
+        )}
+
+        <div className="space-y-10">
+          {DIMENSION_ORDER.map((dim) => {
+            const cards = trendsByDim.get(dim) ?? [];
+            // We always render the section (even empty) so the manual-add
+            // card is always visible — Felipe's explicit ask.
+            const meta = DIMENSION_META[dim];
+            const isManualOpen = manualOpen === dim;
+            const isColorDim = dim === 'color';
+            return (
+              <div key={dim}>
+                <div className="flex items-baseline justify-between mb-3">
+                  <div>
+                    <h3 className="text-[16px] font-semibold text-carbon tracking-[-0.02em]">
+                      {meta.label}
+                    </h3>
+                    <p className="text-[12px] text-carbon/45">{meta.description}</p>
+                  </div>
+                  <span className="text-[11px] text-carbon/35 tabular-nums">{cards.length}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {/* Manual-add card · always first */}
+                  {isManualOpen ? (
+                    <ManualAddForm
+                      label={meta.addLabel}
+                      isColor={isColorDim}
+                      title={manualTitle}
+                      setTitle={setManualTitle}
+                      spec={manualSpec}
+                      setSpec={setManualSpec}
+                      hex={manualHex}
+                      setHex={setManualHex}
+                      brands={manualBrands}
+                      setBrands={setManualBrands}
+                      onSubmit={submitManual}
+                      onCancel={cancelManual}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openManual(dim)}
+                      className="group bg-white rounded-[16px] p-5 ring-1 ring-dashed ring-carbon/15 hover:ring-carbon/40 hover:bg-carbon/[0.02] transition-all flex flex-col items-center justify-center min-h-[160px] text-center"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-carbon/[0.05] flex items-center justify-center mb-3 group-hover:bg-carbon/[0.1] transition-colors">
+                        <Plus className="h-4 w-4 text-carbon/55" />
+                      </div>
+                      <p className="text-[13px] font-medium text-carbon/70 leading-tight">
+                        {meta.addLabel}
+                      </p>
+                      <p className="text-[11px] text-carbon/40 mt-1">
+                        Manual — la añades tú
+                      </p>
+                    </button>
+                  )}
+
+                  {/* Auto cards (market + moodboard origin) */}
+                  {cards.map((trend, i) => (
+                    <TrendCard
+                      key={`${dim}-${i}-${trend.title}`}
+                      trend={trend}
+                      selected={selectedTrendTitles.has(trend.title)}
+                      onToggle={() => toggleTrend(trend.title)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* Confirm */}
