@@ -76,7 +76,7 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     .select(
       `
       id, tenant_id, algorithm_version_id, constraint_id, creative_brief_id, run_status,
-      source_set_ids,
+      source_set_ids, run_mode, default_lead_time_days,
       strategy_algorithm_versions!inner(id, thresholds)
     `
     )
@@ -340,8 +340,14 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     for (const r of data || []) candidateIds.push(r.id);
   }
 
-  // 12. Assemble scenarios
-  const scenarios = assembleScenarios(allCandidates, inputs, constraints, brief != null);
+  // 12. Assemble scenarios — apply run_mode filtering so mid-season vs
+  //     pre-season runs surface the right action mix in scenarios.
+  //     run_mode is informational on the candidates themselves (they stay
+  //     in the DB so the UI can still show them), but the scenario
+  //     assembler only consumes the filtered subset.
+  const runMode = ((run as any).run_mode as string | undefined) ?? 'unscoped';
+  const scenarioCandidates = filterCandidatesByRunMode(allCandidates, runMode);
+  const scenarios = assembleScenarios(scenarioCandidates, inputs, constraints, brief != null);
   const scenarioInserts = scenarios.map((s, idx) => ({
     tenant_id: run.tenant_id,
     run_id: runId,
@@ -395,4 +401,47 @@ function* chunked<T>(arr: T[], size: number): Generator<T[]> {
   for (let i = 0; i < arr.length; i += size) {
     yield arr.slice(i, i + size);
   }
+}
+
+/**
+ * Filter candidates fed into scenario assembly based on the run_mode.
+ * Tension flags always pass — they're meta-signals about strategic
+ * conflicts and stay visible regardless of mode.
+ *
+ *   pre_season: keeps carryover + new_sku_proposal + family_extension +
+ *               kill + recolor + investigate + tension_flag.
+ *   mid_season: keeps replenish + markdown_accelerate +
+ *               markdown_delay + geographic_redistribute + investigate +
+ *               tension_flag.
+ *   unscoped:   keeps everything (default).
+ */
+function filterCandidatesByRunMode<T extends { action_type: string }>(
+  candidates: T[],
+  mode: string
+): T[] {
+  if (mode === 'unscoped') return candidates;
+  const PRE_SEASON = new Set([
+    'carryover',
+    'new_sku_proposal',
+    'family_extension',
+    'kill',
+    'recolor',
+    'investigate',
+    'tension_flag',
+    'resize_up',
+    'resize_down',
+    'substitute',
+  ]);
+  const MID_SEASON = new Set([
+    'replenish',
+    'markdown_accelerate',
+    'markdown_delay',
+    'geographic_redistribute',
+    'investigate',
+    'tension_flag',
+    'substitute',
+  ]);
+  const allowed = mode === 'pre_season' ? PRE_SEASON : mode === 'mid_season' ? MID_SEASON : null;
+  if (!allowed) return candidates;
+  return candidates.filter((c) => allowed.has(c.action_type));
 }

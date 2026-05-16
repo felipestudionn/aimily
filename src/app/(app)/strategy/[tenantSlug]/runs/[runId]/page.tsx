@@ -16,6 +16,7 @@ import { getServerSession } from '@/lib/auth/server-session';
 import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { RunActionsClient } from './RunActionsClient';
+import { AllocateReplenishmentTrigger } from './AllocateReplenishmentTrigger';
 import {
   CheckCircle2,
   Clock3,
@@ -82,7 +83,7 @@ export default async function RunDetailPage({ params }: PageProps) {
     .single();
   if (!run) notFound();
 
-  const [algoVer, families, candidates, scenarios, backtest, palettesRes] = await Promise.all([
+  const [algoVer, families, candidates, scenarios, backtest, palettesRes, allocationsRes] = await Promise.all([
     supabaseAdmin
       .from('strategy_algorithm_versions')
       .select('version, thresholds')
@@ -116,8 +117,14 @@ export default async function RunDetailPage({ params }: PageProps) {
       .select('id, family_code, palette, created_at')
       .eq('run_id', runId)
       .order('created_at', { ascending: false }),
+    supabaseAdmin
+      .from('strategy_replenishment_allocations')
+      .select('scenario_id, product_fact_id, recommended_buy_units, projected_cost, ranking_score, score_components, justification')
+      .eq('run_id', runId)
+      .order('ranking_score', { ascending: false }),
   ]);
   const palettes = palettesRes.data || [];
+  const allocations = (allocationsRes as any).data || [];
 
   // Build a product_fact_id → identity lookup so SKU + color candidates
   // render with product_name + model_ref + color, not opaque UUIDs.
@@ -256,9 +263,24 @@ export default async function RunDetailPage({ params }: PageProps) {
               Scenarios
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {scenarios.data.map((s: any) => (
-                <ScenarioCard key={s.id} scenario={s} />
-              ))}
+              {scenarios.data.map((s: any) => {
+                const allocCount = allocations.filter(
+                  (a: any) => a.scenario_id === s.id && a.recommended_buy_units > 0
+                ).length;
+                const allocBudget = allocations
+                  .filter((a: any) => a.scenario_id === s.id)
+                  .reduce((acc: number, a: any) => acc + (Number(a.projected_cost) || 0), 0);
+                return (
+                  <ScenarioCard
+                    key={s.id}
+                    scenario={s}
+                    tenantSlug={tenant.slug}
+                    runId={run.id}
+                    allocationsCount={allocCount}
+                    allocationsBudget={allocBudget}
+                  />
+                );
+              })}
             </div>
           </section>
         )}
@@ -348,6 +370,120 @@ export default async function RunDetailPage({ params }: PageProps) {
           );
         })()}
 
+        {/* Replenishment allocations (Paso 3) */}
+        {allocations.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em] mb-2">
+              Replenishment allocation
+            </h2>
+            <p className="text-[12px] text-carbon/50 mb-5 max-w-2xl leading-[1.5]">
+              Per-scenario buy units distributed by ranking_score = demand × runway × (1−returns) ×
+              creative_alignment × (1−lead_time_penalty). SKUs with supplier lead time exceeding
+              seasonal runway are excluded as <em>late_to_market</em> and surface a tension flag.
+            </p>
+            <div className="space-y-5">
+              {(scenarios.data || []).map((s: any) => {
+                const scenAllocs = allocations.filter((a: any) => a.scenario_id === s.id);
+                if (scenAllocs.length === 0) return null;
+                const allocated = scenAllocs.filter((a: any) => a.recommended_buy_units > 0);
+                const excluded = scenAllocs.filter(
+                  (a: any) => (a.score_components?.excluded_reason ?? null) != null
+                );
+                const totalUnits = allocated.reduce(
+                  (acc: number, a: any) => acc + (Number(a.recommended_buy_units) || 0),
+                  0
+                );
+                const totalCost = scenAllocs.reduce(
+                  (acc: number, a: any) => acc + (Number(a.projected_cost) || 0),
+                  0
+                );
+                return (
+                  <div key={s.id} className="bg-white rounded-[20px] p-6 md:p-8">
+                    <header className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
+                      <div>
+                        <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] mb-1">
+                          {s.scenario_type.replace(/_/g, ' ')}
+                        </p>
+                        <h3 className="text-[16px] font-semibold text-carbon tracking-[-0.02em]">
+                          {s.name}
+                        </h3>
+                      </div>
+                      <div className="text-[12px] text-carbon/60">
+                        <strong>{allocated.length}</strong> SKUs · {totalUnits.toLocaleString()} units · €{formatCompact(totalCost)}
+                        {excluded.length > 0 && (
+                          <span className="ml-3 text-red-700">
+                            {excluded.length} excluded
+                          </span>
+                        )}
+                      </div>
+                    </header>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-[12px]">
+                        <thead>
+                          <tr className="text-[10px] text-carbon/50 uppercase tracking-[0.08em] border-b border-carbon/[0.06]">
+                            <th className="text-left py-2 pr-3">SKU</th>
+                            <th className="text-right py-2 px-2">Units</th>
+                            <th className="text-right py-2 px-2">Cost</th>
+                            <th className="text-right py-2 px-2">Score</th>
+                            <th className="text-right py-2 px-2">Runway</th>
+                            <th className="text-right py-2 px-2">Lead penalty</th>
+                            <th className="text-right py-2 pl-2">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {scenAllocs.slice(0, 25).map((a: any) => {
+                            const p = productById.get(a.product_fact_id);
+                            const sc = a.score_components || {};
+                            const excludedReason = sc.excluded_reason as string | null;
+                            return (
+                              <tr key={a.product_fact_id} className="border-b border-carbon/[0.04]">
+                                <td className="py-1.5 pr-3 text-carbon">
+                                  <div className="font-medium truncate max-w-[280px]">
+                                    {p?.product_name || p?.model_ref || a.product_fact_id.slice(0, 8)}
+                                  </div>
+                                  {p?.model_ref && (
+                                    <div className="text-[10px] text-carbon/45 font-mono">
+                                      {p.model_ref}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="text-right py-1.5 px-2 text-carbon font-semibold">
+                                  {Number(a.recommended_buy_units || 0).toLocaleString()}
+                                </td>
+                                <td className="text-right py-1.5 px-2 text-carbon/70">
+                                  {a.projected_cost != null ? `€${formatCompact(Number(a.projected_cost))}` : '—'}
+                                </td>
+                                <td className="text-right py-1.5 px-2 text-carbon/60">
+                                  {a.ranking_score != null ? Number(a.ranking_score).toFixed(3) : '—'}
+                                </td>
+                                <td className="text-right py-1.5 px-2 text-carbon/60">
+                                  {sc.deliverable_days != null ? `${sc.deliverable_days}d` : '—'}
+                                </td>
+                                <td className="text-right py-1.5 px-2 text-carbon/60">
+                                  {sc.lead_time_penalty != null ? `${Math.round(Number(sc.lead_time_penalty) * 100)}%` : '—'}
+                                </td>
+                                <td className="text-right py-1.5 pl-2">
+                                  {excludedReason ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] bg-red-50 text-red-700">
+                                      {excludedReason.replace(/_/g, ' ')}
+                                    </span>
+                                  ) : (
+                                    <span className="text-emerald-700 text-[11px]">✓ allocated</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Recommended palettes (Paso 2) */}
         {palettes.length > 0 && (
           <section className="mb-8">
@@ -408,7 +544,19 @@ export default async function RunDetailPage({ params }: PageProps) {
   );
 }
 
-function ScenarioCard({ scenario }: { scenario: any }) {
+function ScenarioCard({
+  scenario,
+  tenantSlug: _tenantSlug,
+  runId,
+  allocationsCount,
+  allocationsBudget,
+}: {
+  scenario: any;
+  tenantSlug: string;
+  runId: string;
+  allocationsCount: number;
+  allocationsBudget: number;
+}) {
   const isSelected = scenario.is_selected;
   return (
     <div
@@ -457,6 +605,16 @@ function ScenarioCard({ scenario }: { scenario: any }) {
           {scenario.creative_application_summary}
         </p>
       )}
+      {allocationsCount > 0 && (
+        <p className="mt-3 text-[11px] text-carbon/60">
+          <strong>{allocationsCount}</strong> SKUs allocated · spend €{formatCompact(allocationsBudget)}
+        </p>
+      )}
+      <AllocateReplenishmentTrigger
+        runId={runId}
+        scenarioId={scenario.id}
+        allocationsCount={allocationsCount}
+      />
     </div>
   );
 }

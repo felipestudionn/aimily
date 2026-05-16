@@ -119,6 +119,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // run_mode + default_lead_time per Paso 3. Validate enum.
+  const allowedModes = new Set(['unscoped', 'pre_season', 'mid_season']);
+  const runMode =
+    typeof body.run_mode === 'string' && allowedModes.has(body.run_mode)
+      ? (body.run_mode as 'unscoped' | 'pre_season' | 'mid_season')
+      : 'unscoped';
+  const defaultLeadTimeDays =
+    typeof body.default_lead_time_days === 'number' && body.default_lead_time_days >= 0
+      ? Math.round(body.default_lead_time_days)
+      : null;
+
   const { data: run, error } = await supabaseAdmin
     .from('strategy_analysis_runs')
     .insert({
@@ -130,6 +141,8 @@ export async function POST(req: NextRequest) {
       constraint_id: body.constraint_id || null,
       creative_brief_id: body.creative_brief_id || null,
       run_status: 'pending',
+      run_mode: runMode,
+      default_lead_time_days: defaultLeadTimeDays,
     })
     .select('id, run_status, created_at')
     .single();

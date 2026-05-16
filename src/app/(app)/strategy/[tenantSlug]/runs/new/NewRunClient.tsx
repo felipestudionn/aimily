@@ -38,6 +38,8 @@ export function NewRunClient({ tenantSlug, sources, constraints, briefs }: Props
   const [selectedSources, setSelectedSources] = useState<string[]>(sources.map((s) => s.id));
   const [constraintId, setConstraintId] = useState<string>('');
   const [briefId, setBriefId] = useState<string>('');
+  const [runMode, setRunMode] = useState<'unscoped' | 'pre_season' | 'mid_season'>('unscoped');
+  const [defaultLeadTime, setDefaultLeadTime] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -62,6 +64,8 @@ export function NewRunClient({ tenantSlug, sources, constraints, briefs }: Props
           constraint_id: constraintId || null,
           creative_brief_id: briefId || null,
           source_set_ids: selectedSources,
+          run_mode: runMode,
+          default_lead_time_days: defaultLeadTime ? parseInt(defaultLeadTime, 10) : null,
         }),
       });
       if (!res.ok) {
@@ -150,6 +154,41 @@ export function NewRunClient({ tenantSlug, sources, constraints, briefs }: Props
           ))}
         </select>
       </Field>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Run mode">
+          <select
+            value={runMode}
+            onChange={(e) =>
+              setRunMode(e.target.value as 'unscoped' | 'pre_season' | 'mid_season')
+            }
+            className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none"
+          >
+            <option value="unscoped">Unscoped — all action types</option>
+            <option value="pre_season">
+              Pre-season — carryover + new SKU + family extension + kill
+            </option>
+            <option value="mid_season">
+              Mid-season — replenish + markdown + redistribute
+            </option>
+          </select>
+        </Field>
+        <Field label="Default supplier lead time (days)">
+          <input
+            type="number"
+            min="0"
+            value={defaultLeadTime}
+            onChange={(e) => setDefaultLeadTime(e.target.value)}
+            placeholder="45"
+            className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/30"
+          />
+        </Field>
+      </div>
+      <p className="text-[11px] text-carbon/45 -mt-3">
+        Mid-season runs trim scenario assembly to operational actions; pre-season runs
+        focus on the next-collection bets. Lead time gates the replenishment allocator
+        against SKUs that would land late to market.
+      </p>
 
       {err && <p className="text-[13px] text-red-700 bg-red-50 px-4 py-3 rounded-[12px]">{err}</p>}
 
