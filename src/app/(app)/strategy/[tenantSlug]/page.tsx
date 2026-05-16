@@ -1,13 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   /strategy/[tenantSlug] — tenant workspace.
+   /strategy/[tenantSlug] — tenant workspace · 4 Gold Standard hub cards.
 
-   The authenticated landing page for a single tenant. Shows:
-   - Tenant header (display name, tier, role, isolation mode badge)
-   - Sources panel: uploads to date, observation date range, season coverage
-   - Analysis runs list: most recent at top, status pill, run shortcut
-   - CTAs: upload new source, start new run
+   Pattern: CLAUDE.md "GOLD STANDARD — las tarjetas del Overview de colección".
+   4 white cards in a row · ghost number 72px · title 28px · description 14px ·
+   CTA pill at the bottom · progress bar under the pill. Hover lift + shadow.
 
-   Server-rendered so all data lands without skeleton flash.
+   The 4 cards represent the 4 inputs that feed an analysis run:
+     01. Sources         — sales feeds ingested
+     02. Analysis        — runs scored + scenarios assembled
+     03. Buy strategy    — archetype A/B/C/D + action mix confirmed
+     04. Creative brief  — moodboard + color story + archetype focus
+
+   When all four are filled, the latest run's decision pack becomes the output.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 import { redirect, notFound } from 'next/navigation';
@@ -18,13 +22,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   Building2,
   ShieldCheck,
-  UploadCloud,
-  Plus,
   ArrowRight,
-  Clock3,
-  CheckCircle2,
-  AlertCircle,
-  PlayCircle,
+  Check,
+  FileText,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -47,37 +47,14 @@ const ISOLATION_LABELS: Record<string, string> = {
   vpc_byoc: 'VPC · BYOC',
 };
 
-const STATUS_META: Record<
-  string,
-  { label: string; icon: React.ComponentType<{ className?: string }>; className: string }
-> = {
-  pending: { label: 'Queued', icon: Clock3, className: 'bg-carbon/[0.06] text-carbon/60' },
-  ingesting: {
-    label: 'Ingesting',
-    icon: UploadCloud,
-    className: 'bg-blue-50 text-blue-700',
-  },
-  scoring: {
-    label: 'Scoring',
-    icon: PlayCircle,
-    className: 'bg-amber-50 text-amber-700',
-  },
-  recommending: {
-    label: 'Recommending',
-    icon: PlayCircle,
-    className: 'bg-amber-50 text-amber-700',
-  },
-  complete: {
-    label: 'Complete',
-    icon: CheckCircle2,
-    className: 'bg-emerald-50 text-emerald-700',
-  },
-  failed: {
-    label: 'Failed',
-    icon: AlertCircle,
-    className: 'bg-red-50 text-red-700',
-  },
-};
+interface HubCard {
+  number: number;
+  title: string;
+  description: string;
+  href: string;
+  progress: number; // 0 · 50 · 100
+  statusLine: string;
+}
 
 export default async function TenantWorkspacePage({ params }: PageProps) {
   const { user } = await getServerSession();
@@ -89,40 +66,109 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
   const tenant = tenants.find((t) => t.slug === tenantSlug);
   if (!tenant) notFound();
 
-  // Pull recent activity in parallel.
-  const [sourcesRes, runsRes, constraintsRes, briefsRes] = await Promise.all([
+  const [sourcesRes, runsRes, constraintRes, briefRes] = await Promise.all([
     supabaseAdmin
       .from('strategy_sources')
-      .select(
-        'id, season, market, source_format, observation_date, record_count, parse_confidence, uploaded_at, processed_at'
-      )
+      .select('id, processed_at')
       .eq('tenant_id', tenant.id)
-      .order('observation_date', { ascending: false })
-      .limit(10),
+      .limit(50),
     supabaseAdmin
       .from('strategy_analysis_runs')
-      .select('id, name, run_status, created_at, scoring_completed_at, recommending_completed_at')
+      .select('id, run_status, recommending_completed_at')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false })
-      .limit(10),
+      .limit(20),
     supabaseAdmin
       .from('strategy_constraints')
-      .select('id, name, target_total_skus, target_avg_margin, created_at')
+      .select('id, chosen_archetype_id, action_mix')
       .eq('tenant_id', tenant.id)
+      .not('chosen_archetype_id', 'is', null)
       .order('created_at', { ascending: false })
-      .limit(5),
+      .limit(1)
+      .maybeSingle(),
     supabaseAdmin
       .from('strategy_creative_briefs')
-      .select('id, name, color_story, archetypes_focus, created_at')
+      .select('id, name, color_story, archetypes_focus')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false })
-      .limit(5),
+      .limit(1)
+      .maybeSingle(),
   ]);
 
-  const sources = sourcesRes.data || [];
-  const runs = runsRes.data || [];
-  const constraints = constraintsRes.data || [];
-  const briefs = briefsRes.data || [];
+  const sources = sourcesRes.data ?? [];
+  const runs = runsRes.data ?? [];
+  const constraint = constraintRes.data ?? null;
+  const brief = briefRes.data ?? null;
+
+  const sourcesProcessed = sources.filter((s) => s.processed_at != null).length;
+  const runsCompleted = runs.filter((r) => r.run_status === 'complete').length;
+  const runInFlight = runs.find(
+    (r) => r.run_status === 'scoring' || r.run_status === 'recommending' || r.run_status === 'pending'
+  );
+  const latestCompletedRun = runs.find((r) => r.run_status === 'complete');
+
+  // 4 hub cards · progress + state-line
+  const sourcesCard: HubCard = {
+    number: 1,
+    title: 'Sources',
+    description:
+      'Upload your historical sales feeds — Zara PDFs, Shopify exports, retail RNK files. Each source is parsed into facts the engine grounds every recommendation on.',
+    href: `/strategy/${tenant.slug}/upload`,
+    progress: sourcesProcessed > 0 ? 100 : sources.length > 0 ? 50 : 0,
+    statusLine:
+      sources.length === 0
+        ? 'No sources yet'
+        : sourcesProcessed === 0
+        ? `${sources.length} ingesting…`
+        : `${sourcesProcessed} processed`,
+  };
+
+  const briefCard: HubCard = {
+    number: 2,
+    title: 'Creative brief',
+    description:
+      'Moodboard + market research + selected trends. Aimily reads your visual codes and grounds the narrative direction the recommendations follow.',
+    href: `/strategy/${tenant.slug}/setup?block=creative`,
+    progress: brief ? 100 : 0,
+    statusLine: brief
+      ? brief.name ?? 'Confirmed'
+      : 'Not started',
+  };
+
+  const buyStrategyCard: HubCard = {
+    number: 3,
+    title: 'Buy strategy',
+    description:
+      'Pick one of four archetypes (Replenish · Balanced · Defend · Category transition) and fine-tune the replenish / new / extension / kill mix.',
+    href: `/strategy/${tenant.slug}/setup?block=buy-strategy`,
+    progress: constraint?.chosen_archetype_id ? 100 : 0,
+    statusLine: constraint?.chosen_archetype_id
+      ? `Archetype ${constraint.chosen_archetype_id} · confirmed`
+      : 'Not started',
+  };
+
+  const analysisCard: HubCard = {
+    number: 4,
+    title: 'Analysis',
+    description:
+      'Cross your sources with creative brief + buy strategy. Aimily scores every SKU, assembles scenarios, and surfaces what to replenish, refresh, or kill.',
+    href: runInFlight
+      ? `/strategy/${tenant.slug}/runs/${runInFlight.id}`
+      : latestCompletedRun
+      ? `/strategy/${tenant.slug}/runs/${latestCompletedRun.id}`
+      : `/strategy/${tenant.slug}/runs/new`,
+    progress: runsCompleted > 0 ? 100 : runInFlight ? 50 : 0,
+    statusLine:
+      runsCompleted > 0
+        ? `${runsCompleted} run${runsCompleted === 1 ? '' : 's'} complete`
+        : runInFlight
+        ? 'Run in progress…'
+        : 'No runs yet',
+  };
+
+  const cards: HubCard[] = [sourcesCard, briefCard, buyStrategyCard, analysisCard];
+  const completedCount = cards.filter((c) => c.progress === 100).length;
+  const allFour = completedCount === 4;
 
   return (
     <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
@@ -157,209 +203,139 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
                 <p className="mt-2 text-[14px] text-carbon/50">{tenant.legal_name}</p>
               )}
             </div>
-            <div className="flex gap-3">
-              <Link
-                href={`/strategy/${tenant.slug}/upload`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-carbon/[0.12] text-carbon/70 text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/[0.04]"
-              >
-                <UploadCloud className="h-4 w-4" />
-                Upload source
-              </Link>
-              <Link
-                href={`/strategy/${tenant.slug}/setup`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-carbon/[0.12] text-carbon/70 text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/[0.04]"
-              >
-                Setup
-              </Link>
-              <Link
-                href={`/strategy/${tenant.slug}/runs/new`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
-              >
-                <Plus className="h-4 w-4" />
-                New analysis run
-              </Link>
+            <div className="text-right">
+              <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+                Progress
+              </div>
+              <div className="text-[28px] font-semibold text-carbon tabular-nums tracking-[-0.03em] mt-1">
+                {completedCount}/4
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Two-column main grid: sources + runs */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-          {/* Sources */}
-          <section className="bg-white rounded-[20px] p-8 md:p-10">
-            <header className="flex items-center justify-between mb-6">
-              <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em]">
-                Sources
-              </h2>
+        {/* 4 Gold Standard hub cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+          {cards.map((card) => {
+            const isComplete = card.progress === 100;
+            const isStarted = card.progress > 0;
+            const n = card.number;
+            return (
               <Link
-                href={`/strategy/${tenant.slug}/upload`}
-                className="text-[12px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline"
+                key={card.number}
+                href={card.href}
+                className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
               >
-                Upload new →
-              </Link>
-            </header>
-            {sources.length === 0 ? (
-              <p className="text-[13px] text-carbon/40 italic">
-                No sources ingested yet. Upload your first SKU performance feed to begin.
-              </p>
-            ) : (
-              <ul className="divide-y divide-carbon/[0.06]">
-                {sources.map((s) => (
-                  <li key={s.id} className="py-3 flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-[14px] text-carbon font-medium">
-                        {s.season} · {s.source_format}
-                        {s.market ? ` · ${s.market}` : ''}
-                      </p>
-                      <p className="text-[12px] text-carbon/40">
-                        {s.record_count} records · obs {new Date(s.observation_date).toLocaleDateString()}{' '}
-                        · parse {Math.round(Number(s.parse_confidence) * 100)}%
-                      </p>
-                    </div>
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.08em] ${
-                        s.processed_at
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-amber-50 text-amber-700'
-                      }`}
-                    >
-                      {s.processed_at ? 'Processed' : 'Pending'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+                {/* Ghost number */}
+                <div className="mb-10">
+                  <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                    0{n}.
+                  </span>
+                </div>
 
-          {/* Runs */}
-          <section className="bg-white rounded-[20px] p-8 md:p-10">
-            <header className="flex items-center justify-between mb-6">
-              <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em]">
-                Analysis runs
-              </h2>
-              <Link
-                href={`/strategy/${tenant.slug}/runs/new`}
-                className="text-[12px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline"
-              >
-                Start new →
+                {/* Title */}
+                <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                  {card.title}
+                </h3>
+
+                {/* Description */}
+                <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                  {card.description}
+                </p>
+
+                {/* Status line */}
+                <p className="text-[11px] text-carbon/35 uppercase tracking-[0.08em] mt-5">
+                  {card.statusLine}
+                </p>
+
+                <div className="flex-1" />
+
+                {/* CTA pill */}
+                <div className="flex justify-center mt-10">
+                  <div
+                    className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                      isComplete
+                        ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+                        : 'bg-carbon text-white group-hover:bg-carbon/90'
+                    }`}
+                  >
+                    {isComplete ? 'Open' : isStarted ? 'Continue' : 'Start'}
+                    {!isComplete && (
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    )}
+                    {isComplete && <Check className="h-3.5 w-3.5" />}
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+                    style={{ width: `${card.progress}%` }}
+                  />
+                </div>
               </Link>
-            </header>
-            {runs.length === 0 ? (
-              <p className="text-[13px] text-carbon/40 italic">
-                No analysis runs yet. Once you have at least one ingested source, start a
-                run to score SKUs and generate recommendations.
-              </p>
-            ) : (
-              <ul className="divide-y divide-carbon/[0.06]">
-                {runs.map((r) => {
-                  const meta = STATUS_META[r.run_status] || STATUS_META.pending;
-                  const Icon = meta.icon;
-                  return (
-                    <li key={r.id} className="py-3 flex items-center justify-between gap-4">
-                      <Link
-                        href={`/strategy/${tenant.slug}/runs/${r.id}`}
-                        className="flex-1 group"
-                      >
-                        <p className="text-[14px] text-carbon font-medium group-hover:text-carbon/70">
-                          {r.name || `Run · ${new Date(r.created_at).toLocaleString()}`}
-                        </p>
-                        <p className="text-[12px] text-carbon/40">
-                          {new Date(r.created_at).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </Link>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.08em] ${meta.className}`}
-                      >
-                        <Icon className="h-3 w-3" />
-                        {meta.label}
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-carbon/30" />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
+            );
+          })}
         </div>
 
-        {/* Constraints + Briefs row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <section className="bg-white rounded-[20px] p-8 md:p-10">
-            <header className="flex items-center justify-between mb-6">
-              <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em]">
-                Buy strategy
-              </h2>
-              <Link
-                href={`/strategy/${tenant.slug}/setup?block=buy-strategy`}
-                className="text-[12px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline"
-              >
-                Open setup →
-              </Link>
-            </header>
-            {constraints.length === 0 ? (
-              <p className="text-[13px] text-carbon/40 italic">
-                Hard targets (margin, SKU count, budget, family share, positioning).
-                Recommendations must respect these.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {constraints.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex items-center justify-between p-3 rounded-[12px] bg-carbon/[0.03] text-[13px]"
-                  >
-                    <span className="text-carbon font-medium">{c.name}</span>
-                    <span className="text-carbon/50 text-[12px]">
-                      {c.target_total_skus ? `${c.target_total_skus} SKUs` : '—'}
-                      {c.target_avg_margin
-                        ? ` · ${(Number(c.target_avg_margin) * 100).toFixed(0)}% margin`
-                        : ''}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="bg-white rounded-[20px] p-8 md:p-10">
-            <header className="flex items-center justify-between mb-6">
-              <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em]">
-                Creative briefs
-              </h2>
-              <Link
-                href={`/strategy/${tenant.slug}/setup?block=creative`}
-                className="text-[12px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline"
-              >
-                Open setup →
-              </Link>
-            </header>
-            {briefs.length === 0 ? (
-              <p className="text-[13px] text-carbon/40 italic">
-                Optional. Color story, archetype focus, family pivot. Modulates the
-                recommendation; never overrides constraints.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {briefs.map((b) => (
-                  <li
-                    key={b.id}
-                    className="flex items-center justify-between p-3 rounded-[12px] bg-carbon/[0.03] text-[13px]"
-                  >
-                    <span className="text-carbon font-medium">{b.name}</span>
-                    <span className="text-carbon/50 text-[12px]">
-                      {(b.color_story || []).length}c · {(b.archetypes_focus || []).length}a
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+        {/* Output band */}
+        {allFour && latestCompletedRun ? (
+          <Link
+            href={`/strategy/${tenant.slug}/runs/${latestCompletedRun.id}/decision-pack`}
+            className="group block bg-white rounded-[20px] p-10 md:p-14 transition-all duration-300 hover:scale-[1.005] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-carbon/55" />
+                  <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+                    Output
+                  </span>
+                </div>
+                <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
+                  Decision pack ready
+                </h2>
+                <p className="text-[14px] text-carbon/55 mt-2 max-w-2xl leading-relaxed">
+                  The four inputs are wired. Aimily has cross-referenced your sales history with
+                  the creative brief and buy strategy to produce the season's plan.
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 py-2.5 px-7 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
+                Open decision pack
+                <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
+          </Link>
+        ) : (
+          <div className="bg-white rounded-[20px] p-10 md:p-14 ring-1 ring-carbon/[0.04]">
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-carbon/40" />
+                  <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35">
+                    Output
+                  </span>
+                </div>
+                <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon/40 tracking-[-0.03em] leading-[1.15]">
+                  Decision pack — locked
+                </h2>
+                <p className="text-[14px] text-carbon/45 mt-2 max-w-2xl leading-relaxed">
+                  Fill the four cards above. When all are confirmed, Aimily synthesises the
+                  decision pack from your sources × brief × strategy.
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35">
+                  Missing
+                </div>
+                <div className="text-[20px] font-semibold text-carbon/50 tabular-nums tracking-[-0.02em] mt-1">
+                  {4 - completedCount} of 4
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
