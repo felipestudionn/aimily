@@ -4509,6 +4509,45 @@ export const en = {
       deepenError: 'Deepen failed',
       confirmError: 'Confirm failed',
     },
+    run: {
+      // Run status pill labels (the 6 lifecycle states).
+      status: {
+        pending: 'Queued',
+        ingesting: 'Ingesting',
+        scoring: 'Scoring',
+        recommending: 'Recommending',
+        complete: 'Complete',
+        failed: 'Failed',
+      },
+      // Recommendation action labels (fashion-industry technical terms;
+      // most stay in English even in non-English locales because that's
+      // how merchandising teams across Europe actually refer to them).
+      actions: {
+        carryover: 'Carry over',
+        kill: 'Kill',
+        resize_up: 'Resize up',
+        resize_down: 'Resize down',
+        recolor: 'Recolor',
+        markdown_accelerate: 'Markdown',
+        markdown_delay: 'Hold price',
+        investigate: 'Investigate',
+        substitute: 'Substitute',
+        replenish: 'Replenish',
+        geographic_redistribute: 'Redistribute',
+        tension_flag: 'Tension flag',
+        new_sku_proposal: 'New SKU',
+        family_extension: 'Family extension',
+      },
+      sections: {
+        whatDataSays: 'What the data says',
+        howCreativeModulated: 'How creative direction modulated the picks',
+        buyBudget: 'Buy budget',
+        creativeFitLabel: 'Creative fit',
+        heroPrecision: 'Hero precision',
+        dogPrecision: 'Dog precision',
+        carryoverPrecision: 'Carryover precision',
+      },
+    },
     archetypes: {
       a: {
         name: 'Replenish & Amplify',

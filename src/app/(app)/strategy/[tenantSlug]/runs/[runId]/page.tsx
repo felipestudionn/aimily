@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
 import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
 import { RunActionsClient } from './RunActionsClient';
 import { AllocateReplenishmentTrigger } from './AllocateReplenishmentTrigger';
 import { RunScenariosEditor } from './RunScenariosEditor';
@@ -36,38 +37,36 @@ interface PageProps {
   params: Promise<{ tenantSlug: string; runId: string }>;
 }
 
-const STATUS_META: Record<
+// Icons + Tailwind classes stay invariant; labels come from the active
+// locale's dict resolved server-side from user.user_metadata.language.
+const STATUS_VISUAL: Record<
   string,
-  { label: string; icon: React.ComponentType<{ className?: string }>; className: string }
+  { icon: React.ComponentType<{ className?: string }>; className: string }
 > = {
-  pending: { label: 'Queued', icon: Clock3, className: 'bg-carbon/[0.06] text-carbon/60' },
-  ingesting: { label: 'Ingesting', icon: UploadCloud, className: 'bg-blue-50 text-blue-700' },
-  scoring: { label: 'Scoring', icon: PlayCircle, className: 'bg-amber-50 text-amber-700' },
-  recommending: { label: 'Recommending', icon: PlayCircle, className: 'bg-amber-50 text-amber-700' },
-  complete: { label: 'Complete', icon: CheckCircle2, className: 'bg-emerald-50 text-emerald-700' },
-  failed: { label: 'Failed', icon: AlertCircle, className: 'bg-red-50 text-red-700' },
-};
-
-const ACTION_LABELS: Record<string, string> = {
-  carryover: 'Carry over',
-  kill: 'Kill',
-  resize_up: 'Resize up',
-  resize_down: 'Resize down',
-  recolor: 'Recolor',
-  markdown_accelerate: 'Markdown',
-  markdown_delay: 'Hold price',
-  investigate: 'Investigate',
-  substitute: 'Substitute',
-  replenish: 'Replenish',
-  geographic_redistribute: 'Redistribute',
-  tension_flag: 'Tension flag',
-  new_sku_proposal: 'New SKU',
-  family_extension: 'Family extension',
+  pending: { icon: Clock3, className: 'bg-carbon/[0.06] text-carbon/60' },
+  ingesting: { icon: UploadCloud, className: 'bg-blue-50 text-blue-700' },
+  scoring: { icon: PlayCircle, className: 'bg-amber-50 text-amber-700' },
+  recommending: { icon: PlayCircle, className: 'bg-amber-50 text-amber-700' },
+  complete: { icon: CheckCircle2, className: 'bg-emerald-50 text-emerald-700' },
+  failed: { icon: AlertCircle, className: 'bg-red-50 text-red-700' },
 };
 
 export default async function RunDetailPage({ params }: PageProps) {
   const { user } = await getServerSession();
   if (!user) redirect('/');
+
+  const dict = getStrategyDictForUser(user);
+  const STATUS_META = Object.fromEntries(
+    Object.entries(STATUS_VISUAL).map(([k, v]) => [
+      k,
+      {
+        label: (dict.strategy.run.status as Record<string, string>)[k] ?? k,
+        icon: v.icon,
+        className: v.className,
+      },
+    ])
+  ) as Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }>;
+  const ACTION_LABELS = dict.strategy.run.actions as Record<string, string>;
 
   const { tenantSlug, runId } = await params;
 
@@ -294,14 +293,14 @@ export default async function RunDetailPage({ params }: PageProps) {
             {learningsNarrative && (
               <NarrativeCard
                 icon={Brain}
-                title="What the data says"
+                title={dict.strategy.run.sections.whatDataSays}
                 markdown={learningsNarrative}
               />
             )}
             {creativeApplication && (
               <NarrativeCard
                 icon={FileSearch}
-                title="How creative direction modulated the picks"
+                title={dict.strategy.run.sections.howCreativeModulated}
                 markdown={creativeApplication}
               />
             )}
@@ -404,7 +403,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {generativeCandidates.map((c: any) => (
-                  <RecommendationCard
+                  <RecommendationCard actionLabels={ACTION_LABELS}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -563,7 +562,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {deterministic.map((c: any) => (
-                  <RecommendationCard
+                  <RecommendationCard actionLabels={ACTION_LABELS}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -671,16 +670,18 @@ function RecommendationCard({
   productById,
   lineageById,
   colorCodeMap,
+  actionLabels,
 }: {
   candidate: any;
   productById: Map<string, any>;
   lineageById: Map<string, any>;
   colorCodeMap: Record<string, string>;
+  actionLabels: Record<string, string>;
 }) {
   const evidence = (candidate.evidence || {}) as Record<string, unknown>;
   const counter = (candidate.counter_evidence || {}) as Record<string, unknown>;
   const assumptions = (candidate.assumptions || []) as string[];
-  const actionLabel = ACTION_LABELS[candidate.action_type] || candidate.action_type;
+  const actionLabel = actionLabels[candidate.action_type] || candidate.action_type;
   const confidence = Number(candidate.confidence_action) || 0;
   const confidenceClass =
     confidence >= 0.75
