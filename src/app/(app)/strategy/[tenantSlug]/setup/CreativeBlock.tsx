@@ -324,7 +324,12 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI ||
           `${window.location.origin}/api/auth/pinterest/callback`;
         const scope = 'boards:read,pins:read';
-        const state = Math.random().toString(36).substring(2, 15);
+        // Encode the current page URL as the return path so the callback
+        // can redirect back here when window.opener is null (Pinterest's
+        // COOP policy can sever the opener reference on some browsers).
+        const returnPath = `${window.location.pathname}${window.location.search}`;
+        const stateNonce = Math.random().toString(36).substring(2, 15);
+        const state = `${stateNonce}_return_${encodeURIComponent(returnPath)}`;
         const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
         const popup = window.open(url, '_blank', 'width=600,height=700');
         if (!popup) {
@@ -343,6 +348,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setPinterestLoading(false);
   };
 
+  // Listen for postMessage from popup (window.opener path).
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -352,6 +358,24 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fallback path: if Pinterest's COOP severed the opener, the callback
+  // redirects the popup to <returnPath>?pinterest_connected=true. When
+  // CreativeBlock mounts with that query param, we fetch boards directly
+  // (the cookie is already set) and clean the URL.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pinterest_connected') === 'true') {
+      // Clean param so a refresh doesn't loop.
+      params.delete('pinterest_connected');
+      const newQs = params.toString();
+      const cleanUrl = `${window.location.pathname}${newQs ? `?${newQs}` : ''}`;
+      window.history.replaceState({}, '', cleanUrl);
+      handlePinterestConnect();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
