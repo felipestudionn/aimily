@@ -84,12 +84,21 @@ export async function GET(req: NextRequest) {
       headers: { 'Content-Type': 'text/html' },
     });
 
-    // Set secure cookie with token
+    // Set secure cookie with token. Domain '.aimily.app' is critical:
+    // the callback may run on either aimily.app or www.aimily.app
+    // (depends on NEXT_PUBLIC_PINTEREST_REDIRECT_URI). Without the
+    // leading-dot domain, the cookie is host-only and the user's
+    // tab at the OTHER host can't read it, so /api/pinterest/boards
+    // keeps returning 401 even after successful OAuth.
+    const isProd = process.env.NODE_ENV === 'production';
     response.cookies.set('pinterest_access_token', tokenData.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProd,
       sameSite: 'lax',
       maxAge: tokenData.expires_in || 3600,
+      // In production, share across all aimily.app subdomains. In dev,
+      // omit so localhost works without a domain attr.
+      ...(isProd ? { domain: '.aimily.app' } : {}),
     });
 
     return response;

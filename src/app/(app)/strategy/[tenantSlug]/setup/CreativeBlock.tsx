@@ -345,13 +345,20 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setPinterestLoading(false);
   };
 
-  // Listen for Pinterest OAuth popup callback — EXACT from Block 1
-  // (lines 1301-1313). Single useEffect. Empty deps. eslint-disable.
+  // Listen for Pinterest OAuth popup callback. Origin check accepts
+  // both 'aimily.app' and 'www.aimily.app' because the callback can
+  // redirect to either depending on the NEXT_PUBLIC_PINTEREST_REDIRECT_URI
+  // env var. Without this, a message from aimily.app to a parent on
+  // www.aimily.app was silently dropped.
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
+      const origin = event.origin || '';
+      const isOurOrigin =
+        origin === window.location.origin ||
+        origin.endsWith('.aimily.app') ||
+        origin === 'https://aimily.app';
+      if (!isOurOrigin) return;
       if (event.data?.type === 'pinterest_connected') {
-        // OAuth succeeded — reload boards.
         handlePinterestConnect();
       }
     };
@@ -526,13 +533,13 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         const fresh = added.filter((t) => !seen.has(`${t.dimension}::${t.title.toLowerCase()}`));
         return [...prev, ...fresh];
       });
-      // Auto-select the moodboard pills so they flow into synthesis.
-      setSelectedTrendTitles((prev) => {
-        const next = new Set(prev);
-        for (const t of added) next.add(t.title);
-        return next;
-      });
-      setMoodboardAnalyzeMsg(`Añadidos ${added.length} pills desde tu moodboard.`);
+      // Moodboard pills land UNSELECTED — the user must validate each one.
+      // Felipe: el modelo a veces detecta marcas por adyacencia estilística
+      // (e.g. Celine + Toteme + The Row aunque solo Celine esté literal en
+      // las fotos). No auto-validar previene "Aimily se inventa marcas".
+      setMoodboardAnalyzeMsg(
+        `${added.length} pills detectados desde tu moodboard. Marca los que quieras validar.`
+      );
     } catch (err) {
       setMoodboardAnalyzeMsg(err instanceof Error ? err.message : 'No se pudo analizar el moodboard');
     } finally {
