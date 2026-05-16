@@ -82,7 +82,7 @@ export default async function RunDetailPage({ params }: PageProps) {
     .single();
   if (!run) notFound();
 
-  const [algoVer, families, candidates, scenarios, backtest] = await Promise.all([
+  const [algoVer, families, candidates, scenarios, backtest, palettesRes] = await Promise.all([
     supabaseAdmin
       .from('strategy_algorithm_versions')
       .select('version, thresholds')
@@ -111,7 +111,13 @@ export default async function RunDetailPage({ params }: PageProps) {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabaseAdmin
+      .from('strategy_recommended_palettes')
+      .select('id, family_code, palette, created_at')
+      .eq('run_id', runId)
+      .order('created_at', { ascending: false }),
   ]);
+  const palettes = palettesRes.data || [];
 
   // Build a product_fact_id → identity lookup so SKU + color candidates
   // render with product_name + model_ref + color, not opaque UUIDs.
@@ -210,6 +216,7 @@ export default async function RunDetailPage({ params }: PageProps) {
             runStatus={run.run_status}
             hasBacktest={!!backtest.data}
             tenantSlug={tenant.slug}
+            familyCodes={(families.data || []).map((f: any) => f.family_code as string)}
           />
         </header>
 
@@ -311,25 +318,80 @@ export default async function RunDetailPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Top recommendation candidates */}
-        {candidates.data && candidates.data.length > 0 && (
+        {/* Generative recommendations (Paso 2): new SKUs + family extensions */}
+        {(() => {
+          const generativeCandidates = (candidates.data || []).filter(
+            (c: any) => c.action_type === 'new_sku_proposal' || c.action_type === 'family_extension'
+          );
+          if (generativeCandidates.length === 0) return null;
+          return (
+            <section className="mb-8">
+              <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em] mb-2">
+                Generative recommendations
+              </h2>
+              <p className="text-[12px] text-carbon/50 mb-5 max-w-2xl leading-[1.5]">
+                New SKU concepts extending portfolio winners + family-extension archetypes,
+                synthesized from current run data × active creative brief × tenant brand DNA.
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {generativeCandidates.map((c: any) => (
+                  <RecommendationCard
+                    key={c.id}
+                    candidate={c}
+                    productById={productById}
+                    lineageById={lineageById}
+                    colorCodeMap={colorCodeMap}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })()}
+
+        {/* Recommended palettes (Paso 2) */}
+        {palettes.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em] mb-5">
-              Top recommendations
+            <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em] mb-2">
+              Recommended palettes
             </h2>
+            <p className="text-[12px] text-carbon/50 mb-5 max-w-2xl leading-[1.5]">
+              5-7 colors per family grounded in current winners × brand DNA × Perplexity color
+              trend signals. Each color carries a DNA alignment tag (tight / aligned / bridge /
+              tension).
+            </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {candidates.data.map((c: any) => (
-                <RecommendationCard
-                  key={c.id}
-                  candidate={c}
-                  productById={productById}
-                  lineageById={lineageById}
-                  colorCodeMap={colorCodeMap}
-                />
+              {palettes.map((p: any) => (
+                <PaletteCard key={p.id} palette={p} />
               ))}
             </div>
           </section>
         )}
+
+        {/* Top deterministic recommendations */}
+        {(() => {
+          const deterministic = (candidates.data || []).filter(
+            (c: any) => c.action_type !== 'new_sku_proposal' && c.action_type !== 'family_extension'
+          );
+          if (deterministic.length === 0) return null;
+          return (
+            <section className="mb-8">
+              <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em] mb-5">
+                Top recommendations
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {deterministic.map((c: any) => (
+                  <RecommendationCard
+                    key={c.id}
+                    candidate={c}
+                    productById={productById}
+                    lineageById={lineageById}
+                    colorCodeMap={colorCodeMap}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Backtest scorecard */}
         {backtest.data && (
@@ -586,6 +648,95 @@ function NarrativeCard({
         {markdown}
       </div>
     </div>
+  );
+}
+
+function PaletteCard({ palette }: { palette: any }) {
+  const colors = (palette.palette?.colors || []) as Array<{
+    name: string;
+    hex: string;
+    confidence?: number;
+    dna_alignment?: 'tight' | 'aligned' | 'bridge' | 'tension';
+    rationale?: string;
+    source_winner_product_name?: string;
+    tension?: string;
+  }>;
+  const briefAlignment = palette.palette?.brief_alignment ?? null;
+  return (
+    <article className="bg-white rounded-[20px] p-6 md:p-8">
+      <header className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] mb-1">
+            Palette
+          </p>
+          <h3 className="text-[16px] font-semibold text-carbon font-mono break-all">
+            {palette.family_code}
+          </h3>
+        </div>
+        {briefAlignment != null && (
+          <span className="text-[11px] text-carbon/50">
+            Brief alignment {Math.round(Number(briefAlignment) * 100)}%
+          </span>
+        )}
+      </header>
+      <div className="grid grid-cols-1 gap-2">
+        {colors.map((c, i) => {
+          const alignmentTone =
+            c.dna_alignment === 'tight'
+              ? 'text-emerald-700 bg-emerald-50'
+              : c.dna_alignment === 'aligned'
+              ? 'text-emerald-700 bg-emerald-50/60'
+              : c.dna_alignment === 'bridge'
+              ? 'text-amber-700 bg-amber-50'
+              : c.dna_alignment === 'tension'
+              ? 'text-red-700 bg-red-50'
+              : 'text-carbon/60 bg-carbon/[0.04]';
+          return (
+            <div
+              key={i}
+              className="flex items-start gap-3 p-2 rounded-[10px] bg-carbon/[0.02]"
+            >
+              <span
+                className="flex-shrink-0 w-10 h-10 rounded-[8px] border border-carbon/[0.06]"
+                style={{ backgroundColor: c.hex }}
+                aria-label={c.hex}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-[13px] font-semibold text-carbon">{c.name}</span>
+                  <span className="text-[11px] text-carbon/40 font-mono">{c.hex}</span>
+                  {c.dna_alignment && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${alignmentTone}`}
+                    >
+                      {c.dna_alignment}
+                    </span>
+                  )}
+                  {typeof c.confidence === 'number' && (
+                    <span className="text-[11px] text-carbon/50">
+                      {Math.round(c.confidence * 100)}%
+                    </span>
+                  )}
+                </div>
+                {c.rationale && (
+                  <p className="text-[11px] text-carbon/55 leading-[1.5] mt-0.5">
+                    {c.rationale}
+                  </p>
+                )}
+                {c.source_winner_product_name && (
+                  <p className="text-[11px] text-carbon/40 mt-0.5">
+                    Extends winner: {c.source_winner_product_name}
+                  </p>
+                )}
+                {c.tension && (
+                  <p className="text-[11px] text-red-700 mt-0.5">⚠ {c.tension}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </article>
   );
 }
 

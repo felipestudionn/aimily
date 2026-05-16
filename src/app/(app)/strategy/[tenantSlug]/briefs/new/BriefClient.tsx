@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, Wand2, AlertCircle } from 'lucide-react';
 
 interface Props {
   tenantSlug: string;
@@ -25,7 +25,55 @@ export function BriefClient({
   const [familyPivotJson, setFamilyPivotJson] = useState('');
   const [narrative, setNarrative] = useState('');
   const [busy, setBusy] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverNote, setDiscoverNote] = useState<string | null>(null);
+  const [discoverWarning, setDiscoverWarning] = useState<string | null>(null);
   const [err, setErr] = useState('');
+
+  const handleDiscover = async () => {
+    setDiscovering(true);
+    setErr('');
+    setDiscoverNote(null);
+    setDiscoverWarning(null);
+    try {
+      const res = await fetch('/api/strategy/briefs/discover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_slug: tenantSlug }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || `Failed (${res.status})`);
+      }
+      const json = await res.json();
+      const draft = json.draft || {};
+      if (!name) setName(draft.name || 'AI-discovered direction');
+      if (!description) setDescription(draft.description || '');
+      if (colorStory.length === 0 && Array.isArray(draft.color_story))
+        setColorStory(draft.color_story);
+      if (archetypes.length === 0 && Array.isArray(draft.archetypes_focus))
+        setArchetypes(draft.archetypes_focus);
+      if (!familyPivotJson && draft.family_pivot && Object.keys(draft.family_pivot).length > 0) {
+        setFamilyPivotJson(JSON.stringify(draft.family_pivot, null, 2));
+      }
+      if (!narrative && draft.creative_narrative) setNarrative(draft.creative_narrative);
+
+      const sources = draft.sources || {};
+      const noteParts: string[] = [];
+      if (sources.brand_profile_used) noteParts.push('brand DNA used');
+      if (sources.brand_profile_auto_discovered)
+        noteParts.push('brand DNA auto-discovered via Perplexity');
+      if (sources.trends_count > 0) noteParts.push(`${sources.trends_count} trend signals`);
+      if (sources.winners_count > 0)
+        noteParts.push(`${sources.winners_count} portfolio winners`);
+      setDiscoverNote(`Draft filled from ${noteParts.join(', ') || 'tenant context'}.`);
+      if (draft.data_sufficiency_warning) setDiscoverWarning(draft.data_sufficiency_warning);
+    } catch (e: any) {
+      setErr(`AI discovery: ${e.message}`);
+    } finally {
+      setDiscovering(false);
+    }
+  };
 
   const toggle = (
     setter: React.Dispatch<React.SetStateAction<string[]>>,
@@ -75,6 +123,38 @@ export function BriefClient({
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-[20px] p-8 md:p-10 space-y-5">
+      {/* AI discovery — fills empty fields with a draft from brand DNA + trends + winners */}
+      <div className="flex flex-wrap items-center justify-between gap-3 -mb-1">
+        <p className="text-[12px] text-carbon/55 leading-[1.5] max-w-md">
+          Empty form? Click <strong>Discover with AI</strong> to draft from your brand DNA,
+          current trend signals, and current portfolio winners. Only empty fields will be filled.
+        </p>
+        <button
+          type="button"
+          onClick={handleDiscover}
+          disabled={busy || discovering}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-carbon/[0.15] text-carbon/80 text-[12px] font-semibold hover:bg-carbon/[0.04] disabled:opacity-50"
+        >
+          {discovering ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Wand2 className="h-3.5 w-3.5" />
+          )}
+          Discover with AI
+        </button>
+      </div>
+      {discoverNote && (
+        <p className="text-[11px] text-emerald-700 bg-emerald-50 px-3 py-2 rounded-[8px]">
+          {discoverNote}
+        </p>
+      )}
+      {discoverWarning && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 px-3 py-2 rounded-[8px] flex items-start gap-2">
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+          {discoverWarning}
+        </p>
+      )}
+
       <Field label="Name *">
         <input
           type="text"
