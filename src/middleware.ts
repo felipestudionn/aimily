@@ -17,7 +17,7 @@ const MARKETING_BARE_PATHS = ['', '/contact', '/trust', '/privacy', '/terms', '/
 // linking to /[locale]/studio must do so with the locale prefix explicitly.
 // This avoids the routing conflict between (app)/studio (authenticated
 // dashboard at /studio) and [locale]/studio (public landing at /es/studio).
-const MARKETING_LOCALE_ONLY_PATHS = ['/studio'];
+const MARKETING_LOCALE_ONLY_PATHS = ['/studio', '/strategy'];
 
 // Marketing path PREFIXES — content-driven sub-trees (workflows, vs, etc.)
 // added in Wave 1+. Anything under these is public and should be delegated
