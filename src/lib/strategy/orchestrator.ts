@@ -22,6 +22,7 @@ import {
   generateSkuCandidates,
   generateFamilyCandidates,
   generateColorWinnerCandidates,
+  generateTensionFlags,
   applyCreativeBriefModulation,
   assembleScenarios,
   type Constraints,
@@ -201,6 +202,8 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     cannibalization_risk_score: s.cannibalization_risk_score,
     distribution_breadth_score: s.distribution_breadth_score,
     lifecycle_stage: s.lifecycle_stage,
+    seasonal_runway_days: s.seasonal_runway_days,
+    seasonal_runway_score: s.seasonal_runway_score,
     confidence_data_completeness: s.confidence_data_completeness,
     confidence_identity: s.confidence_identity,
     confidence_demand: s.confidence_demand,
@@ -288,13 +291,23 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     }
   }
 
-  // Apply Bucket B modulation
-  const allCandidates = applyCreativeBriefModulation(
+  // Apply Bucket B modulation to all base candidates …
+  const modulated = applyCreativeBriefModulation(
     [...skuCandidates, ...familyCandidates, ...colorCandidates],
     brief,
     familyToArchetype,
     colorTaxonomy
   );
+
+  // … then layer tension_flag candidates on top. Tension is a first-class
+  // recommendation that surfaces strategic conflict between sales-driven
+  // verdicts and the creative brief. It is generated AFTER modulation so
+  // we can compare the (post-Bucket-B) action_type against the brief.
+  const productFamilyByPid = new Map<string, string | null>(
+    inputs.map((i) => [i.product_fact_id, i.family_code])
+  );
+  const tensions = generateTensionFlags(modulated, brief, productFamilyByPid, colorTaxonomy);
+  const allCandidates = [...modulated, ...tensions];
 
   // 11. Persist candidates — including ALL 6 confidence dimensions per Codex P1.
   const candidateInserts = allCandidates.map((c) => ({

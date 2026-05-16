@@ -57,6 +57,9 @@ const ACTION_LABELS: Record<string, string> = {
   substitute: 'Substitute',
   replenish: 'Replenish',
   geographic_redistribute: 'Redistribute',
+  tension_flag: 'Tension flag',
+  new_sku_proposal: 'New SKU',
+  family_extension: 'Family extension',
 };
 
 export default async function RunDetailPage({ params }: PageProps) {
@@ -109,6 +112,59 @@ export default async function RunDetailPage({ params }: PageProps) {
       .limit(1)
       .maybeSingle(),
   ]);
+
+  // Build a product_fact_id → identity lookup so SKU + color candidates
+  // render with product_name + model_ref + color, not opaque UUIDs.
+  // For sku scope: scope_ref IS the product_fact_id.
+  // For color scope: scope_ref is `<lineage_id>#<color_ref>` — we lookup
+  // the lineage and render its display_name + the color.
+  const skuIds = Array.from(
+    new Set(
+      (candidates.data || [])
+        .filter((c: any) => c.scope === 'sku')
+        .map((c: any) => c.scope_ref as string)
+    )
+  );
+  const lineageIds = Array.from(
+    new Set(
+      (candidates.data || [])
+        .filter((c: any) => c.scope === 'color' || c.scope === 'lineage')
+        .map((c: any) => (c.scope_ref as string).split('#')[0])
+    )
+  );
+  const [productIdRes, lineageIdRes, colorTaxRes] = await Promise.all([
+    skuIds.length > 0
+      ? supabaseAdmin
+          .from('strategy_product_facts')
+          .select('id, model_ref, color_ref, product_name, family_code, pvp, markup_pct')
+          .in('id', skuIds)
+      : Promise.resolve({ data: [] as any[] }),
+    lineageIds.length > 0
+      ? supabaseAdmin
+          .from('strategy_sku_identity_graph')
+          .select('id, canonical_id, display_name, variant_color_codes')
+          .in('id', lineageIds)
+      : Promise.resolve({ data: [] as any[] }),
+    supabaseAdmin
+      .from('strategy_taxonomies')
+      .select('mapping')
+      .eq('tenant_id', tenant.id)
+      .eq('taxonomy_kind', 'color')
+      .eq('is_active', true)
+      .maybeSingle(),
+  ]);
+  const productById = new Map<string, any>(
+    (productIdRes.data || []).map((p: any) => [p.id, p])
+  );
+  const lineageById = new Map<string, any>(
+    (lineageIdRes.data || []).map((l: any) => [l.id, l])
+  );
+  const colorCodeMap = (
+    ((colorTaxRes && (colorTaxRes as any).data?.mapping?.code_to_name) || {}) as Record<
+      string,
+      string
+    >
+  );
 
   const meta = STATUS_META[run.run_status] || STATUS_META.pending;
   const StatusIcon = meta.icon;
@@ -263,7 +319,13 @@ export default async function RunDetailPage({ params }: PageProps) {
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {candidates.data.map((c: any) => (
-                <RecommendationCard key={c.id} candidate={c} />
+                <RecommendationCard
+                  key={c.id}
+                  candidate={c}
+                  productById={productById}
+                  lineageById={lineageById}
+                  colorCodeMap={colorCodeMap}
+                />
               ))}
             </div>
           </section>
@@ -337,7 +399,17 @@ function ScenarioCard({ scenario }: { scenario: any }) {
   );
 }
 
-function RecommendationCard({ candidate }: { candidate: any }) {
+function RecommendationCard({
+  candidate,
+  productById,
+  lineageById,
+  colorCodeMap,
+}: {
+  candidate: any;
+  productById: Map<string, any>;
+  lineageById: Map<string, any>;
+  colorCodeMap: Record<string, string>;
+}) {
   const evidence = (candidate.evidence || {}) as Record<string, unknown>;
   const counter = (candidate.counter_evidence || {}) as Record<string, unknown>;
   const assumptions = (candidate.assumptions || []) as string[];
@@ -349,6 +421,11 @@ function RecommendationCard({ candidate }: { candidate: any }) {
       : confidence >= 0.5
       ? 'bg-amber-50 text-amber-700'
       : 'bg-red-50 text-red-700';
+
+  // Resolve visual identity (product name + model_ref + color name) so the
+  // card header is human-readable, not a UUID. Falls back gracefully when
+  // a lookup misses or for non-sku/color scopes.
+  const identity = resolveCandidateIdentity(candidate, productById, lineageById, colorCodeMap);
 
   // 6 confidence dimensions per Codex P1 fix — render the breakdown that
   // the BP §9 value prop hinges on. NULL creative_fit means "no brief".
@@ -364,15 +441,32 @@ function RecommendationCard({ candidate }: { candidate: any }) {
   return (
     <article className="bg-white rounded-[20px] p-6 md:p-8">
       <header className="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] mb-1">
-            {candidate.scope}
-          </p>
-          <h3 className="text-[16px] font-semibold text-carbon font-mono break-all">
-            {candidate.scope_ref}
-          </h3>
+        <div className="flex gap-3 items-start flex-1 min-w-0">
+          {/* Visual thumbnail slot — placeholder until image_url is on facts */}
+          <div
+            className="flex-shrink-0 w-14 h-14 rounded-[10px] bg-carbon/[0.06] flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <span className="text-[10px] uppercase tracking-[0.08em] text-carbon/35">
+              {candidate.scope === 'sku' ? 'SKU' : candidate.scope === 'color' ? 'COL' : candidate.scope.slice(0, 3).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] mb-1">
+              {candidate.scope}
+              {identity.family ? ` · ${identity.family}` : ''}
+            </p>
+            <h3 className="text-[15px] font-semibold text-carbon leading-tight truncate" title={identity.headline}>
+              {identity.headline}
+            </h3>
+            {identity.sub && (
+              <p className="text-[11px] text-carbon/50 font-mono mt-1 truncate" title={identity.sub}>
+                {identity.sub}
+              </p>
+            )}
+          </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.08em] ${confidenceClass}`}>
+        <span className={`flex-shrink-0 px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.08em] ${confidenceClass}`}>
           {actionLabel} · {(confidence * 100).toFixed(0)}%
         </span>
       </header>
@@ -510,6 +604,67 @@ function formatCompact(n: number): string {
   if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (Math.abs(n) >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
   return n.toFixed(0);
+}
+
+interface CandidateIdentity {
+  headline: string;
+  sub: string | null;
+  family: string | null;
+}
+
+/**
+ * Turn a recommendation_candidate into a human-readable identity for the
+ * card header. SKU candidates resolve via productById; color candidates
+ * resolve via lineageById + colorCodeMap; family/archetype use the raw ref.
+ */
+function resolveCandidateIdentity(
+  candidate: { scope: string; scope_ref: string },
+  productById: Map<string, any>,
+  lineageById: Map<string, any>,
+  colorCodeMap: Record<string, string>
+): CandidateIdentity {
+  if (candidate.scope === 'sku') {
+    const p = productById.get(candidate.scope_ref);
+    if (p) {
+      const colorName =
+        p.color_ref && colorCodeMap[p.color_ref]
+          ? colorCodeMap[p.color_ref].replace(/_/g, ' ')
+          : p.color_ref;
+      return {
+        headline: p.product_name || p.model_ref,
+        sub: `${p.model_ref}${colorName ? ` · ${colorName}` : ''}${p.pvp ? ` · €${Number(p.pvp).toFixed(2)}` : ''}`,
+        family: p.family_code || null,
+      };
+    }
+    return { headline: candidate.scope_ref, sub: null, family: null };
+  }
+  if (candidate.scope === 'color') {
+    const [lineageId, colorRef] = candidate.scope_ref.split('#');
+    const lineage = lineageById.get(lineageId);
+    const colorName =
+      colorRef && colorCodeMap[colorRef]
+        ? colorCodeMap[colorRef].replace(/_/g, ' ')
+        : colorRef;
+    if (lineage) {
+      return {
+        headline: lineage.display_name || lineage.canonical_id,
+        sub: `Lineage ${lineage.canonical_id} · ${colorName}`,
+        family: null,
+      };
+    }
+    return { headline: candidate.scope_ref, sub: null, family: null };
+  }
+  if (candidate.scope === 'lineage') {
+    const lineage = lineageById.get(candidate.scope_ref);
+    if (lineage) {
+      return {
+        headline: lineage.display_name || lineage.canonical_id,
+        sub: `Lineage ${lineage.canonical_id}`,
+        family: null,
+      };
+    }
+  }
+  return { headline: candidate.scope_ref, sub: null, family: null };
 }
 
 function formatEvidence(obj: Record<string, unknown>): string {

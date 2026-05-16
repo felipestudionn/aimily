@@ -29,7 +29,10 @@ export type ActionType =
   | 'investigate'
   | 'substitute'
   | 'geographic_redistribute'
-  | 'replenish';
+  | 'replenish'
+  | 'tension_flag'
+  | 'new_sku_proposal'
+  | 'family_extension';
 
 export type Scope = 'sku' | 'family' | 'archetype' | 'color' | 'lineage';
 
@@ -459,6 +462,120 @@ export function generateColorWinnerCandidates(
         narrative: null,
       });
     }
+  }
+  return out;
+}
+
+/**
+ * Surface strategic tension as its own first-class recommendation.
+ *
+ * Felipe direction (2026-05-16): when sales-driven recommendations point
+ * one way and the creative brief points another, flag it explicitly.
+ * Example: family X is winning + engine recommends scaling, but Bucket B
+ * pivots away from X. The merchant must decide whether to ride the winner
+ * or follow the creative bet — but they must SEE the tension.
+ *
+ * Tensions detected:
+ *   - resize_up / carryover on a SKU in a family the brief pivots NEGATIVELY
+ *   - kill / resize_down on a SKU in a family the brief pivots POSITIVELY
+ *   - color winner verdict on a color OUTSIDE the brief's color_story
+ *
+ * Each tension emits a `tension_flag` candidate alongside (NOT instead of)
+ * the underlying recommendation, with evidence + counter-evidence already
+ * resolved. The scenario assembler can choose to keep or drop tensions.
+ */
+export function generateTensionFlags(
+  baseCandidates: RecommendationCandidate[],
+  brief: CreativeBrief | null,
+  productFamilyByPid: Map<string, string | null>,
+  colorTaxonomy: Map<string, string>
+): RecommendationCandidate[] {
+  if (!brief) return [];
+  const out: RecommendationCandidate[] = [];
+  const familyPivot = brief.family_pivot || {};
+
+  for (const c of baseCandidates) {
+    let tensionType: string | null = null;
+    let detail: Record<string, unknown> = {};
+
+    if (c.scope === 'sku') {
+      const fam = productFamilyByPid.get(c.scope_ref) ?? null;
+      const pivot = fam ? familyPivot[fam] : undefined;
+      if (pivot != null && Math.abs(pivot) >= 0.05) {
+        if (
+          pivot > 0 &&
+          (c.action_type === 'kill' || c.action_type === 'resize_down' || c.action_type === 'markdown_accelerate')
+        ) {
+          tensionType = 'cut_in_growing_family';
+          detail = {
+            family_code: fam,
+            family_pivot: pivot,
+            underlying_action: c.action_type,
+            note:
+              'Sales data wants to cut this SKU, but the creative brief is pivoting INTO this family. Consider replacing rather than removing.',
+          };
+        } else if (
+          pivot < 0 &&
+          (c.action_type === 'resize_up' || c.action_type === 'carryover' || c.action_type === 'replenish')
+        ) {
+          tensionType = 'scale_in_shrinking_family';
+          detail = {
+            family_code: fam,
+            family_pivot: pivot,
+            underlying_action: c.action_type,
+            note:
+              'Sales data wants to scale this SKU, but the creative brief is pivoting AWAY from this family. Ride the current winner until it runs into the new direction, OR complement with a SKU that bridges both.',
+          };
+        }
+      }
+    }
+
+    if (c.scope === 'color' && brief.color_story.length > 0) {
+      const colorRef = c.scope_ref.split('#')[1];
+      const colorName = colorRef ? colorTaxonomy.get(colorRef) : null;
+      if (
+        colorName &&
+        !brief.color_story.includes(colorName) &&
+        c.action_type === 'recolor'
+      ) {
+        tensionType = 'winner_off_palette';
+        detail = {
+          color: colorName,
+          target_palette: brief.color_story,
+          note:
+            'Sales data identifies this color as a winner within the lineage, but it is OUTSIDE the brief\'s color story. Consider keeping the winner for one more season as a bridge, then transitioning.',
+        };
+      }
+    }
+
+    if (!tensionType) continue;
+
+    out.push({
+      scope: c.scope,
+      scope_ref: c.scope_ref,
+      action_type: 'tension_flag',
+      proposed_magnitude: null,
+      evidence: {
+        tension_type: tensionType,
+        underlying_action: c.action_type,
+        underlying_confidence: c.confidence_action,
+        ...detail,
+      },
+      counter_evidence: c.counter_evidence,
+      assumptions: [
+        'A tension flag is a SIGNAL for the merchandiser, not a decision. The underlying recommendation is preserved as a separate candidate.',
+      ],
+      confidence_data_completeness: c.confidence_data_completeness,
+      confidence_identity: c.confidence_identity,
+      confidence_demand: c.confidence_demand,
+      confidence_margin: c.confidence_margin,
+      // The tension itself is high-confidence — we can detect it
+      // deterministically. The resolution requires human judgement.
+      confidence_creative_fit: 0.05,
+      confidence_action: Math.min(0.95, c.confidence_action * 0.95),
+      data_sufficiency_warning: null,
+      narrative: null,
+    });
   }
   return out;
 }

@@ -41,6 +41,9 @@ const ACTION_LABELS: Record<string, string> = {
   substitute: 'Substitute',
   replenish: 'Replenish',
   geographic_redistribute: 'Redistribute',
+  tension_flag: 'Tension flag',
+  new_sku_proposal: 'New SKU',
+  family_extension: 'Family extension',
 };
 
 export default async function DecisionPackPage({ params }: PageProps) {

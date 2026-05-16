@@ -117,6 +117,11 @@ export interface SkuScore {
   cannibalization_risk_score: number | null;
   distribution_breadth_score: number | null;
   lifecycle_stage: LifecycleStage;
+  // Days remaining in the SKU's natural sell window. Drives the
+  // replenishment allocator: a V26 (S/S) SKU observed in May has more
+  // runway than the same SKU observed in September.
+  seasonal_runway_days: number | null;
+  seasonal_runway_score: number | null;
   confidence_data_completeness: number;
   confidence_identity: number;
   confidence_demand: number;
@@ -546,6 +551,16 @@ export function scoreSku(
       confidence_margin
   );
 
+  // ── Classifier 11 (new): seasonal runway ───────────────────────────────
+  // Days remaining in the SKU's natural sell window from the observation
+  // anchor date forward. Replenishment allocator uses this to avoid
+  // recommending heavy buy on a summer SKU mid-August (would land in
+  // October when nobody wears it).
+  const seasonal = computeSeasonalRunway(input.season_tag, ctx.observation_date);
+  const seasonal_runway_days = seasonal.runway_days;
+  const seasonal_runway_score = seasonal.runway_score;
+  traces.seasonal_runway = seasonal;
+
   return {
     product_fact_id: input.product_fact_id,
     identity_node_id: input.identity_node_id,
@@ -557,6 +572,8 @@ export function scoreSku(
     markdown_risk_score,
     cannibalization_risk_score,
     distribution_breadth_score,
+    seasonal_runway_days,
+    seasonal_runway_score,
     lifecycle_stage: lifecycle,
     confidence_data_completeness,
     confidence_identity,
@@ -750,4 +767,92 @@ function numOrNull(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Seasonal runway: how many days of natural sell window remain for this
+ * SKU from the observation anchor date forward.
+ *
+ *   Spanish convention:
+ *     V = Verano (spring/summer) → Mar–Sep, peak Apr–Aug
+ *     I = Invierno (winter) → Sep–Mar, peak Oct–Feb
+ *   English convention:
+ *     SS = Spring/Summer → same as V
+ *     FW/AW = Fall/Winter → same as I
+ *
+ * Compound tags like "I26+V26" use the LATEST season segment (the SKU
+ * carried over into the more recent one).
+ *
+ * Output:
+ *   runway_days = max(0, season_end - observation_date) capped at 240
+ *   runway_score = runway_days / 180 capped at 1
+ *
+ * Score interpretation:
+ *   1.0 = full season ahead (e.g. V26 observed in March 2026)
+ *   0.5 = half a season ahead (e.g. V26 observed in May–Jun)
+ *   0.1 = season ending (e.g. V26 observed in late August)
+ *   0.0 = season ended (re-buying makes no sense without next season's tag)
+ */
+export function computeSeasonalRunway(
+  seasonTag: string | undefined | null,
+  observationDate: string
+): {
+  season_year: number | null;
+  season_kind: 'spring_summer' | 'fall_winter' | 'unknown';
+  season_end_date: string | null;
+  runway_days: number | null;
+  runway_score: number | null;
+  note: string;
+} {
+  if (!seasonTag) {
+    return {
+      season_year: null,
+      season_kind: 'unknown',
+      season_end_date: null,
+      runway_days: null,
+      runway_score: null,
+      note: 'No season_tag — runway cannot be computed.',
+    };
+  }
+  // Use the LATEST segment for compound tags.
+  const segments = seasonTag.split('+').map((s) => s.trim());
+  const latest = segments[segments.length - 1];
+  const m = latest.match(/^(V|I|SS|FW|AW)\s?(\d{2,4})$/i);
+  if (!m) {
+    return {
+      season_year: null,
+      season_kind: 'unknown',
+      season_end_date: null,
+      runway_days: null,
+      runway_score: null,
+      note: `Unrecognized season_tag format: "${seasonTag}"`,
+    };
+  }
+  const prefix = m[1].toUpperCase();
+  let yearRaw = m[2];
+  if (yearRaw.length === 2) yearRaw = `20${yearRaw}`;
+  const year = parseInt(yearRaw, 10);
+
+  // S/S season ends Sep 30 of the same year.
+  // F/W season ends Mar 31 of the FOLLOWING year.
+  const kind: 'spring_summer' | 'fall_winter' =
+    prefix === 'V' || prefix === 'SS' ? 'spring_summer' : 'fall_winter';
+  const seasonEnd =
+    kind === 'spring_summer'
+      ? new Date(Date.UTC(year, 8, 30)) // Sep 30
+      : new Date(Date.UTC(year + 1, 2, 31)); // Mar 31 of year+1
+  const obs = new Date(observationDate);
+  const dayMs = 24 * 60 * 60 * 1000;
+  const runwayDaysRaw = Math.round((seasonEnd.getTime() - obs.getTime()) / dayMs);
+  const runwayDays = Math.max(0, Math.min(240, runwayDaysRaw));
+  const runwayScore = Math.max(0, Math.min(1, runwayDays / 180));
+
+  return {
+    season_year: year,
+    season_kind: kind,
+    season_end_date: seasonEnd.toISOString().slice(0, 10),
+    runway_days: runwayDays,
+    runway_score: runwayScore,
+    note: `${kind === 'spring_summer' ? 'S/S' : 'F/W'} ${year} → ${runwayDays}d remaining`,
+  };
 }
