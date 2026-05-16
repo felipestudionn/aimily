@@ -1,45 +1,44 @@
 'use client';
 
 /**
- * CreativeBlock — Block 1 MoodboardContent verbatim, adapted to tenant context.
+ * CreativeBlock — Strategy Creative Direction & Market Trends
  *
- * Layout (top → bottom):
- *   1. Moodboard (Pinterest connect + direct upload side-by-side · image grid
- *      with silent auto-analysis at ≥5 images)
- *   2. Market trends — 4 research mini-blocks: Global · Deep dive · Live
- *      signals · Competitors. Trends-global auto-runs on mount so the user
- *      enters with pre-proposed pills already on screen.
- *   3. Confirm CTA — calls /api/strategy/briefs/discover with the validated
- *      trend set + uploaded moodboard analysis, which synthesises the brief
- *      and writes it to strategy_creative_briefs.
+ * Layout:
+ *   1. Moodboard (Pinterest connect + direct upload side-by-side · grid +
+ *      silent auto-analysis at ≥5 images)
+ *   2. Market Trends — ONE auto-loaded section, trends grouped by
+ *      dimension (silhouette · pattern · color · material · reference_brand
+ *      · category_direction). Each card: title + product spec + brand
+ *      chips + clear click-to-select affordance. Cero marketing prose.
+ *   3. Confirm CTA — synthesises brief via /api/strategy/briefs/discover
+ *      and persists to /api/strategy/briefs.
  *
- * Endpoints reused (NO new ones):
- *   · /api/strategy/moodboard/upload (file + source_url JSON modes)
- *   · /api/pinterest/boards · /api/pinterest/boards/[id]/pins · /api/auth/pinterest/callback
- *   · /api/ai/analyze-moodboard (collectionPlanId is optional)
- *   · /api/ai/creative-generate (collectionPlanId is optional · types
- *     trends-global · trends-deep-dive · trends-live-signals · trends-competitors)
- *   · /api/strategy/briefs/discover (synthesises brief from inputs)
+ * Endpoint backbone:
+ *   /api/strategy/moodboard/upload — file + source_url branches
+ *   /api/pinterest/boards · /api/pinterest/boards/[id]/pins
+ *   /api/auth/pinterest/callback
+ *   /api/ai/analyze-moodboard
+ *   /api/strategy/market-trends (ad-hoc, product-spec prompt)
+ *   /api/strategy/briefs/discover · /api/strategy/briefs
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Compass,
   ExternalLink,
-  FlaskConical,
-  Globe,
   Loader2,
   Plus,
   RefreshCw,
   Upload,
   X,
 } from 'lucide-react';
-
-// ── Types ───────────────────────────────────────────────────────────────
+import type {
+  StrategyTrend,
+  StrategyTrendDimension,
+} from '@/lib/strategy/market-trends-prompt';
 
 interface Tenant {
   id: string;
@@ -79,62 +78,30 @@ interface PinterestPin {
   dominantColor?: string;
 }
 
-interface TrendCard {
-  title: string;
-  desc: string;
-  brands?: string;
-  hex?: string;
-  dimension?: string;
-  sources?: string[];
-}
-
-type TrendType = 'global' | 'deep-dive' | 'live-signals' | 'competitors';
-
-const TREND_META: Record<TrendType, {
-  label: string;
-  hint: string;
-  icon: React.ComponentType<{ className?: string }>;
-  needsInput: boolean;
-  apiType: string;
-}> = {
-  'global': {
-    label: 'Global trends',
-    hint: 'Macro fashion signals for the upcoming season.',
-    icon: Globe,
-    needsInput: false,
-    apiType: 'trends-global',
-  },
-  'deep-dive': {
-    label: 'Deep dive',
-    hint: 'Drill into one direction or category.',
-    icon: Compass,
-    needsInput: true,
-    apiType: 'trends-deep-dive',
-  },
-  'live-signals': {
-    label: 'Live signals',
-    hint: 'Real-time runway, retail and street.',
-    icon: RefreshCw,
-    needsInput: false,
-    apiType: 'trends-live-signals',
-  },
-  'competitors': {
-    label: 'Competitors',
-    hint: 'What peers are doing right now.',
-    icon: FlaskConical,
-    needsInput: true,
-    apiType: 'trends-competitors',
-  },
+const DIMENSION_META: Record<StrategyTrendDimension, { label: string; description: string }> = {
+  silhouette: { label: 'Siluetas', description: 'Cortes y formas a considerar.' },
+  pattern: { label: 'Estampados', description: 'Patrones y técnicas de print.' },
+  color: { label: 'Color', description: 'Paleta — selecciona los que adoptarías.' },
+  material: { label: 'Materiales', description: 'Tejidos y construcciones.' },
+  reference_brand: { label: 'Marcas a vigilar', description: 'Brands que marcan el ritmo.' },
+  category_direction: { label: 'Macro de categoría', description: 'Cambios estructurales en tu categoría.' },
 };
 
-// ── Component ───────────────────────────────────────────────────────────
+const DIMENSION_ORDER: StrategyTrendDimension[] = [
+  'silhouette',
+  'pattern',
+  'color',
+  'material',
+  'reference_brand',
+  'category_direction',
+];
 
 export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlocked, onSaved }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const FILE_INPUT_ID = 'strategy-moodboard-file-input';
 
-  // Moodboard state
+  // Moodboard
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
@@ -143,7 +110,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
   const [analyzedKey, setAnalyzedKey] = useState('');
   const [moodboardKeywords, setMoodboardKeywords] = useState<string[]>([]);
 
-  // Pinterest state
+  // Pinterest
   const [pinterestStep, setPinterestStep] = useState<'idle' | 'boards' | 'pins'>('idle');
   const [boards, setBoards] = useState<PinterestBoard[]>([]);
   const [pins, setPins] = useState<PinterestPin[]>([]);
@@ -153,67 +120,43 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
   const [pinterestError, setPinterestError] = useState('');
   const [importingPins, setImportingPins] = useState(false);
 
-  // Trends state — one bucket per type, plus selected set across all 4
-  const [trends, setTrends] = useState<Record<TrendType, TrendCard[]>>({
-    'global': [],
-    'deep-dive': [],
-    'live-signals': [],
-    'competitors': [],
-  });
-  const [trendLoading, setTrendLoading] = useState<TrendType | null>(null);
-  const [trendInputs, setTrendInputs] = useState<Record<TrendType, string>>({
-    'global': '',
-    'deep-dive': '',
-    'live-signals': '',
-    'competitors': '',
-  });
+  // Market trends
+  const [trends, setTrends] = useState<StrategyTrend[]>([]);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [trendsError, setTrendsError] = useState('');
   const [selectedTrendTitles, setSelectedTrendTitles] = useState<Set<string>>(new Set());
 
-  // Confirm state
+  // Confirm
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
 
-  // ── Trend research ─────────────────────────────────────────────────────
-  const runTrendResearch = useCallback(async (type: TrendType) => {
-    setTrendLoading(type);
-    setError('');
+  // ── Auto-load market trends on mount ───────────────────────────────────
+  const loadMarketTrends = useCallback(async () => {
+    setTrendsLoading(true);
+    setTrendsError('');
     try {
-      const meta = TREND_META[type];
-      const userInput = trendInputs[type] || '';
-
-      const res = await fetch('/api/ai/creative-generate', {
+      const res = await fetch('/api/strategy/market-trends', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: meta.apiType,
-          language: 'es',
-          input: {
-            input: userInput,
-            collectionName: tenant.display_name,
-            season: deriveCurrentSeason(),
-          },
-        }),
+        body: JSON.stringify({ tenant_slug: tenant.slug, language: 'es' }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Trend research failed (${res.status})`);
+        throw new Error(err.error || `Market trends fetch failed (${res.status})`);
       }
       const data = await res.json();
-      const results = (data?.result?.results ?? []) as TrendCard[];
-      setTrends((prev) => ({ ...prev, [type]: results }));
+      setTrends(Array.isArray(data.trends) ? data.trends : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Trend research failed');
+      setTrendsError(err instanceof Error ? err.message : 'Market trends fetch failed');
     } finally {
-      setTrendLoading(null);
+      setTrendsLoading(false);
     }
-  }, [trendInputs, tenant.display_name]);
+  }, [tenant.slug]);
 
-  // Auto-run trends-global on first mount so the user lands on trends.
   useEffect(() => {
     if (gatingBlocked) return;
-    if (trends.global.length > 0) return;
-    if (trendLoading != null) return;
-    runTrendResearch('global');
+    if (trends.length > 0 || trendsLoading) return;
+    loadMarketTrends();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -226,7 +169,18 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     });
   };
 
-  // ── Moodboard · direct upload ──────────────────────────────────────────
+  // Group trends by dimension for sectioned rendering.
+  const trendsByDim = useMemo(() => {
+    const map = new Map<StrategyTrendDimension, StrategyTrend[]>();
+    for (const t of trends) {
+      const bucket = map.get(t.dimension) ?? [];
+      bucket.push(t);
+      map.set(t.dimension, bucket);
+    }
+    return map;
+  }, [trends]);
+
+  // ── Moodboard upload (direct) ──────────────────────────────────────────
   const handleUpload = async (files: FileList) => {
     setUploading(true);
     const newUrls: string[] = [];
@@ -274,7 +228,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     if (e.dataTransfer.files?.length) handleUpload(e.dataTransfer.files);
   };
 
-  // ── Pinterest · OAuth + boards + pins import ───────────────────────────
+  // ── Pinterest ──────────────────────────────────────────────────────────
   const handlePinterestConnect = useCallback(async () => {
     setPinterestLoading(true);
     setPinterestError('');
@@ -361,7 +315,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           if (data.signed_url) newUrls.push(data.signed_url);
         }
       } catch {
-        /* skip failed */
+        /* skip */
       }
     }
     if (newUrls.length > 0) setImages((prev) => [...prev, ...newUrls]);
@@ -380,7 +334,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setPinterestError('');
   };
 
-  // ── Silent moodboard analysis at ≥5 images ─────────────────────────────
+  // ── Silent moodboard analysis ──────────────────────────────────────────
   useEffect(() => {
     if (images.length < 5 || analyzing) return;
     const key = images.join('|');
@@ -401,12 +355,10 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
             ...((result.keyStyles as string[]) || []),
             ...((result.keyMaterials as string[]) || []),
             ...((result.keyArchetypes as string[]) || []),
+            ...((result.keySilhouettes as string[]) || []),
           ].slice(0, 30);
           setMoodboardKeywords(keywords);
           setAnalyzedKey(key);
-
-          // Auto-add visual keywords as selected trends so they flow into
-          // synthesis alongside the user-picked Sonar trends.
           if (keywords.length > 0) {
             setSelectedTrendTitles((prev) => {
               const next = new Set(prev);
@@ -416,7 +368,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           }
         }
       } catch {
-        /* silent — analysis is a hint */
+        /* silent */
       } finally {
         setAnalyzing(false);
       }
@@ -425,7 +377,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [images.join('|')]);
 
-  // ── Confirm · synthesise brief from inputs ─────────────────────────────
+  // ── Confirm ────────────────────────────────────────────────────────────
   const handleConfirm = async () => {
     setConfirming(true);
     setError('');
@@ -448,7 +400,6 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
       const data = await res.json();
       const draft = data.draft ?? data;
 
-      // Persist the discovered brief to strategy_creative_briefs.
       const saveRes = await fetch('/api/strategy/briefs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -491,7 +442,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="space-y-12">
-      {/* Moodboard section */}
+      {/* Moodboard */}
       <section className="bg-white rounded-[20px] p-8 md:p-12">
         <header className="mb-6">
           <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
@@ -516,7 +467,6 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           }}
         />
 
-        {/* ENTRY phase — Pinterest + drag/upload side-by-side */}
         {images.length === 0 && pinterestStep === 'idle' && (
           <div className="flex flex-col items-center py-6 md:py-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
@@ -577,18 +527,13 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           </div>
         )}
 
-        {/* Pinterest · boards modal */}
         {pinterestStep === 'boards' && (
           <div className="bg-shade rounded-[16px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
                 Elige un tablero
               </p>
-              <button
-                type="button"
-                onClick={closePinterest}
-                className="text-carbon/40 hover:text-carbon/70"
-              >
+              <button type="button" onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -604,18 +549,10 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                   >
                     {board.image_thumbnail_url && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={board.image_thumbnail_url}
-                        alt=""
-                        className="w-full aspect-square object-cover rounded-[8px]"
-                      />
+                      <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover rounded-[8px]" />
                     )}
-                    <span className="text-[12px] font-medium text-carbon/80 truncate w-full">
-                      {board.name}
-                    </span>
-                    {board.pin_count != null && (
-                      <span className="text-[11px] text-carbon/45">{board.pin_count} pins</span>
-                    )}
+                    <span className="text-[12px] font-medium text-carbon/80 truncate w-full">{board.name}</span>
+                    {board.pin_count != null && <span className="text-[11px] text-carbon/45">{board.pin_count} pins</span>}
                   </button>
                 ))}
               </div>
@@ -626,33 +563,21 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           </div>
         )}
 
-        {/* Pinterest · pins modal */}
         {pinterestStep === 'pins' && (
           <div className="bg-shade rounded-[16px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPinterestStep('boards')}
-                  className="text-xs text-carbon/50 hover:text-carbon/80"
-                >
+                <button type="button" onClick={() => setPinterestStep('boards')} className="text-xs text-carbon/50 hover:text-carbon/80">
                   <ArrowLeft className="h-3.5 w-3.5 inline mr-1" />
                   Tableros
                 </button>
-                <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-                  {selectedBoard?.name}
-                </p>
+                <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{selectedBoard?.name}</p>
               </div>
-              <button
-                type="button"
-                onClick={closePinterest}
-                className="text-carbon/40 hover:text-carbon/70"
-              >
+              <button type="button" onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70">
                 <X className="h-4 w-4" />
               </button>
             </div>
             {pinterestError && <p className="text-xs text-red-600">{pinterestError}</p>}
-
             <div className="max-h-[60vh] overflow-y-auto">
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {pins.map((pin) => (
@@ -661,17 +586,11 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                     type="button"
                     onClick={() => togglePin(pin.id)}
                     className={`relative aspect-square overflow-hidden rounded-[8px] transition-all ${
-                      selectedPins.has(pin.id)
-                        ? 'ring-2 ring-carbon'
-                        : 'ring-1 ring-transparent hover:ring-carbon/20'
+                      selectedPins.has(pin.id) ? 'ring-2 ring-carbon' : 'ring-1 ring-transparent hover:ring-carbon/20'
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={pin.imageUrl}
-                      alt={pin.title || ''}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={pin.imageUrl} alt={pin.title || ''} className="w-full h-full object-cover" />
                     {selectedPins.has(pin.id) && (
                       <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-carbon text-white flex items-center justify-center">
                         <Check className="h-3 w-3" />
@@ -681,7 +600,6 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 ))}
               </div>
             </div>
-
             {selectedPins.size > 0 && (
               <div className="flex items-center justify-between pt-2 border-t border-carbon/[0.1]">
                 <span className="text-xs text-carbon/60">{selectedPins.size} seleccionados</span>
@@ -696,22 +614,17 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 </button>
               </div>
             )}
-
             {pins.length === 0 && !pinterestLoading && (
               <p className="text-xs text-carbon/50 text-center py-4">No se encontraron pins</p>
             )}
           </div>
         )}
 
-        {/* Image grid + add-more */}
         {images.length > 0 && (
           <div className="space-y-6">
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
               {images.map((img, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square bg-carbon/[0.04] rounded-[10px] overflow-hidden group"
-                >
+                <div key={i} className="relative aspect-square bg-carbon/[0.04] rounded-[10px] overflow-hidden group">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img} alt="" className="w-full h-full object-cover" />
                   <button
@@ -741,7 +654,6 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
               ) : null}
             </div>
 
-            {/* Add-more row · Pinterest + drag, same layout as entry but compact */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto pt-2">
               <button
                 type="button"
@@ -762,9 +674,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`flex flex-col items-center justify-center gap-3 py-8 px-6 rounded-[20px] border-2 border-dashed transition-all cursor-pointer ${
-                  dragActive
-                    ? 'border-carbon/50 bg-carbon/[0.05]'
-                    : 'border-carbon/[0.15] hover:border-carbon/30 hover:bg-carbon/[0.02]'
+                  dragActive ? 'border-carbon/50 bg-carbon/[0.05]' : 'border-carbon/[0.15] hover:border-carbon/30 hover:bg-carbon/[0.02]'
                 } ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
               >
                 <div className="w-10 h-10 rounded-full bg-carbon/[0.04] flex items-center justify-center">
@@ -779,119 +689,67 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         )}
       </section>
 
-      {/* Market trends · 4 research mini-blocks */}
+      {/* Market Trends · grouped by dimension · click-to-select cards */}
       <section>
-        <div className="text-center mb-6">
-          <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-            Market trends
-          </h2>
-          <p className="text-[13px] text-carbon/50 mt-1">
-            Aimily ya propuso tendencias macro para tu temporada. Activa las que quieras
-            mantener y profundiza en lo que necesites.
-          </p>
+        <div className="flex items-baseline justify-between mb-6 max-w-7xl mx-auto">
+          <div>
+            <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
+              Market trends
+            </h2>
+            <p className="text-[13px] text-carbon/50 mt-1">
+              Aimily ya propuso tendencias relevantes para tu producto. Selecciona las que adoptarías.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={loadMarketTrends}
+            disabled={trendsLoading}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/70 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors shrink-0"
+          >
+            {trendsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Refrescar
+          </button>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {(['global', 'deep-dive', 'live-signals', 'competitors'] as const).map((type) => {
-            const meta = TREND_META[type];
-            const Icon = meta.icon;
-            const cards = trends[type];
-            const isLoading = trendLoading === type;
+
+        {trendsError && (
+          <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[13px] text-red-800 max-w-2xl mx-auto mb-6">
+            {trendsError}
+          </div>
+        )}
+
+        {trendsLoading && trends.length === 0 && (
+          <div className="flex items-center justify-center gap-2 py-16 text-carbon/45">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-[13px]">Aimily está leyendo el mercado…</span>
+          </div>
+        )}
+
+        <div className="space-y-10">
+          {DIMENSION_ORDER.map((dim) => {
+            const cards = trendsByDim.get(dim);
+            if (!cards || cards.length === 0) return null;
+            const meta = DIMENSION_META[dim];
             return (
-              <div key={type} className="bg-white rounded-[20px] p-6 md:p-8">
-                <header className="flex items-start justify-between gap-3 mb-3">
+              <div key={dim}>
+                <div className="flex items-baseline justify-between mb-3 max-w-7xl mx-auto">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 text-carbon/55" />
-                      <h3 className="text-[16px] font-semibold text-carbon tracking-[-0.02em]">
-                        {meta.label}
-                      </h3>
-                    </div>
-                    <p className="text-[12px] text-carbon/50 mt-1">{meta.hint}</p>
+                    <h3 className="text-[16px] font-semibold text-carbon tracking-[-0.02em]">
+                      {meta.label}
+                    </h3>
+                    <p className="text-[12px] text-carbon/45">{meta.description}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => runTrendResearch(type)}
-                    disabled={isLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/70 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors shrink-0"
-                  >
-                    {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                    {cards.length > 0 ? 'Refrescar' : 'Cargar'}
-                  </button>
-                </header>
+                  <span className="text-[11px] text-carbon/35 tabular-nums">{cards.length}</span>
+                </div>
 
-                {meta.needsInput && (
-                  <input
-                    type="text"
-                    value={trendInputs[type]}
-                    onChange={(e) =>
-                      setTrendInputs((prev) => ({ ...prev, [type]: e.target.value }))
-                    }
-                    placeholder={
-                      type === 'deep-dive'
-                        ? 'tema (e.g. "renacer del tailoring de bouclé")'
-                        : 'marcas a analizar (e.g. "Toteme, Khaite, Lemaire")'
-                    }
-                    className="w-full mb-3 px-3 py-2 text-[13px] bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/30"
-                  />
-                )}
-
-                {cards.length === 0 && !isLoading && (
-                  <p className="text-[12px] text-carbon/40 italic py-2">
-                    {meta.needsInput
-                      ? 'Escribe un tema y pulsa Cargar.'
-                      : 'Aún no se ha cargado.'}
-                  </p>
-                )}
-
-                <div className="space-y-2">
-                  {cards.map((card, i) => {
-                    const selected = selectedTrendTitles.has(card.title);
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => toggleTrend(card.title)}
-                        className={`w-full text-left p-3 rounded-[12px] transition-all flex items-start gap-3 ${
-                          selected
-                            ? 'bg-carbon text-white'
-                            : 'bg-carbon/[0.03] hover:bg-carbon/[0.06] text-carbon/85'
-                        }`}
-                      >
-                        {card.hex && (
-                          <span
-                            className="w-8 h-8 rounded-[8px] shrink-0 ring-1 ring-black/10"
-                            style={{ backgroundColor: card.hex }}
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium leading-tight">{card.title}</p>
-                          {card.desc && (
-                            <p
-                              className={`text-[12px] mt-1 leading-snug ${
-                                selected ? 'text-white/70' : 'text-carbon/50'
-                              }`}
-                            >
-                              {card.desc}
-                            </p>
-                          )}
-                          {card.brands && (
-                            <p
-                              className={`text-[11px] mt-1 italic ${
-                                selected ? 'text-white/55' : 'text-carbon/40'
-                              }`}
-                            >
-                              {card.brands}
-                            </p>
-                          )}
-                        </div>
-                        {selected && (
-                          <span className="shrink-0 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                            <Check className="h-3 w-3" />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {cards.map((trend, i) => (
+                    <TrendCard
+                      key={`${dim}-${i}-${trend.title}`}
+                      trend={trend}
+                      selected={selectedTrendTitles.has(trend.title)}
+                      onToggle={() => toggleTrend(trend.title)}
+                    />
+                  ))}
                 </div>
               </div>
             );
@@ -899,7 +757,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         </div>
       </section>
 
-      {/* Confirm bar */}
+      {/* Confirm */}
       <div className="flex flex-col items-center gap-3 pt-2">
         {error && (
           <p className="text-[13px] text-red-700 bg-red-50 px-4 py-2.5 rounded-[12px] max-w-xl text-center">
@@ -923,13 +781,80 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
   );
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+// ── TrendCard ─────────────────────────────────────────────────────────────
 
-function deriveCurrentSeason(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  // Pre-Sep = SS following year; Sep+ = AW following year.
-  if (month >= 8) return `${year + 1} AW`;
-  return `${year + 1} SS`;
+function TrendCard({
+  trend,
+  selected,
+  onToggle,
+}: {
+  trend: StrategyTrend;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  const isColor = trend.dimension === 'color' && trend.color_hex;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`group relative bg-white rounded-[16px] p-5 text-left transition-all duration-200 ${
+        selected
+          ? 'ring-2 ring-carbon shadow-[0_8px_24px_rgba(0,0,0,0.08)]'
+          : 'ring-1 ring-carbon/[0.06] hover:ring-carbon/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)]'
+      }`}
+    >
+      {/* Selected badge */}
+      <div
+        className={`absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+          selected ? 'bg-carbon text-white' : 'bg-carbon/[0.05] text-transparent group-hover:bg-carbon/[0.1]'
+        }`}
+      >
+        <Check className="h-3.5 w-3.5" />
+      </div>
+
+      {/* Color swatch (only for color dimension) */}
+      {isColor && (
+        <div className="flex items-center gap-3 mb-3">
+          <span
+            className="w-14 h-14 rounded-[10px] ring-1 ring-black/10 shrink-0"
+            style={{ backgroundColor: trend.color_hex }}
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-semibold text-carbon leading-tight">
+              {trend.color_name || trend.title}
+            </p>
+            <p className="text-[11px] text-carbon/45 font-mono mt-0.5">
+              {trend.color_hex?.toUpperCase()}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Title (skip if already shown in color swatch row) */}
+      {!isColor && (
+        <h4 className="text-[14px] font-semibold text-carbon tracking-[-0.01em] leading-tight mb-2 pr-8">
+          {trend.title}
+        </h4>
+      )}
+
+      {/* Product spec */}
+      <p className="text-[12px] text-carbon/65 leading-[1.5] mb-3">
+        {trend.product_spec}
+      </p>
+
+      {/* Reference brands */}
+      {trend.reference_brands.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {trend.reference_brands.slice(0, 4).map((brand, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center px-2 py-0.5 rounded-full bg-carbon/[0.04] text-[10px] font-medium text-carbon/65 tracking-[-0.01em]"
+            >
+              {brand}
+            </span>
+          ))}
+        </div>
+      )}
+    </button>
+  );
 }
