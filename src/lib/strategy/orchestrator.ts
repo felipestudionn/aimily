@@ -27,7 +27,9 @@ import {
   assembleScenarios,
   type Constraints,
   type CreativeBrief,
+  type RecommendationCandidate,
 } from './recommend';
+import { proposeNewSKUs, proposeFamilyExtensions } from './proposers';
 
 export interface ExecuteRunResult {
   run_id: string;
@@ -103,6 +105,12 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     family_share_targets: {},
     positioning_tier: null,
     hard_exclusions: [],
+    // v3 · buy-strategy fields (migration 064). NULL/empty until the user
+    // confirms a posture in the setup workspace.
+    chosen_archetype_id: null,
+    action_mix: {},
+    buy_waves: [],
+    target_adjacent_families: [],
   };
   if (run.constraint_id) {
     // Tenant filter on lookup — defense in depth against cross-tenant injection.
@@ -113,6 +121,7 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
       .eq('tenant_id', run.tenant_id)
       .single();
     if (c) {
+      const archetypeId = c.chosen_archetype_id as 'A' | 'B' | 'C' | 'D' | null;
       constraints = {
         target_total_skus: c.target_total_skus,
         target_buy_budget: c.target_buy_budget,
@@ -120,6 +129,10 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
         family_share_targets: (c.family_share_targets || {}) as Record<string, number>,
         positioning_tier: c.positioning_tier,
         hard_exclusions: (c.hard_exclusions || []) as string[],
+        chosen_archetype_id: archetypeId,
+        action_mix: (c.action_mix || {}) as Constraints['action_mix'],
+        buy_waves: (c.buy_waves || []) as Constraints['buy_waves'],
+        target_adjacent_families: (c.target_adjacent_families || []) as string[],
       };
     }
   }
@@ -307,7 +320,42 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     inputs.map((i) => [i.product_fact_id, i.family_code])
   );
   const tensions = generateTensionFlags(modulated, brief, productFamilyByPid, colorTaxonomy);
-  const allCandidates = [...modulated, ...tensions];
+  const allCandidates: RecommendationCandidate[] = [...modulated, ...tensions];
+
+  // 10b. v3 · Archetype D dispatches generative proposers BEFORE persist +
+  // scenario assembly. The deterministic candidate pool above has no
+  // new_sku_proposal or family_extension rows; for the category_transition
+  // scenario to have anything to pick from, we synthesise them here, push
+  // into allCandidates so they flow through the single persistence loop
+  // below, and assembleScenarios then sees them as first-class candidates.
+  //
+  // Other archetypes (A/B/C) keep the historical post-complete proposer
+  // endpoints intact. This is the only gate per Codex v3 P1 #2.
+  if (constraints.chosen_archetype_id === 'D') {
+    try {
+      const [newSkuRes, extRes] = await Promise.all([
+        proposeNewSKUs({
+          runId,
+          count: 8,
+          language: 'es',
+          targetAdjacentFamilies: constraints.target_adjacent_families,
+        }),
+        proposeFamilyExtensions({
+          runId,
+          count: 4,
+          language: 'es',
+          targetAdjacentFamilies: constraints.target_adjacent_families,
+        }),
+      ]);
+      if (newSkuRes.candidates.length > 0) allCandidates.push(...newSkuRes.candidates);
+      if (extRes.candidates.length > 0) allCandidates.push(...extRes.candidates);
+      warnings.push(...newSkuRes.warnings, ...extRes.warnings);
+    } catch (err) {
+      warnings.push(
+        `Archetype D generative dispatch failed: ${err instanceof Error ? err.message : String(err)}. Falling back to deterministic candidates only.`
+      );
+    }
+  }
 
   // 11. Persist candidates — including ALL 6 confidence dimensions per Codex P1.
   const candidateInserts = allCandidates.map((c) => ({
