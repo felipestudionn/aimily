@@ -19,8 +19,7 @@ export type StrategyTrendDimension =
   | 'pattern'
   | 'color'
   | 'material'
-  | 'reference_brand'
-  | 'category_direction';
+  | 'reference_brand';
 
 export interface StrategyTrend {
   dimension: StrategyTrendDimension;
@@ -86,20 +85,19 @@ CRITICAL OUTPUT RULES:
 - Buying season ahead: ${opts.season}${archetypeBlock}${refsBlock}
 
 # Task
-Surface 16-24 market trends relevant for this brand's next-season buy. Distribute them across these 6 dimensions:
+Surface 16-24 market trends relevant for this brand's next-season buy. Distribute them across these 5 dimensions:
 
-1. **silhouette** (4-6 trends) — specific cuts/shapes the brand should consider. Examples: "blazer oversized raglan, double-breasted", "midi slip dress bias-cut", "trouser pleated wide-leg".
-2. **pattern** (2-4 trends) — print/jacquard/embroidery techniques. Examples: "tonal jacquard floral", "lace overlay scallop edge", "abstract block print 70s palette".
-3. **color** (3-5 trends) — Each card MUST include color_hex AND color_name. Examples: "Dusty Rose #DCAE96", "Midnight Petrol #0B2A33", "Soft Bone #E8DDC7".
-4. **material** (2-4 trends) — fabric specs with weight when relevant. Examples: "bouclé wool 320gsm", "silk crêpe de chine", "garment-dyed cotton twill".
+1. **silhouette** (5-7 trends) — specific cuts/shapes the brand should consider. Examples: "blazer oversized raglan, double-breasted", "midi slip dress bias-cut", "trouser pleated wide-leg".
+2. **pattern** (3-5 trends) — print/jacquard/embroidery techniques. Examples: "tonal jacquard floral", "lace overlay scallop edge", "abstract block print 70s palette".
+3. **color** (4-6 trends) — Each card MUST include color_hex AND color_name. Examples: "Dusty Rose #DCAE96", "Midnight Petrol #0B2A33", "Soft Bone #E8DDC7".
+4. **material** (3-4 trends) — fabric specs with weight when relevant. Examples: "bouclé wool 320gsm", "silk crêpe de chine", "garment-dyed cotton twill".
 5. **reference_brand** (2-3 trends) — brands worth tracking specifically because their next-season releases will set the pace. Each trend's title = the brand name; product_spec = 1 sentence on what makes them the reference right now.
-6. **category_direction** (1-2 trends) — macro shifts in the brand's category (e.g. "wholesale buyers requesting fewer SKUs", "younger consumers entering the contemporary tier"). product_spec = 1 sentence on the shift's product implication.
 
 # SCHEMA (emit one JSON object, no markdown fences, no prose)
 {
   "trends": [
     {
-      "dimension": "silhouette | pattern | color | material | reference_brand | category_direction",
+      "dimension": "silhouette | pattern | color | material | reference_brand",
       "title": "concise label (max 6 words)",
       "product_spec": "1 technical sentence describing the product feature (max 20 words)",
       "reference_brands": ["Brand 1", "Brand 2", "Brand 3"],

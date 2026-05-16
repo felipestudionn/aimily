@@ -86,7 +86,6 @@ const DIMENSION_META: Record<StrategyTrendDimension, { label: string; descriptio
   color: { label: 'Color', description: 'Paleta que adoptarás.', addLabel: 'Añadir color' },
   material: { label: 'Materiales', description: 'Tejidos y construcciones.', addLabel: 'Añadir material' },
   reference_brand: { label: 'Marcas a vigilar', description: 'Brands que marcan el ritmo.', addLabel: 'Añadir marca' },
-  category_direction: { label: 'Macro de categoría', description: 'Cambios estructurales en tu categoría.', addLabel: 'Añadir macro' },
 };
 
 const DIMENSION_ORDER: StrategyTrendDimension[] = [
@@ -95,7 +94,6 @@ const DIMENSION_ORDER: StrategyTrendDimension[] = [
   'color',
   'material',
   'reference_brand',
-  'category_direction',
 ];
 
 export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlocked, onSaved }: Props) {
@@ -319,7 +317,10 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     if (e.dataTransfer.files?.length) handleUpload(Array.from(e.dataTransfer.files));
   };
 
-  // ── Pinterest · Block 1 pattern verbatim ──────────────────────────────
+  // Pinterest: connect or load boards. EXACT pattern from Block 1
+  // (src/app/(app)/collection/[id]/creative/page.tsx lines 1316-1338).
+  // Cero extras. Cero localStorage. Cero _return_ state. Cero popup
+  // capture. Solo postMessage como Block 1.
   const handlePinterestConnect = async () => {
     setPinterestLoading(true);
     setPinterestError('');
@@ -327,103 +328,35 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
       const res = await fetch('/api/pinterest/boards');
       if (res.status === 401) {
         const clientId = process.env.NEXT_PUBLIC_PINTEREST_CLIENT_ID || '';
-        const redirectUri =
-          process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI ||
-          `${window.location.origin}/api/auth/pinterest/callback`;
+        const redirectUri = process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI || `${window.location.origin}/api/auth/pinterest/callback`;
         const scope = 'boards:read,pins:read';
-        // Encode the current pathname (NOT the query string) as the return
-        // path. The callback appends '?pinterest_connected=true' with a
-        // literal '?' — if returnPath already had query params we'd end up
-        // with '?block=creative?pinterest_connected=true' which is invalid.
-        const returnPath = window.location.pathname;
-        const stateNonce = Math.random().toString(36).substring(2, 15);
-        const state = `${stateNonce}_return_${encodeURIComponent(returnPath)}`;
+        const state = Math.random().toString(36).substring(2, 15);
         const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
-        const popup = window.open(url, '_blank', 'width=600,height=700');
-        if (!popup) {
-          setPinterestError('El navegador bloqueó el popup. Permite popups para aimily.app y reinténtalo.');
-        }
+        window.open(url, '_blank', 'width=600,height=700');
         setPinterestLoading(false);
         return;
       }
       const boardsData = await res.json();
       setBoards(boardsData.items || []);
       setPinterestStep('boards');
-    } catch (err) {
-      console.error('[CreativeBlock pinterest]', err);
-      setPinterestError('No se pudo conectar a Pinterest');
+    } catch {
+      setPinterestError('Failed to connect to Pinterest');
     }
     setPinterestLoading(false);
   };
 
-  // Three signal channels to detect Pinterest OAuth success:
-  //   1. postMessage from popup (when window.opener survives COOP)
-  //   2. localStorage `storage` event (cross-window broadcast, fires in
-  //      every OTHER tab of the same origin → reliable when opener is null)
-  //   3. URL ?pinterest_connected=true on this very page (when we ARE the
-  //      popup that lost opener and got redirected here by the callback)
+  // Listen for Pinterest OAuth popup callback — EXACT from Block 1
+  // (lines 1301-1313). Single useEffect. Empty deps. eslint-disable.
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'pinterest_connected') {
-        handlePinterestConnect();
-      }
-    };
-    const handleStorage = (e: StorageEvent) => {
-      // Storage events only fire in OTHER tabs/windows of same origin,
-      // so this catches the parent when the popup sets the signal.
-      if (e.key === 'aimily_pinterest_oauth_signal' && e.newValue) {
+        // OAuth succeeded — reload boards.
         handlePinterestConnect();
       }
     };
     window.addEventListener('message', handleMessage);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      window.removeEventListener('storage', handleStorage);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // If we mounted with ?pinterest_connected=true we're the popup (lost
-  // opener because of COOP). Broadcast via localStorage so the parent tab
-  // sees the storage event, then close ourselves. Falls back to fetching
-  // boards in this tab if window.close() is blocked.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('pinterest_connected') !== 'true') return;
-
-    // Clean param so a refresh doesn't re-trigger.
-    params.delete('pinterest_connected');
-    const newQs = params.toString();
-    const cleanUrl = `${window.location.pathname}${newQs ? `?${newQs}` : ''}`;
-    window.history.replaceState({}, '', cleanUrl);
-
-    // Broadcast to other tabs. Set + remove triggers a storage event
-    // with a non-null newValue in every other tab of same origin.
-    try {
-      localStorage.setItem('aimily_pinterest_oauth_signal', String(Date.now()));
-      // Drop the key after a tick so future tabs don't auto-fire on mount.
-      setTimeout(() => {
-        try { localStorage.removeItem('aimily_pinterest_oauth_signal'); } catch {}
-      }, 500);
-    } catch {
-      // No localStorage available; fall through to in-window fetch.
-    }
-
-    // If we're a popup, close ourselves so the user sees their parent tab.
-    // window.close() only works when the window was opened by script —
-    // works for our case. If blocked, we just fall through to fetch boards
-    // in this tab so the user still sees them.
-    const isPopup = typeof window.opener !== 'undefined' && window.opener !== null;
-    const looksLikePopup = window.history.length <= 2 || isPopup;
-    if (looksLikePopup) {
-      try { window.close(); } catch {}
-    }
-    // In either branch (closed or not), trigger boards fetch so this
-    // window also has the data if it stays open.
-    handlePinterestConnect();
+    return () => window.removeEventListener('message', handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -575,17 +508,6 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           reference_brands: [b],
         });
       }
-      // Archetype → category direction
-      for (const a of (result.keyArchetypes as string[] | undefined) || []) {
-        added.push({
-          origin: 'moodboard',
-          dimension: 'category_direction',
-          title: a,
-          product_spec: 'Arquetipo detectado en tu moodboard.',
-          reference_brands: [],
-        });
-      }
-
       // Append, dedupe by (title, dimension).
       setTrends((prev) => {
         const seen = new Set(prev.map((t) => `${t.dimension}::${t.title.toLowerCase()}`));

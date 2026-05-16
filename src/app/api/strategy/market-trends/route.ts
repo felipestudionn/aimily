@@ -34,7 +34,6 @@ const VALID_DIMENSIONS: StrategyTrendDimension[] = [
   'color',
   'material',
   'reference_brand',
-  'category_direction',
 ];
 
 function deriveCurrentSeason(): string {
