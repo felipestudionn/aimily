@@ -11,8 +11,6 @@
  * SegmentedPill centered below, content fills the rest.
  */
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import type { BuyStrategyArchetype } from '@/lib/strategy/sales-archetypes';
 import { CreativeBlock } from './CreativeBlock';
 import { BuyStrategyBlock } from './BuyStrategyBlock';
@@ -72,17 +70,12 @@ export function SetupWorkspace({
   existingConstraint,
   topFamilyCodes,
 }: Props) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [block, setBlock] = useState<BlockKey>(initialBlock);
-
-  const handleBlockChange = (next: BlockKey) => {
-    setBlock(next);
-    // Keep URL in sync so deep-link + refresh land on the same sub-block.
-    const newParams = new URLSearchParams(searchParams?.toString() ?? '');
-    newParams.set('block', next);
-    router.replace(`?${newParams.toString()}`, { scroll: false });
-  };
+  // Block is fixed by the route query param when the user arrives from
+  // the tenant hub's 4 Gold Standard cards. We deliberately do NOT expose
+  // a SegmentedPill to switch between blocks here — each block is
+  // independent per Felipe's rule. To switch blocks the user goes back
+  // to the tenant hub.
+  const block: BlockKey = initialBlock;
 
   const headline =
     block === 'creative'
@@ -99,43 +92,24 @@ export function SetupWorkspace({
 
   return (
     <div className="space-y-8">
-      {/* Contextual header — switches with the active block */}
+      {/* Back to tenant hub · the only nav out of a block */}
+      <div className="max-w-7xl mx-auto">
+        <a
+          href={`/strategy/${tenant.slug}`}
+          className="inline-flex items-center gap-1.5 text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
+        >
+          ← {tenant.display_name}
+        </a>
+      </div>
+
+      {/* Contextual header */}
       <div className="text-center mb-2">
-        <div className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em]">
-          {tenant.display_name}
-        </div>
         <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05] mt-2">
           {headline.title}
         </h1>
         <p className="text-[14px] text-carbon/55 leading-relaxed italic mt-3 max-w-2xl mx-auto">
           {headline.description}
         </p>
-      </div>
-
-      {/* SegmentedPill — centered */}
-      <div className="flex justify-center">
-        <div className="inline-flex p-1 bg-carbon/[0.04] rounded-full">
-          {([
-            { key: 'creative' as const, label: 'Creative direction' },
-            { key: 'buy-strategy' as const, label: 'Buy strategy' },
-          ]).map((opt) => {
-            const active = block === opt.key;
-            return (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => handleBlockChange(opt.key)}
-                className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all ${
-                  active
-                    ? 'bg-carbon text-white'
-                    : 'text-carbon/55 hover:text-carbon'
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Gating banners */}
@@ -185,13 +159,17 @@ export function SetupWorkspace({
         </div>
       )}
 
-      {/* Sub-block content */}
+      {/* Sub-block content · block is fixed by the URL query param */}
       {block === 'creative' && (
         <CreativeBlock
           tenant={tenant}
           existingBrief={existingBrief}
           gatingBlocked={gating.processed_sources === 0}
-          onSaved={() => handleBlockChange('buy-strategy')}
+          onSaved={() => {
+            // After saving creative direction, return to the tenant hub
+            // so the user re-enters via the 4 Gold Standard cards.
+            window.location.href = `/strategy/${tenant.slug}`;
+          }}
         />
       )}
       {block === 'buy-strategy' && (

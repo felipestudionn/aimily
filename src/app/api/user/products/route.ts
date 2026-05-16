@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/lib/api-auth';
 import { getUserProducts } from '@/lib/auth/getUserProducts';
 import { ADMIN_EMAILS } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { listUserTenants } from '@/lib/strategy/tenant-context';
 
 export const runtime = 'nodejs';
 
@@ -35,8 +36,17 @@ export async function GET() {
   }
   const isAdmin = isAdminByEmail || isAdminByDb;
 
+  // Strategy access: list of tenants the user belongs to. First tenant
+  // is the deep-link target for the switcher. Admins see /strategy
+  // (all tenants list) when they have no tenant of their own.
+  const strategyTenants = await listUserTenants(user!.id);
+  const hasStrategy = strategyTenants.length > 0;
+  const activeStrategyTenantSlug = strategyTenants[0]?.slug ?? null;
+
   return NextResponse.json({
     ...products,
     isAdmin,
+    hasStrategy,
+    activeStrategyTenantSlug,
   });
 }
