@@ -10,7 +10,45 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
-import { discoverCreativeBrief } from '@/lib/strategy/creative-discovery';
+import {
+  discoverCreativeBrief,
+  type SelectedTrend,
+} from '@/lib/strategy/creative-discovery';
+
+const VALID_DIMS: SelectedTrend['dimension'][] = [
+  'silhouette',
+  'pattern',
+  'color',
+  'material',
+  'reference_brand',
+];
+
+function normalizeSelectedTrends(raw: unknown): SelectedTrend[] {
+  // Accept two shapes from CreativeBlock for backwards-compat:
+  //   A) [{ dimension, title, product_spec?, color_hex?, color_name? }, ...]
+  //   B) ['Vestido midi al bies', 'Bone', ...]  (legacy · titles only)
+  // Shape B has no dimension, so we drop those silently — the hard
+  // constraint only fires when the client sends shape A.
+  if (!Array.isArray(raw)) return [];
+  const out: SelectedTrend[] = [];
+  for (const r of raw) {
+    if (!r || typeof r !== 'object') continue;
+    const rec = r as Record<string, unknown>;
+    const dim = rec.dimension;
+    const title = rec.title;
+    if (typeof dim !== 'string' || !VALID_DIMS.includes(dim as SelectedTrend['dimension'])) continue;
+    if (typeof title !== 'string' || !title.trim()) continue;
+    out.push({
+      dimension: dim as SelectedTrend['dimension'],
+      title: title.trim(),
+      product_spec: typeof rec.product_spec === 'string' ? rec.product_spec : undefined,
+      color_hex: typeof rec.color_hex === 'string' ? rec.color_hex : undefined,
+      color_name: typeof rec.color_name === 'string' ? rec.color_name : undefined,
+    });
+    if (out.length >= 40) break; // hard cap to keep prompt size sane
+  }
+  return out;
+}
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -52,10 +90,13 @@ export async function POST(req: NextRequest) {
         }
       : undefined;
 
+  const selectedTrends = normalizeSelectedTrends(body.selected_trends);
+
   try {
     const result = await discoverCreativeBrief({
       tenantId: access.tenant.id,
       moodboard,
+      selectedTrends,
       season: typeof body.season === 'string' ? body.season : undefined,
       language: body.language === 'es' || body.language === 'en' ? body.language : undefined,
     });

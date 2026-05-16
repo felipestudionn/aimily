@@ -87,7 +87,33 @@ This archetype REQUIRES target_adjacent_families to be a non-empty array of fami
     : `# No adjacency
 This archetype does NOT require target_adjacent_families. Return an empty array [].`;
 
-  const user = `The user just chose buy-strategy archetype "${archetype.id} · ${archetype.name}" in the setup workspace. Pre-fill the 5-axis editor with a coherent starting point grounded in this tenant's actual portfolio. The user will then fine-tune each axis.
+  // Creative brief block · the user's confirmed Creative Direction. The
+  // prefill MUST stay coherent with this: don't propose a +30% family_pivot
+  // INTO a family the brief is pivoting AWAY from, don't seed action_mix
+  // skewed toward `new_sku_proposal` when the brief's narrative reads
+  // conservative, etc. The LLM sees this as soft guidance — it can still
+  // contradict if the data overwhelmingly demands it, but must explain
+  // the conflict in rationale.
+  const briefBlock = tenantContext.active_brief
+    ? `# Active creative direction (Bucket B · user-confirmed brief)
+- Brief name: ${tenantContext.active_brief.name}
+${tenantContext.active_brief.color_story.length > 0 ? `- Color story: ${tenantContext.active_brief.color_story.join(', ')}\n` : ''}${tenantContext.active_brief.archetypes_focus.length > 0 ? `- Archetype focus: ${tenantContext.active_brief.archetypes_focus.join(', ')}\n` : ''}${Object.keys(tenantContext.active_brief.family_pivot).length > 0 ? `- Family pivots: ${Object.entries(tenantContext.active_brief.family_pivot).map(([f, v]) => `${f} ${v > 0 ? '+' : ''}${(v * 100).toFixed(0)}%`).join(' · ')}\n` : ''}${(() => {
+        const sp = tenantContext.active_brief.silhouette_preferences as { favored?: unknown; deprioritized?: unknown } | undefined;
+        const fav = Array.isArray(sp?.favored) ? (sp!.favored as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+        return fav.length > 0 ? `- Silhouettes favored: ${fav.join(', ')}\n` : '';
+      })()}${(() => {
+        const md = tenantContext.active_brief.material_direction as { favored?: unknown } | undefined;
+        const fav = Array.isArray(md?.favored) ? (md!.favored as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+        return fav.length > 0 ? `- Materials favored: ${fav.join(', ')}\n` : '';
+      })()}${tenantContext.active_brief.creative_narrative ? `- Narrative: ${tenantContext.active_brief.creative_narrative.slice(0, 400)}\n` : ''}
+COHERENCE RULES with this brief:
+- Your family_pivot proposals MUST be coherent with the brief's family_pivot. If the brief pivots AWAY from a family (negative pct) and the sales data wants to scale it (resize_up), prefer a SMALLER positive pct here and flag the tension in rationale rather than fully overriding the brief.
+- action_mix tilt: if the brief's narrative + archetypes signal a conservative / curation-led direction (Defend), bias replenish/kill higher and new_sku lower even within the chosen archetype's defaults. If the brief signals expansion / new-territory (Category Transition narrative), bias new_sku + family_extension higher.
+- target_adjacent_families (when archetype.id === 'D') MUST be reachable from the brief's archetype_focus — don't propose an adjacent category orthogonal to the brand's confirmed direction.`
+    : `# No active creative brief
+The user has not confirmed Creative Direction yet. Build the prefill from portfolio data only and recommend they confirm a brief before lock-in.`;
+
+  const user = `The user just chose buy-strategy archetype "${archetype.id} · ${archetype.name}" in the setup workspace. Pre-fill the 5-axis editor with a coherent starting point grounded in this tenant's actual portfolio AND coherent with their confirmed Creative Direction (when present). The user will then fine-tune each axis.
 
 # Archetype chosen
 - ID: ${archetype.id}
@@ -100,6 +126,8 @@ This archetype does NOT require target_adjacent_families. Return an empty array 
 - Buy budget posture: ${archetype.levers.buy_budget}
 - Best for: ${archetype.best_for}
 
+${briefBlock}
+
 # Tenant top families (from latest completed run)
 ${topFamiliesBlock || '(no top families — likely first run for this tenant)'}
 
@@ -109,7 +137,7 @@ ${winnersBlock || '(no winners surfaced)'}
 ${adjacencyBlock}
 
 # Task
-Emit one JSON object matching the schema. Anchor every number in the tenant data above — don't invent figures. If a field is unknowable, set null.
+Emit one JSON object matching the schema. Anchor every number in the tenant data above — don't invent figures. If a field is unknowable, set null. When the brief and the data disagree, prefer SMALLER moves and surface the tension in rationale.
 
 # SCHEMA
 {

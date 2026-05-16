@@ -556,7 +556,21 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setConfirming(true);
     setError('');
     try {
-      const selectedList = Array.from(selectedTrendTitles);
+      // Send the FULL shape (dimension + title + spec + hex/name) so the
+      // brief synthesis treats them as HARD constraints in the right
+      // field — color → color_story, silhouette → silhouette_preferences,
+      // material → material_direction, etc. Sending just titles would
+      // make the LLM guess which dimension each belonged to and silently
+      // drop most of them.
+      const selectedPayload = trends
+        .filter((tr) => selectedTrendTitles.has(tr.title))
+        .map((tr) => ({
+          dimension: tr.dimension,
+          title: tr.title,
+          product_spec: tr.product_spec,
+          color_hex: tr.color_hex,
+          color_name: tr.color_name,
+        }));
       const res = await fetch('/api/strategy/briefs/discover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -564,7 +578,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           tenant_slug: tenant.slug,
           language: 'es',
           moodboard: images.length > 0 ? { imageUrls: images } : undefined,
-          selected_trends: selectedList,
+          selected_trends: selectedPayload,
         }),
       });
       if (!res.ok) {

@@ -88,10 +88,30 @@ export interface MoodboardAnalysis {
   detectedBrandReferences: string[];
 }
 
+/** A pill validated by the user in CreativeBlock · the user's explicit
+ *  creative intent. Synthesis treats these as HARD constraints that must
+ *  appear in the brief output. */
+export interface SelectedTrend {
+  /** Dimension the user validated under. */
+  dimension: 'silhouette' | 'pattern' | 'color' | 'material' | 'reference_brand';
+  /** Short title visible in the UI ("Vestido midi al bies", "Bone", "Bouclé wool", "Khaite"). */
+  title: string;
+  /** Optional spec / hex / description (color hex code for color dim). */
+  product_spec?: string;
+  color_hex?: string;
+  color_name?: string;
+}
+
 export interface DiscoverCreativeBriefOptions {
   tenantId: string;
   /** When supplied, the moodboard becomes the PRIMARY input. Brand DNA + trends still feed the synthesis as supporting context. */
   moodboard?: MoodboardInput;
+  /** Pills the user explicitly validated in the CreativeBlock UI. The
+   *  synthesis treats these as HARD constraints: color pills MUST land in
+   *  color_story, silhouette pills MUST land in silhouette_preferences.favored,
+   *  etc. Without this, the LLM would freely re-synthesise from moodboard
+   *  + brand DNA + trends and the user's validation work would be lost. */
+  selectedTrends?: SelectedTrend[];
   season?: string;
   language?: 'en' | 'es';
 }
@@ -380,8 +400,45 @@ ${moodboardAnalysis.detectedBrandReferences.length > 0 ? `- Brand references in 
 - Build the direction on portfolio winners + brand DNA + trend signals.
 - Conservative: prefer small pivots over bold ones when data is thin.`;
 
+  // Group the user-validated pills by dimension so the prompt can demand
+  // each set lands in the right brief field. These are HARD constraints —
+  // the user's explicit creative intent overrides what moodboard analysis
+  // or trend signals might otherwise want to propose.
+  const selectedByDim = {
+    silhouette: [] as SelectedTrend[],
+    pattern: [] as SelectedTrend[],
+    color: [] as SelectedTrend[],
+    material: [] as SelectedTrend[],
+    reference_brand: [] as SelectedTrend[],
+  };
+  for (const s of opts.selectedTrends || []) {
+    if (s.dimension in selectedByDim) selectedByDim[s.dimension].push(s);
+  }
+  const totalSelected = (opts.selectedTrends || []).length;
+  const userSelectionsBlock =
+    totalSelected > 0
+      ? `# USER-VALIDATED SIGNALS (HARD CONSTRAINTS · ${totalSelected} pills)
+The user explicitly clicked these pills in the CreativeBlock UI. They override moodboard / trends / brand-DNA inferences for the corresponding brief fields. Your output MUST honor every selection in the exact field listed below.
+
+${selectedByDim.color.length > 0 ? `## Colors validated (→ color_story; preserve order)
+${selectedByDim.color.map((c) => `- ${c.color_name ?? c.title}${c.color_hex ? ` (${c.color_hex})` : ''}`).join('\n')}
+` : ''}
+${selectedByDim.silhouette.length > 0 ? `## Silhouettes validated (→ silhouette_preferences.favored verbatim, in order)
+${selectedByDim.silhouette.map((s) => `- ${s.title}${s.product_spec ? ` · ${s.product_spec}` : ''}`).join('\n')}
+` : ''}
+${selectedByDim.material.length > 0 ? `## Materials validated (→ material_direction.favored verbatim, in order)
+${selectedByDim.material.map((m) => `- ${m.title}${m.product_spec ? ` · ${m.product_spec}` : ''}`).join('\n')}
+` : ''}
+${selectedByDim.pattern.length > 0 ? `## Patterns validated (→ surface in creative_narrative as pattern direction)
+${selectedByDim.pattern.map((p) => `- ${p.title}${p.product_spec ? ` · ${p.product_spec}` : ''}`).join('\n')}
+` : ''}
+${selectedByDim.reference_brand.length > 0 ? `## Reference brands validated (→ name explicitly in creative_narrative)
+${selectedByDim.reference_brand.map((b) => `- ${b.title}`).join('\n')}
+` : ''}`
+      : '';
+
   const user = `Synthesise a DRAFT creative direction brief that:
-- ${moodboardAnalysis ? 'Reflects the MOODBOARD codes as the primary direction.' : 'Builds on the top winners as the primary direction.'}
+- ${totalSelected > 0 ? 'RESPECTS the USER-VALIDATED SIGNALS section below as hard constraints.' : moodboardAnalysis ? 'Reflects the MOODBOARD codes as the primary direction.' : 'Builds on the top winners as the primary direction.'}
 - Stays grounded in the TOP WINNING SKUs and FAMILIES (do not contradict the data without explaining).
 - Aligns with the BRAND DNA (if available).
 - Reflects the CURRENT TREND SIGNALS (if available) without slavishly chasing them.
@@ -391,6 +448,8 @@ ${moodboardAnalysis.detectedBrandReferences.length > 0 ? `- Brand references in 
 - Writes a 3-4 sentence creative narrative explaining the strategic intent.
 
 ${synthesisGuidance}
+
+${userSelectionsBlock}
 
 ${moodboardBlock}
 
@@ -422,6 +481,7 @@ CRITICAL RULES:
 - Never propose a family_pivot that contradicts the data without explaining why in creative_narrative.
 - color_story must include at least one anchor color drawn from current top-winner colors.
 - Stay grounded. If data is thin, prefer SMALL pivots over bold ones.
+${totalSelected > 0 ? `- HARD CONSTRAINT: every entry in USER-VALIDATED SIGNALS lands in the corresponding brief field. Do NOT silently drop a user selection. You MAY add 1-2 complementary items to color_story / silhouette_preferences / material_direction beyond what the user validated, but the user's selections come first and you must reference at least one validated reference_brand in creative_narrative when any are listed.` : ''}
 
 Begin output now with the JSON object.`;
 
