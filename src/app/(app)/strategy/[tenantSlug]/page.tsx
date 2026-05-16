@@ -166,6 +166,12 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
                 Upload source
               </Link>
               <Link
+                href={`/strategy/${tenant.slug}/setup`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-carbon/[0.12] text-carbon/70 text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/[0.04]"
+              >
+                Setup
+              </Link>
+              <Link
                 href={`/strategy/${tenant.slug}/runs/new`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
               >
@@ -286,13 +292,13 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
           <section className="bg-white rounded-[20px] p-8 md:p-10">
             <header className="flex items-center justify-between mb-6">
               <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em]">
-                Constraints (Bucket A)
+                Buy strategy
               </h2>
               <Link
-                href={`/strategy/${tenant.slug}/constraints/new`}
+                href={`/strategy/${tenant.slug}/setup?block=buy-strategy`}
                 className="text-[12px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline"
               >
-                New →
+                Open setup →
               </Link>
             </header>
             {constraints.length === 0 ? (
@@ -323,13 +329,13 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
           <section className="bg-white rounded-[20px] p-8 md:p-10">
             <header className="flex items-center justify-between mb-6">
               <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.02em]">
-                Creative briefs (Bucket B)
+                Creative briefs
               </h2>
               <Link
-                href={`/strategy/${tenant.slug}/briefs/new`}
+                href={`/strategy/${tenant.slug}/setup?block=creative`}
                 className="text-[12px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline"
               >
-                New →
+                Open setup →
               </Link>
             </header>
             {briefs.length === 0 ? (
