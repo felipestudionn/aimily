@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Plus, Upload, X, Sparkles, FlaskConical, BarChart3, Compass, Globe } from 'lucide-react';
+import { Loader2, Plus, Upload, X, RefreshCw, FlaskConical, BarChart3, Compass, Globe, Wand2 } from 'lucide-react';
 
 interface Tenant {
   id: string;
@@ -284,18 +284,13 @@ export function CreativeBlock({ tenant, existingBrief, gatingBlocked, onSaved }:
     <div className="space-y-12">
       {/* Moodboard surface (Block 1 verbatim shape) */}
       <section className="bg-white rounded-[20px] p-8 md:p-12">
-        <header className="flex items-baseline justify-between mb-6">
-          <div>
-            <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-              Moodboard
-            </h2>
-            <p className="text-[13px] text-carbon/50 mt-1">
-              Drop reference images. Aimily reads the visual codes silently at ≥5 images.
-            </p>
-          </div>
-          <span className="text-[10px] tracking-[0.15em] uppercase text-carbon/35 px-2.5 py-0.5 rounded-full bg-carbon/[0.04]">
-            Pinterest · soon
-          </span>
+        <header className="mb-6">
+          <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
+            Moodboard
+          </h2>
+          <p className="text-[13px] text-carbon/50 mt-1">
+            Drop reference images. Aimily reads the visual codes silently at ≥5 images.
+          </p>
         </header>
 
         <input
@@ -411,7 +406,7 @@ export function CreativeBlock({ tenant, existingBrief, gatingBlocked, onSaved }:
                     disabled={isLoading}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/70 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors"
                   >
-                    {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                     {result ? 'Refresh' : 'Run'}
                   </button>
                 </header>
@@ -476,7 +471,7 @@ export function CreativeBlock({ tenant, existingBrief, gatingBlocked, onSaved }:
             disabled={discovering || images.length === 0}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold hover:bg-carbon/90 disabled:opacity-40 transition-colors"
           >
-            {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {discovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
             Auto-fill from moodboard
           </button>
         </header>
