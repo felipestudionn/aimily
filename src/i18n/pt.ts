@@ -4350,6 +4350,25 @@ export const pt: Dictionary = {
       deepenError: 'Falha no aprofundamento',
       confirmError: 'Falha na confirmação',
     },
+    surfaces: {
+      uploadTitle: 'Carregar dados de fonte',
+      uploadDescription: 'Ingere uma estação de performance por SKU. O ficheiro aterra num bucket privado scoped ao tenant; zero leakage cross-tenant. Formatos suportados: PDF de ranking interno tipo Inditex, bundle CSV/XLSX Shopify, CSV custom de ERP.',
+      runsNewTitle: 'Nova análise',
+      runsNewDescription: 'Escolhe as fontes a ingerir, opcionalmente vincula a um set de restrições (Bucket A) e um brief criativo (Bucket B), e nós pontuamos, recomendamos e montamos cenários.',
+    },
+    decisionPack: {
+      executiveSummary: 'Resumo executivo',
+      scenarios: 'Cenários',
+      familyScoreboard: 'Scoreboard de famílias',
+      topRecommendations: 'Top recomendações',
+      backtestScorecard: 'Scorecard de backtest',
+      methodology: 'Metodologia e caveats',
+      skusScored: 'SKUs pontuados',
+      familiesAnalysed: 'Famílias analisadas',
+      lineagesTracked: 'Lineages rastreados',
+      returnsCol: 'Devoluções',
+      saturationCol: 'Saturação',
+    },
     run: {
       status: {
         pending: 'Em fila',

@@ -4369,6 +4369,25 @@ export const de: Dictionary = {
       deepenError: 'Vertiefung fehlgeschlagen',
       confirmError: 'Bestätigung fehlgeschlagen',
     },
+    surfaces: {
+      uploadTitle: 'Quelldaten hochladen',
+      uploadDescription: 'Importiere eine Saison SKU-Performance. Die Datei landet in einem privaten, Tenant-scoped Bucket; kein Cross-Tenant-Leakage. Unterstützte Formate: Inditex-style internes Ranking-PDF, Shopify CSV/XLSX-Bundle, Custom-ERP-CSV.',
+      runsNewTitle: 'Neue Analyse',
+      runsNewDescription: 'Wähle die einzulesenden Quellen, binde optional an ein Constraint-Set (Bucket A) und einen Creative Brief (Bucket B), und wir scoren, empfehlen und stellen Szenarien zusammen.',
+    },
+    decisionPack: {
+      executiveSummary: 'Executive Summary',
+      scenarios: 'Szenarien',
+      familyScoreboard: 'Familien-Scoreboard',
+      topRecommendations: 'Top-Empfehlungen',
+      backtestScorecard: 'Backtest-Scorecard',
+      methodology: 'Methodik & Caveats',
+      skusScored: 'SKUs gescort',
+      familiesAnalysed: 'Familien analysiert',
+      lineagesTracked: 'Lineages verfolgt',
+      returnsCol: 'Rücksendungen',
+      saturationCol: 'Sättigung',
+    },
     run: {
       status: {
         pending: 'In Warteschlange',

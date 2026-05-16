@@ -4509,6 +4509,25 @@ export const en = {
       deepenError: 'Deepen failed',
       confirmError: 'Confirm failed',
     },
+    surfaces: {
+      uploadTitle: 'Upload source data',
+      uploadDescription: 'Ingest a season of SKU performance. The file lands in a private, tenant-scoped bucket; no cross-tenant leakage. Supported formats: Inditex-style internal ranking PDF, Shopify CSV / XLSX bundle, custom ERP CSV.',
+      runsNewTitle: 'New analysis run',
+      runsNewDescription: 'Pick the sources to ingest, optionally bind to a constraint set (Bucket A) and creative brief (Bucket B), and we\'ll score, recommend, and assemble scenarios.',
+    },
+    decisionPack: {
+      executiveSummary: 'Executive summary',
+      scenarios: 'Scenarios',
+      familyScoreboard: 'Family scoreboard',
+      topRecommendations: 'Top recommendations',
+      backtestScorecard: 'Backtest scorecard',
+      methodology: 'Methodology + caveats',
+      skusScored: 'SKUs scored',
+      familiesAnalysed: 'Families analysed',
+      lineagesTracked: 'Lineages tracked',
+      returnsCol: 'Returns',
+      saturationCol: 'Saturation',
+    },
     run: {
       // Run status pill labels (the 6 lifecycle states).
       status: {

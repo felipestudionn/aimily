@@ -4369,6 +4369,25 @@ export const fr: Dictionary = {
       deepenError: 'Échec de l\'approfondissement',
       confirmError: 'Échec de la confirmation',
     },
+    surfaces: {
+      uploadTitle: 'Téléverser des données source',
+      uploadDescription: 'Ingère une saison de performance SKU. Le fichier atterrit dans un bucket privé scoped au tenant ; aucune fuite cross-tenant. Formats supportés : PDF de ranking interne type Inditex, bundle CSV/XLSX Shopify, CSV custom ERP.',
+      runsNewTitle: 'Nouvelle analyse',
+      runsNewDescription: 'Choisis les sources à ingérer, optionnellement lie à un set de contraintes (Bucket A) et un brief créatif (Bucket B), et nous scorons, recommandons et assemblons des scénarios.',
+    },
+    decisionPack: {
+      executiveSummary: 'Résumé exécutif',
+      scenarios: 'Scénarios',
+      familyScoreboard: 'Tableau de bord des familles',
+      topRecommendations: 'Top recommandations',
+      backtestScorecard: 'Scorecard de backtest',
+      methodology: 'Méthodologie et caveats',
+      skusScored: 'SKU scorés',
+      familiesAnalysed: 'Familles analysées',
+      lineagesTracked: 'Lineages suivis',
+      returnsCol: 'Retours',
+      saturationCol: 'Saturation',
+    },
     run: {
       status: {
         pending: 'En file',

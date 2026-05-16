@@ -4368,6 +4368,25 @@ export const nl: Dictionary = {
       deepenError: 'Verdiepen mislukt',
       confirmError: 'Bevestiging mislukt',
     },
+    surfaces: {
+      uploadTitle: 'Brondata uploaden',
+      uploadDescription: 'Lees een seizoen SKU-prestaties in. Het bestand landt in een privé, tenant-scoped bucket; geen cross-tenant lekkage. Ondersteunde formaten: Inditex-stijl intern ranking-PDF, Shopify CSV/XLSX-bundle, custom ERP-CSV.',
+      runsNewTitle: 'Nieuwe analyse',
+      runsNewDescription: 'Kies de bronnen om in te lezen, koppel optioneel aan een constraint-set (Bucket A) en creatieve brief (Bucket B), en wij scoren, bevelen aan en stellen scenario\'s samen.',
+    },
+    decisionPack: {
+      executiveSummary: 'Samenvatting',
+      scenarios: 'Scenario\'s',
+      familyScoreboard: 'Familie-scoreboard',
+      topRecommendations: 'Top aanbevelingen',
+      backtestScorecard: 'Backtest-scorecard',
+      methodology: 'Methodologie & caveats',
+      skusScored: 'SKUs gescored',
+      familiesAnalysed: 'Families geanalyseerd',
+      lineagesTracked: 'Lineages gevolgd',
+      returnsCol: 'Retouren',
+      saturationCol: 'Verzadiging',
+    },
     run: {
       status: {
         pending: 'In wachtrij',

@@ -4254,6 +4254,25 @@ export const sv: Dictionary = {
       deepenError: 'Fördjupning misslyckades',
       confirmError: 'Bekräftelse misslyckades',
     },
+    surfaces: {
+      uploadTitle: 'Ladda upp källdata',
+      uploadDescription: 'Läs in en säsong med SKU-prestanda. Filen landar i en privat, tenant-scoped bucket; ingen läckage mellan tenants. Format som stöds: Inditex-stil internt ranking-PDF, Shopify CSV/XLSX-paket, custom ERP-CSV.',
+      runsNewTitle: 'Ny analys',
+      runsNewDescription: 'Välj källor att läsa in, bind valfritt till ett villkorset (Bucket A) och kreativ brief (Bucket B), så scorar vi, rekommenderar och sätter ihop scenarier.',
+    },
+    decisionPack: {
+      executiveSummary: 'Executive summary',
+      scenarios: 'Scenarier',
+      familyScoreboard: 'Familjescoreboard',
+      topRecommendations: 'Topprekommendationer',
+      backtestScorecard: 'Backtest-scorecard',
+      methodology: 'Metodik & caveats',
+      skusScored: 'SKUs scorade',
+      familiesAnalysed: 'Familjer analyserade',
+      lineagesTracked: 'Lineages spårade',
+      returnsCol: 'Returer',
+      saturationCol: 'Mättnad',
+    },
     run: {
       status: {
         pending: 'I kö',

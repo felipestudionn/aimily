@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
 import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
 import { NewRunClient } from './NewRunClient';
 
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,8 @@ export default async function NewRunPage({ params }: PageProps) {
   const tenants = await listUserTenants(user.id);
   const tenant = tenants.find((t) => t.slug === tenantSlug);
   if (!tenant) notFound();
+
+  const dict = getStrategyDictForUser(user);
 
   const [sourcesRes, constraintsRes, briefsRes] = await Promise.all([
     supabaseAdmin
@@ -51,12 +54,10 @@ export default async function NewRunPage({ params }: PageProps) {
           ← {tenant.display_name}
         </Link>
         <h1 className="text-[36px] md:text-[42px] font-medium text-carbon tracking-[-0.03em] leading-[1.1] mb-3">
-          New analysis run
+          {dict.strategy.surfaces.runsNewTitle}
         </h1>
         <p className="text-[14px] text-carbon/50 leading-[1.6] mb-10 max-w-xl">
-          Pick the sources to ingest, optionally bind to a constraint set
-          (Bucket A) and creative brief (Bucket B), and we&apos;ll score,
-          recommend, and assemble scenarios.
+          {dict.strategy.surfaces.runsNewDescription}
         </p>
         <NewRunClient
           tenantSlug={tenant.slug}

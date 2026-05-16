@@ -4369,6 +4369,25 @@ export const it: Dictionary = {
       deepenError: 'Approfondimento fallito',
       confirmError: 'Conferma fallita',
     },
+    surfaces: {
+      uploadTitle: 'Carica dati sorgente',
+      uploadDescription: 'Ingerisci una stagione di performance per SKU. Il file atterra in un bucket privato scoped al tenant; zero leakage cross-tenant. Formati supportati: PDF di ranking interno tipo Inditex, bundle CSV/XLSX Shopify, CSV custom ERP.',
+      runsNewTitle: 'Nuova analisi',
+      runsNewDescription: 'Scegli le sorgenti da ingerire, opzionalmente collega a un set di vincoli (Bucket A) e un brief creativo (Bucket B), e noi scoriamo, raccomandiamo e assembliamo scenari.',
+    },
+    decisionPack: {
+      executiveSummary: 'Riepilogo esecutivo',
+      scenarios: 'Scenari',
+      familyScoreboard: 'Scoreboard famiglie',
+      topRecommendations: 'Top raccomandazioni',
+      backtestScorecard: 'Scorecard di backtest',
+      methodology: 'Metodologia e caveats',
+      skusScored: 'SKU valutati',
+      familiesAnalysed: 'Famiglie analizzate',
+      lineagesTracked: 'Lineages tracciati',
+      returnsCol: 'Resi',
+      saturationCol: 'Saturazione',
+    },
     run: {
       status: {
         pending: 'In coda',

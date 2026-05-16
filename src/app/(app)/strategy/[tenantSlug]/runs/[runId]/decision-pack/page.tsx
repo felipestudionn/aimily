@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
 import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
 import { DecisionPackPrintTrigger } from './DecisionPackPrintTrigger';
 
 export const dynamic = 'force-dynamic';
@@ -29,26 +30,14 @@ interface PageProps {
   params: Promise<{ tenantSlug: string; runId: string }>;
 }
 
-const ACTION_LABELS: Record<string, string> = {
-  carryover: 'Carry over',
-  kill: 'Kill',
-  resize_up: 'Resize up',
-  resize_down: 'Resize down',
-  recolor: 'Recolor',
-  markdown_accelerate: 'Markdown',
-  markdown_delay: 'Hold price',
-  investigate: 'Investigate',
-  substitute: 'Substitute',
-  replenish: 'Replenish',
-  geographic_redistribute: 'Redistribute',
-  tension_flag: 'Tension flag',
-  new_sku_proposal: 'New SKU',
-  family_extension: 'Family extension',
-};
-
 export default async function DecisionPackPage({ params }: PageProps) {
   const { user } = await getServerSession();
   if (!user) redirect('/');
+
+  const dict = getStrategyDictForUser(user);
+  const ACTION_LABELS = dict.strategy.run.actions as Record<string, string>;
+  const dp = dict.strategy.decisionPack;
+  const rs = dict.strategy.run.sections;
 
   const { tenantSlug, runId } = await params;
   const tenants = await listUserTenants(user.id);
@@ -160,19 +149,19 @@ export default async function DecisionPackPage({ params }: PageProps) {
               <div className="text-[18px] font-medium text-carbon tracking-[-0.02em] normal-case">
                 {coverage.sku_count ?? '—'}
               </div>
-              <div className="mt-1">SKUs scored</div>
+              <div className="mt-1">{dp.skusScored}</div>
             </div>
             <div>
               <div className="text-[18px] font-medium text-carbon tracking-[-0.02em] normal-case">
                 {coverage.family_count ?? '—'}
               </div>
-              <div className="mt-1">Families analysed</div>
+              <div className="mt-1">{dp.familiesAnalysed}</div>
             </div>
             <div>
               <div className="text-[18px] font-medium text-carbon tracking-[-0.02em] normal-case">
                 {coverage.lineages_count ?? '—'}
               </div>
-              <div className="mt-1">Lineages tracked</div>
+              <div className="mt-1">{dp.lineagesTracked}</div>
             </div>
           </div>
           <p className="mt-6 text-[11px] text-carbon/40 leading-[1.5]">
@@ -194,9 +183,9 @@ export default async function DecisionPackPage({ params }: PageProps) {
         {/* ─── Executive summary ─── */}
         {learningsNarrative && (
           <section className="page-break-before" style={{ paddingTop: '8mm' }}>
-            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">Executive summary</h2>
+            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.executiveSummary}</h2>
             <p className="text-[10px] uppercase tracking-[0.08em] text-carbon/40 mb-4">
-              What the data says
+              {rs.whatDataSays}
             </p>
             <div className="text-[12px] text-carbon/80 leading-[1.7] whitespace-pre-line">
               {learningsNarrative}
@@ -204,7 +193,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
             {creativeApplication && (
               <>
                 <p className="mt-7 text-[10px] uppercase tracking-[0.08em] text-carbon/40 mb-4">
-                  How creative direction modulated the picks
+                  {rs.howCreativeModulated}
                 </p>
                 <div className="text-[12px] text-carbon/80 leading-[1.7] whitespace-pre-line">
                   {creativeApplication}
@@ -217,7 +206,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
         {/* ─── Scenarios ─── */}
         {scenarios.data && scenarios.data.length > 0 && (
           <section className="page-break-before" style={{ paddingTop: '8mm' }}>
-            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">Scenarios</h2>
+            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.scenarios}</h2>
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
               Each scenario is a deterministic assembly of recommendation candidates honouring
               Bucket A constraints. Pick one as the base; deviations are logged in the run.
@@ -236,10 +225,10 @@ export default async function DecisionPackPage({ params }: PageProps) {
                     {s.description}
                   </p>
                   <dl className="space-y-1 text-[10px]">
-                    <Row label="SKUs" value={(s.predicted_sku_count ?? 0).toString()} />
-                    <Row label="Revenue" value={eur(s.total_predicted_revenue)} />
-                    <Row label="Margin" value={eur(s.total_predicted_margin)} />
-                    <Row label="Buy budget" value={eur(s.total_predicted_buy_budget)} />
+                    <Row label={rs.skus} value={(s.predicted_sku_count ?? 0).toString()} />
+                    <Row label={rs.revenue} value={eur(s.total_predicted_revenue)} />
+                    <Row label={rs.margin} value={eur(s.total_predicted_margin)} />
+                    <Row label={rs.buyBudget} value={eur(s.total_predicted_buy_budget)} />
                     {s.creative_application_summary && (
                       <li className="text-[9px] text-carbon/50 italic mt-2 pt-2 border-t border-carbon/06">
                         {s.creative_application_summary}
@@ -255,7 +244,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
         {/* ─── Family scoreboard ─── */}
         {families.data && families.data.length > 0 && (
           <section className="page-break-before" style={{ paddingTop: '8mm' }}>
-            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">Family scoreboard</h2>
+            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.familyScoreboard}</h2>
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
               Heroes / dogs / saturation per family. ROI is post-returns, post-markdown.
             </p>
@@ -267,8 +256,8 @@ export default async function DecisionPackPage({ params }: PageProps) {
                   <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Heroes</th>
                   <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Dogs</th>
                   <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">ROI</th>
-                  <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Returns</th>
-                  <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Saturation</th>
+                  <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">{dp.returnsCol}</th>
+                  <th className="text-right py-2 px-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">{dp.saturationCol}</th>
                   <th className="text-right py-2 pl-2 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Share</th>
                 </tr>
               </thead>
@@ -297,7 +286,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
         {/* ─── Top recommendations ─── */}
         {candidates.data && candidates.data.length > 0 && (
           <section className="page-break-before" style={{ paddingTop: '8mm' }}>
-            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">Top recommendations</h2>
+            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.topRecommendations}</h2>
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
               Each card carries 6 confidence dimensions, evidence + counter-evidence, and the
               assumptions you can challenge in the decision workshop.
@@ -379,7 +368,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
         {/* ─── Backtest ─── */}
         {backtest.data && (
           <section className="page-break-before" style={{ paddingTop: '8mm' }}>
-            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">Backtest scorecard</h2>
+            <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.backtestScorecard}</h2>
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
               Trained on{' '}
               <span className="font-mono">{(backtest.data.train_season_tags || []).join(', ')}</span>;
@@ -393,9 +382,9 @@ export default async function DecisionPackPage({ params }: PageProps) {
               </p>
             ) : (
               <div className="grid grid-cols-4 gap-4">
-                <Stat label="Hero precision" value={backtest.data.precision_heroes} />
-                <Stat label="Dog precision" value={backtest.data.precision_dogs} />
-                <Stat label="Carryover precision" value={backtest.data.precision_carryover} />
+                <Stat label={rs.heroPrecision} value={backtest.data.precision_heroes} />
+                <Stat label={rs.dogPrecision} value={backtest.data.precision_dogs} />
+                <Stat label={rs.carryoverPrecision} value={backtest.data.precision_carryover} />
                 <Stat label="Return-trap catch" value={backtest.data.return_trap_catch_rate} />
               </div>
             )}
@@ -404,7 +393,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
 
         {/* ─── Methodology footer ─── */}
         <section className="page-break-before" style={{ paddingTop: '8mm' }}>
-          <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">Methodology + caveats</h2>
+          <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.methodology}</h2>
           <div className="text-[11px] text-carbon/70 leading-[1.65] space-y-3">
             <p>
               <strong>Deterministic-first.</strong> All scores come from 10 versioned, auditable
