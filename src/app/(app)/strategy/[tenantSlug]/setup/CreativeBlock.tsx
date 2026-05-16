@@ -244,7 +244,11 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
 
   // ── Moodboard upload · base64 JSON (mirrors Block 1's pattern verbatim) ─
   const [uploadError, setUploadError] = useState('');
-  const handleUpload = async (files: FileList) => {
+  // Accept an Array (NOT FileList) — caller MUST snapshot the FileList via
+  // Array.from before passing it here. FileList is live and gets cleared
+  // when the input value is reset, which silently truncated the loop and
+  // dropped all but the last file when uploading multiple images.
+  const handleUpload = async (files: File[]) => {
     setUploading(true);
     setUploadError('');
     const newUrls: string[] = [];
@@ -312,7 +316,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files?.length) handleUpload(e.dataTransfer.files);
+    if (e.dataTransfer.files?.length) handleUpload(Array.from(e.dataTransfer.files));
   };
 
   // ── Pinterest · Block 1 pattern verbatim ──────────────────────────────
@@ -352,7 +356,12 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     setPinterestLoading(false);
   };
 
-  // Listen for postMessage from popup (window.opener path).
+  // Three signal channels to detect Pinterest OAuth success:
+  //   1. postMessage from popup (when window.opener survives COOP)
+  //   2. localStorage `storage` event (cross-window broadcast, fires in
+  //      every OTHER tab of the same origin → reliable when opener is null)
+  //   3. URL ?pinterest_connected=true on this very page (when we ARE the
+  //      popup that lost opener and got redirected here by the callback)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -360,26 +369,61 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         handlePinterestConnect();
       }
     };
+    const handleStorage = (e: StorageEvent) => {
+      // Storage events only fire in OTHER tabs/windows of same origin,
+      // so this catches the parent when the popup sets the signal.
+      if (e.key === 'aimily_pinterest_oauth_signal' && e.newValue) {
+        handlePinterestConnect();
+      }
+    };
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fallback path: if Pinterest's COOP severed the opener, the callback
-  // redirects the popup to <returnPath>?pinterest_connected=true. When
-  // CreativeBlock mounts with that query param, we fetch boards directly
-  // (the cookie is already set) and clean the URL.
+  // If we mounted with ?pinterest_connected=true we're the popup (lost
+  // opener because of COOP). Broadcast via localStorage so the parent tab
+  // sees the storage event, then close ourselves. Falls back to fetching
+  // boards in this tab if window.close() is blocked.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('pinterest_connected') === 'true') {
-      // Clean param so a refresh doesn't loop.
-      params.delete('pinterest_connected');
-      const newQs = params.toString();
-      const cleanUrl = `${window.location.pathname}${newQs ? `?${newQs}` : ''}`;
-      window.history.replaceState({}, '', cleanUrl);
-      handlePinterestConnect();
+    if (params.get('pinterest_connected') !== 'true') return;
+
+    // Clean param so a refresh doesn't re-trigger.
+    params.delete('pinterest_connected');
+    const newQs = params.toString();
+    const cleanUrl = `${window.location.pathname}${newQs ? `?${newQs}` : ''}`;
+    window.history.replaceState({}, '', cleanUrl);
+
+    // Broadcast to other tabs. Set + remove triggers a storage event
+    // with a non-null newValue in every other tab of same origin.
+    try {
+      localStorage.setItem('aimily_pinterest_oauth_signal', String(Date.now()));
+      // Drop the key after a tick so future tabs don't auto-fire on mount.
+      setTimeout(() => {
+        try { localStorage.removeItem('aimily_pinterest_oauth_signal'); } catch {}
+      }, 500);
+    } catch {
+      // No localStorage available; fall through to in-window fetch.
     }
+
+    // If we're a popup, close ourselves so the user sees their parent tab.
+    // window.close() only works when the window was opened by script —
+    // works for our case. If blocked, we just fall through to fetch boards
+    // in this tab so the user still sees them.
+    const isPopup = typeof window.opener !== 'undefined' && window.opener !== null;
+    const looksLikePopup = window.history.length <= 2 || isPopup;
+    if (looksLikePopup) {
+      try { window.close(); } catch {}
+    }
+    // In either branch (closed or not), trigger boards fetch so this
+    // window also has the data if it stays open.
+    handlePinterestConnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -649,7 +693,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           accept="image/*"
           className="hidden"
           onChange={(e) => {
-            if (e.target.files?.length) handleUpload(e.target.files);
+            if (e.target.files?.length) handleUpload(Array.from(e.target.files));
             e.target.value = '';
           }}
         />
