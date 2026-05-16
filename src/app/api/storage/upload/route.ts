@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { uploadBase64, uploadFromUrl, saveAssetRecord, type AssetType } from '@/lib/storage';
+import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
 
 const VALID_ASSET_TYPES: AssetType[] = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model', 'still_life', 'editorial', 'tech_pack', 'material_swatch', 'callout'];
 
@@ -44,11 +45,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { collectionPlanId, assetType, name, base64, mimeType, sourceUrl, description, phase, metadata, skuId } = body;
+    const { collectionPlanId, tenantSlug, assetType, name, base64, mimeType, sourceUrl, description, phase, metadata, skuId } = body;
 
-    if (!collectionPlanId || !assetType || !name) {
+    if ((!collectionPlanId && !tenantSlug) || !assetType || !name) {
       return NextResponse.json(
-        { error: 'collectionPlanId, assetType, and name are required' },
+        { error: 'Either collectionPlanId or tenantSlug is required, plus assetType and name' },
         { status: 400 }
       );
     }
@@ -67,8 +68,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
-    if (!ownership.authorized) return ownership.error;
+    // Auth + storage prefix · two contexts share this endpoint:
+    //   1. Collection plans (Block 1) — verifyCollectionOwnership, storage
+    //      prefix = collectionPlanId.
+    //   2. Strategy tenants — requireStrategyAccess, storage prefix =
+    //      tenant_id. Pictures land in the SAME 'collection-assets' bucket,
+    //      just under <tenant_id>/<assetType>/<file> instead of
+    //      <collectionPlanId>/<assetType>/<file>. No collection_assets row
+    //      is written for tenant uploads (no FK to satisfy).
+    let storagePrefix: string;
+    let registerCollectionAsset = false;
+    if (collectionPlanId) {
+      const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
+      storagePrefix = collectionPlanId;
+      registerCollectionAsset = true;
+    } else {
+      const access = await requireStrategyAccess({ tenantSlug, minRole: 'analyst' });
+      if (!access.ok) return access.response;
+      storagePrefix = access.tenant.id;
+      registerCollectionAsset = false;
+    }
 
     // Soft warning: SKU-linkable types should usually carry skuId. We log
     // when one is missing so we can spot framework regressions in audits
@@ -85,31 +105,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage — same bucket + same helpers regardless
+    // of caller context. storagePrefix is either collectionPlanId or
+    // tenant_id from the auth branch above.
     let upload;
     if (sourceUrl) {
-      upload = await uploadFromUrl(collectionPlanId, assetType, sourceUrl);
+      upload = await uploadFromUrl(storagePrefix, assetType, sourceUrl);
     } else {
-      upload = await uploadBase64(collectionPlanId, assetType, base64, mimeType || 'image/png');
+      upload = await uploadBase64(storagePrefix, assetType, base64, mimeType || 'image/png');
     }
 
-    // Save record to collection_assets
-    // skuId top-level wins over metadata.sku_id if both are passed.
-    const assetId = await saveAssetRecord({
-      collection_plan_id: collectionPlanId,
-      phase: phase || assetType,
-      asset_type: assetType,
-      name,
-      description,
-      url: upload.publicUrl,
-      metadata: {
-        ...metadata,
-        storage_path: upload.storagePath,
-        original_source: sourceUrl || 'base64_upload',
-        ...(skuId ? { sku_id: skuId } : {}),
-      },
-      uploaded_by: user.id,
-    });
+    let assetId: string | null = null;
+    if (registerCollectionAsset) {
+      // Block 1 path: also register in collection_assets so the asset is
+      // discoverable from the collection workspace.
+      assetId = await saveAssetRecord({
+        collection_plan_id: storagePrefix,
+        phase: phase || assetType,
+        asset_type: assetType,
+        name,
+        description,
+        url: upload.publicUrl,
+        metadata: {
+          ...metadata,
+          storage_path: upload.storagePath,
+          original_source: sourceUrl || 'base64_upload',
+          ...(skuId ? { sku_id: skuId } : {}),
+        },
+        uploaded_by: user.id,
+      });
+    }
 
     return NextResponse.json({
       assetId,

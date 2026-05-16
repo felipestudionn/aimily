@@ -259,11 +259,14 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           reader.onerror = () => reject(new Error('FileReader failed'));
           reader.readAsDataURL(file);
         });
-        const res = await fetch('/api/strategy/moodboard/upload', {
+        // Block 1's exact endpoint + body shape. Only diff: tenantSlug
+        // instead of collectionPlanId, which the endpoint now accepts.
+        const res = await fetch('/api/storage/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tenant_slug: tenant.slug,
+            tenantSlug: tenant.slug,
+            assetType: 'moodboard',
             name: file.name,
             base64: base64.split(',')[1],
             mimeType: file.type,
@@ -277,9 +280,9 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           continue;
         }
         const data = await res.json();
-        const url = data.signed_url || data.publicUrl;
+        const url = data.publicUrl;
         if (url) newUrls.push(url);
-        else failed.push(`${file.name}: missing signed_url in response`);
+        else failed.push(`${file.name}: missing publicUrl in response`);
       } catch (err) {
         failed.push(`${file.name}: ${err instanceof Error ? err.message : String(err)}`);
         console.error('[CreativeBlock upload exception]', err);
@@ -324,10 +327,11 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI ||
           `${window.location.origin}/api/auth/pinterest/callback`;
         const scope = 'boards:read,pins:read';
-        // Encode the current page URL as the return path so the callback
-        // can redirect back here when window.opener is null (Pinterest's
-        // COOP policy can sever the opener reference on some browsers).
-        const returnPath = `${window.location.pathname}${window.location.search}`;
+        // Encode the current pathname (NOT the query string) as the return
+        // path. The callback appends '?pinterest_connected=true' with a
+        // literal '?' — if returnPath already had query params we'd end up
+        // with '?block=creative?pinterest_connected=true' which is invalid.
+        const returnPath = window.location.pathname;
         const stateNonce = Math.random().toString(36).substring(2, 15);
         const state = `${stateNonce}_return_${encodeURIComponent(returnPath)}`;
         const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
@@ -413,18 +417,20 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     for (let i = 0; i < selected.length; i++) {
       setUploadProgress(`Importando ${i + 1}/${selected.length}…`);
       try {
-        const res = await fetch('/api/strategy/moodboard/upload', {
+        // Pinterest pin import via Block 1's endpoint with sourceUrl path.
+        const res = await fetch('/api/storage/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tenant_slug: tenant.slug,
-            source_url: selected[i].imageUrl,
-            source_name: `pinterest-${selected[i].id}.jpg`,
+            tenantSlug: tenant.slug,
+            assetType: 'moodboard',
+            name: `pinterest-${selected[i].id}.jpg`,
+            sourceUrl: selected[i].imageUrl,
           }),
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.signed_url) newUrls.push(data.signed_url);
+          if (data.publicUrl) newUrls.push(data.publicUrl);
         }
       } catch {
         /* skip */
