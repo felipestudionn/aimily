@@ -4401,6 +4401,18 @@ export const nl: Dictionary = {
         heroPrecision: 'Heroes-precisie',
         dogPrecision: 'Dogs-precisie',
         carryoverPrecision: 'Carryover-precisie',
+        skus: 'SKUs',
+        revenue: 'Omzet',
+        margin: 'Marge',
+        allocatedSummary: '{n} SKUs toegewezen · uitgave €{spend}',
+      },
+      dims: {
+        data: 'Data',
+        identity: 'Identiteit',
+        demand: 'Vraag',
+        margin: 'Marge',
+        creative_fit: 'Creatieve fit',
+        action: 'Actie',
       },
     },
     archetypes: {

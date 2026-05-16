@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Check, Loader2, Pencil, RotateCcw, X } from 'lucide-react';
 import { ActionMixCard, type ActionMix } from '@/components/strategy/axis-cards/ActionMixCard';
+import { useTranslation } from '@/i18n';
 
 interface ScenarioRow {
   id: string;
@@ -53,6 +54,8 @@ function fmtEur(n: number | null): string {
 }
 
 export function RunScenariosEditor({ tenantSlug: _tenantSlug, runId, scenarios, defaultMix }: Props) {
+  const t = useTranslation();
+  const labels = t.strategy.run.sections;
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMix, setEditMix] = useState<ActionMix>(defaultMix);
@@ -172,10 +175,10 @@ export function RunScenariosEditor({ tenantSlug: _tenantSlug, runId, scenarios, 
               </header>
 
               <dl className="space-y-1.5 text-[12px] mb-4">
-                <Metric label="SKUs" value={s.predicted_sku_count?.toLocaleString() ?? '—'} />
-                <Metric label="Revenue" value={fmtEur(s.total_predicted_revenue)} />
-                <Metric label="Margin" value={fmtEur(s.total_predicted_margin)} />
-                <Metric label="Buy budget" value={fmtEur(s.total_predicted_buy_budget)} />
+                <Metric label={labels.skus} value={s.predicted_sku_count?.toLocaleString() ?? '—'} />
+                <Metric label={labels.revenue} value={fmtEur(s.total_predicted_revenue)} />
+                <Metric label={labels.margin} value={fmtEur(s.total_predicted_margin)} />
+                <Metric label={labels.buyBudget} value={fmtEur(s.total_predicted_buy_budget)} />
               </dl>
 
               {isEditing && (

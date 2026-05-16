@@ -4546,6 +4546,18 @@ export const en = {
         heroPrecision: 'Hero precision',
         dogPrecision: 'Dog precision',
         carryoverPrecision: 'Carryover precision',
+        skus: 'SKUs',
+        revenue: 'Revenue',
+        margin: 'Margin',
+        allocatedSummary: '{n} SKUs allocated · spend €{spend}',
+      },
+      dims: {
+        data: 'Data',
+        identity: 'Identity',
+        demand: 'Demand',
+        margin: 'Margin',
+        creative_fit: 'Creative fit',
+        action: 'Action',
       },
     },
     archetypes: {

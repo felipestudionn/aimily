@@ -403,7 +403,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {generativeCandidates.map((c: any) => (
-                  <RecommendationCard actionLabels={ACTION_LABELS}
+                  <RecommendationCard actionLabels={ACTION_LABELS} dimLabels={dict.strategy.run.dims}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -562,7 +562,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {deterministic.map((c: any) => (
-                  <RecommendationCard actionLabels={ACTION_LABELS}
+                  <RecommendationCard actionLabels={ACTION_LABELS} dimLabels={dict.strategy.run.dims}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -582,7 +582,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               <Activity className="h-5 w-5 text-carbon/60" />
               Backtest scorecard
             </h2>
-            <BacktestCard data={backtest.data} />
+            <BacktestCard data={backtest.data} labels={dict.strategy.run.sections} />
           </section>
         )}
       </div>
@@ -596,12 +596,20 @@ function ScenarioCard({
   runId,
   allocationsCount,
   allocationsBudget,
+  labels,
 }: {
   scenario: any;
   tenantSlug: string;
   runId: string;
   allocationsCount: number;
   allocationsBudget: number;
+  labels: {
+    skus: string;
+    revenue: string;
+    margin: string;
+    buyBudget: string;
+    allocatedSummary: string;
+  };
 }) {
   const isSelected = scenario.is_selected;
   return (
@@ -620,9 +628,9 @@ function ScenarioCard({
         {scenario.description}
       </p>
       <dl className="space-y-1.5 text-[12px]">
-        <Metric label="SKUs" value={scenario.predicted_sku_count?.toLocaleString() ?? '—'} />
+        <Metric label={labels.skus} value={scenario.predicted_sku_count?.toLocaleString() ?? '—'} />
         <Metric
-          label="Revenue"
+          label={labels.revenue}
           value={
             scenario.total_predicted_revenue != null
               ? `€${formatCompact(Number(scenario.total_predicted_revenue))}`
@@ -630,7 +638,7 @@ function ScenarioCard({
           }
         />
         <Metric
-          label="Margin"
+          label={labels.margin}
           value={
             scenario.total_predicted_margin != null
               ? `€${formatCompact(Number(scenario.total_predicted_margin))}`
@@ -638,7 +646,7 @@ function ScenarioCard({
           }
         />
         <Metric
-          label="Buy budget"
+          label={labels.buyBudget}
           value={
             scenario.total_predicted_buy_budget != null
               ? `€${formatCompact(Number(scenario.total_predicted_buy_budget))}`
@@ -653,7 +661,9 @@ function ScenarioCard({
       )}
       {allocationsCount > 0 && (
         <p className="mt-3 text-[11px] text-carbon/60">
-          <strong>{allocationsCount}</strong> SKUs allocated · spend €{formatCompact(allocationsBudget)}
+          {labels.allocatedSummary
+            .replace('{n}', String(allocationsCount))
+            .replace('{spend}', formatCompact(allocationsBudget))}
         </p>
       )}
       <AllocateReplenishmentTrigger
@@ -671,12 +681,21 @@ function RecommendationCard({
   lineageById,
   colorCodeMap,
   actionLabels,
+  dimLabels,
 }: {
   candidate: any;
   productById: Map<string, any>;
   lineageById: Map<string, any>;
   colorCodeMap: Record<string, string>;
   actionLabels: Record<string, string>;
+  dimLabels: {
+    data: string;
+    identity: string;
+    demand: string;
+    margin: string;
+    creative_fit: string;
+    action: string;
+  };
 }) {
   const evidence = (candidate.evidence || {}) as Record<string, unknown>;
   const counter = (candidate.counter_evidence || {}) as Record<string, unknown>;
@@ -698,12 +717,12 @@ function RecommendationCard({
   // 6 confidence dimensions per Codex P1 fix — render the breakdown that
   // the BP §9 value prop hinges on. NULL creative_fit means "no brief".
   const dims: Array<{ key: string; label: string; value: number | null }> = [
-    { key: 'data_completeness', label: 'Data', value: candidate.confidence_data_completeness != null ? Number(candidate.confidence_data_completeness) : null },
-    { key: 'identity', label: 'Identity', value: candidate.confidence_identity != null ? Number(candidate.confidence_identity) : null },
-    { key: 'demand', label: 'Demand', value: candidate.confidence_demand != null ? Number(candidate.confidence_demand) : null },
-    { key: 'margin', label: 'Margin', value: candidate.confidence_margin != null ? Number(candidate.confidence_margin) : null },
-    { key: 'creative_fit', label: 'Creative fit', value: candidate.confidence_creative_fit != null ? Number(candidate.confidence_creative_fit) : null },
-    { key: 'action', label: 'Action', value: confidence },
+    { key: 'data_completeness', label: dimLabels.data, value: candidate.confidence_data_completeness != null ? Number(candidate.confidence_data_completeness) : null },
+    { key: 'identity', label: dimLabels.identity, value: candidate.confidence_identity != null ? Number(candidate.confidence_identity) : null },
+    { key: 'demand', label: dimLabels.demand, value: candidate.confidence_demand != null ? Number(candidate.confidence_demand) : null },
+    { key: 'margin', label: dimLabels.margin, value: candidate.confidence_margin != null ? Number(candidate.confidence_margin) : null },
+    { key: 'creative_fit', label: dimLabels.creative_fit, value: candidate.confidence_creative_fit != null ? Number(candidate.confidence_creative_fit) : null },
+    { key: 'action', label: dimLabels.action, value: confidence },
   ];
 
   return (
@@ -804,7 +823,17 @@ function RecommendationCard({
   );
 }
 
-function BacktestCard({ data }: { data: any }) {
+function BacktestCard({
+  data,
+  labels,
+}: {
+  data: any;
+  labels: {
+    heroPrecision: string;
+    dogPrecision: string;
+    carryoverPrecision: string;
+  };
+}) {
   return (
     <div className="bg-white rounded-[20px] p-8">
       <p className="text-[12px] text-carbon/50 mb-5">
@@ -812,9 +841,9 @@ function BacktestCard({ data }: { data: any }) {
         {' · '} Tested on <span className="font-mono text-carbon">{data.test_season_tag}</span>
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-        <BacktestMetric label="Hero precision" value={data.precision_heroes} />
-        <BacktestMetric label="Dog precision" value={data.precision_dogs} />
-        <BacktestMetric label="Carryover precision" value={data.precision_carryover} />
+        <BacktestMetric label={labels.heroPrecision} value={data.precision_heroes} />
+        <BacktestMetric label={labels.dogPrecision} value={data.precision_dogs} />
+        <BacktestMetric label={labels.carryoverPrecision} value={data.precision_carryover} />
         <BacktestMetric label="Return-trap catch" value={data.return_trap_catch_rate} />
       </div>
       {data.scorecard_summary?.skipped && (

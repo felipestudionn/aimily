@@ -4402,6 +4402,18 @@ export const fr: Dictionary = {
         heroPrecision: 'Précision heroes',
         dogPrecision: 'Précision dogs',
         carryoverPrecision: 'Précision carryover',
+        skus: 'SKU',
+        revenue: 'Revenus',
+        margin: 'Marge',
+        allocatedSummary: '{n} SKU alloués · dépense €{spend}',
+      },
+      dims: {
+        data: 'Données',
+        identity: 'Identité',
+        demand: 'Demande',
+        margin: 'Marge',
+        creative_fit: 'Adéquation créative',
+        action: 'Action',
       },
     },
     archetypes: {

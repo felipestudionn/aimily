@@ -4287,6 +4287,18 @@ export const no: Dictionary = {
         heroPrecision: 'Heroes-presisjon',
         dogPrecision: 'Dogs-presisjon',
         carryoverPrecision: 'Carryover-presisjon',
+        skus: 'SKU-er',
+        revenue: 'Inntekt',
+        margin: 'Margin',
+        allocatedSummary: '{n} SKU-er allokert · utgift €{spend}',
+      },
+      dims: {
+        data: 'Data',
+        identity: 'Identitet',
+        demand: 'Etterspørsel',
+        margin: 'Margin',
+        creative_fit: 'Kreativ passform',
+        action: 'Handling',
       },
     },
     archetypes: {

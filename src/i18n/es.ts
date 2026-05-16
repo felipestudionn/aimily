@@ -4495,6 +4495,18 @@ export const es: Dictionary = {
         heroPrecision: 'Precisión heroes',
         dogPrecision: 'Precisión dogs',
         carryoverPrecision: 'Precisión carryover',
+        skus: 'SKUs',
+        revenue: 'Ingresos',
+        margin: 'Margen',
+        allocatedSummary: '{n} SKUs asignados · gasto €{spend}',
+      },
+      dims: {
+        data: 'Datos',
+        identity: 'Identidad',
+        demand: 'Demanda',
+        margin: 'Margen',
+        creative_fit: 'Ajuste creativo',
+        action: 'Acción',
       },
     },
     archetypes: {

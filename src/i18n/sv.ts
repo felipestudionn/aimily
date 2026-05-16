@@ -4287,6 +4287,18 @@ export const sv: Dictionary = {
         heroPrecision: 'Heroes-precision',
         dogPrecision: 'Dogs-precision',
         carryoverPrecision: 'Carryover-precision',
+        skus: 'SKUs',
+        revenue: 'Intäkter',
+        margin: 'Marginal',
+        allocatedSummary: '{n} SKUs allokerade · utgift €{spend}',
+      },
+      dims: {
+        data: 'Data',
+        identity: 'Identitet',
+        demand: 'Efterfrågan',
+        margin: 'Marginal',
+        creative_fit: 'Kreativ passform',
+        action: 'Åtgärd',
       },
     },
     archetypes: {
