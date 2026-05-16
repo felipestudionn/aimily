@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation, type Dictionary } from '@/i18n';
 import {
   ArrowLeft,
   ArrowRight,
@@ -80,13 +81,17 @@ interface UITrend extends StrategyTrend {
   origin: 'market' | 'manual' | 'moodboard';
 }
 
-const DIMENSION_META: Record<StrategyTrendDimension, { label: string; description: string; addLabel: string }> = {
-  silhouette: { label: 'Siluetas', description: 'Cortes y formas a considerar.', addLabel: 'Añadir silueta' },
-  pattern: { label: 'Estampados', description: 'Patrones y técnicas de print.', addLabel: 'Añadir estampado' },
-  color: { label: 'Color', description: 'Paleta que adoptarás.', addLabel: 'Añadir color' },
-  material: { label: 'Materiales', description: 'Tejidos y construcciones.', addLabel: 'Añadir material' },
-  reference_brand: { label: 'Marcas a vigilar', description: 'Brands que marcan el ritmo.', addLabel: 'Añadir marca' },
-};
+function buildDimensionMeta(
+  t: Dictionary
+): Record<StrategyTrendDimension, { label: string; description: string; addLabel: string }> {
+  return {
+    silhouette: t.strategy.creative.dimensions.silhouette,
+    pattern: t.strategy.creative.dimensions.pattern,
+    color: t.strategy.creative.dimensions.color,
+    material: t.strategy.creative.dimensions.material,
+    reference_brand: t.strategy.creative.dimensions.reference_brand,
+  };
+}
 
 const DIMENSION_ORDER: StrategyTrendDimension[] = [
   'silhouette',
@@ -98,6 +103,9 @@ const DIMENSION_ORDER: StrategyTrendDimension[] = [
 
 export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlocked, onSaved }: Props) {
   const router = useRouter();
+  const t = useTranslation();
+  const tc = t.strategy.creative;
+  const DIMENSION_META = useMemo(() => buildDimensionMeta(t), [t]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const FILE_INPUT_ID = 'strategy-moodboard-file-input';
 
@@ -252,7 +260,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     const newUrls: string[] = [];
     const failed: string[] = [];
     for (let i = 0; i < files.length; i++) {
-      setUploadProgress(`Subiendo ${i + 1}/${files.length}…`);
+      setUploadProgress(tc.uploadingProgress.replace('{i}', String(i + 1)).replace('{n}', String(files.length)));
       const file = files[i];
       try {
         const reader = new FileReader();
@@ -340,7 +348,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
       setBoards(boardsData.items || []);
       setPinterestStep('boards');
     } catch {
-      setPinterestError('Failed to connect to Pinterest');
+      setPinterestError(tc.pinterestErrorConnect);
     }
     setPinterestLoading(false);
   };
@@ -379,7 +387,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
       setSelectedPins(new Set());
       setPinterestStep('pins');
     } catch {
-      setPinterestError('No se pudieron cargar los pins de este tablero');
+      setPinterestError(tc.pinterestErrorLoad);
     }
     setPinterestLoading(false);
   };
@@ -441,7 +449,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
     if (images.length === 0 || analyzing) return;
     const key = images.join('|');
     if (key === analyzedKey) {
-      setMoodboardAnalyzeMsg('Esas imágenes ya fueron analizadas.');
+      setMoodboardAnalyzeMsg(tc.alreadyAnalyzed);
       return;
     }
     setAnalyzing(true);
@@ -478,7 +486,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           origin: 'moodboard',
           dimension: 'silhouette',
           title,
-          product_spec: spec || 'Detectado en tu moodboard.',
+          product_spec: spec || tc.detectedInMoodboard,
           reference_brands: [],
         });
       }
@@ -489,7 +497,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           origin: 'moodboard',
           dimension: 'pattern',
           title,
-          product_spec: spec || 'Detectado en tu moodboard.',
+          product_spec: spec || tc.detectedInMoodboard,
           reference_brands: [],
         });
       }
@@ -500,7 +508,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           origin: 'moodboard',
           dimension: 'material',
           title,
-          product_spec: spec || 'Detectado en tu moodboard.',
+          product_spec: spec || tc.detectedInMoodboard,
           reference_brands: [],
         });
       }
@@ -515,7 +523,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           origin: 'moodboard',
           dimension: 'color',
           title: beforeParen || c,
-          product_spec: afterDash || 'Detectado en tu moodboard.',
+          product_spec: afterDash || tc.detectedInMoodboard,
           reference_brands: [],
           ...(hex ? { color_hex: hex, color_name: beforeParen || c } : { color_name: beforeParen || c }),
         });
@@ -527,7 +535,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           origin: 'moodboard',
           dimension: 'reference_brand',
           title,
-          product_spec: spec || 'Detectada en tu moodboard.',
+          product_spec: spec || tc.detectedInMoodboard,
           reference_brands: [title],
         });
       }
@@ -541,11 +549,9 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
       // Felipe: el modelo a veces detecta marcas por adyacencia estilística
       // (e.g. Celine + Toteme + The Row aunque solo Celine esté literal en
       // las fotos). No auto-validar previene "Aimily se inventa marcas".
-      setMoodboardAnalyzeMsg(
-        `${added.length} pills detectados desde tu moodboard. Marca los que quieras validar.`
-      );
+      setMoodboardAnalyzeMsg(tc.pillsDetected.replace('{n}', String(added.length)));
     } catch (err) {
-      setMoodboardAnalyzeMsg(err instanceof Error ? err.message : 'No se pudo analizar el moodboard');
+      setMoodboardAnalyzeMsg(err instanceof Error ? err.message : tc.moodboardError);
     } finally {
       setAnalyzing(false);
     }
@@ -636,11 +642,10 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
       <section className="bg-white rounded-[20px] p-8 md:p-12">
         <header className="mb-6">
           <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-            Añadir contexto creativo
+            {tc.addContextTitle}
           </h2>
           <p className="text-[13px] text-carbon/50 mt-1">
-            Conecta Pinterest o sube imágenes antes de revisar las tendencias. Al analizar,
-            Aimily añade pills nuevos a las secciones de Market Trends.
+            {tc.addContextDescription}
           </p>
         </header>
 
@@ -682,7 +687,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 )}
               </div>
               <p className="text-[15px] font-medium text-carbon/75">
-                {pinterestLoading ? 'Conectando…' : 'Conectar Pinterest'}
+                {pinterestLoading ? tc.connecting : tc.connectPinterest}
               </p>
             </button>
 
@@ -706,7 +711,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 )}
               </div>
               <p className="text-[15px] font-medium text-carbon/75">
-                {uploading ? uploadProgress : 'Arrastra imágenes o haz click'}
+                {uploading ? uploadProgress : tc.dragOrClick}
               </p>
             </label>
           </div>
@@ -716,7 +721,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           <div className="bg-shade rounded-[16px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-                Elige un tablero
+                {tc.pickBoard}
               </p>
               <button type="button" onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70">
                 <X className="h-4 w-4" />
@@ -737,13 +742,13 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                       <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover rounded-[8px]" />
                     )}
                     <span className="text-[12px] font-medium text-carbon/80 truncate w-full">{board.name}</span>
-                    {board.pin_count != null && <span className="text-[11px] text-carbon/45">{board.pin_count} pins</span>}
+                    {board.pin_count != null && <span className="text-[11px] text-carbon/45">{tc.pinterestPinsCount.replace('{n}', String(board.pin_count))}</span>}
                   </button>
                 ))}
               </div>
             </div>
             {boards.length === 0 && !pinterestLoading && (
-              <p className="text-xs text-carbon/50 text-center py-4">No se encontraron tableros</p>
+              <p className="text-xs text-carbon/50 text-center py-4">{tc.pinterestEmptyBoards}</p>
             )}
           </div>
         )}
@@ -754,7 +759,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
               <div className="flex items-center gap-3">
                 <button type="button" onClick={() => setPinterestStep('boards')} className="text-xs text-carbon/50 hover:text-carbon/80">
                   <ArrowLeft className="h-3.5 w-3.5 inline mr-1" />
-                  Tableros
+                  {tc.boardsTab}
                 </button>
                 <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{selectedBoard?.name}</p>
               </div>
@@ -787,7 +792,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
             </div>
             {selectedPins.size > 0 && (
               <div className="flex items-center justify-between pt-2 border-t border-carbon/[0.1]">
-                <span className="text-xs text-carbon/60">{selectedPins.size} seleccionados</span>
+                <span className="text-xs text-carbon/60">{tc.pinsSelectedCount.replace('{n}', String(selectedPins.size))}</span>
                 <button
                   type="button"
                   onClick={handleImportPins}
@@ -795,12 +800,12 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                   className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-carbon text-white text-[13px] font-semibold hover:bg-carbon/90 disabled:opacity-50 transition-colors"
                 >
                   {importingPins ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                  {importingPins ? uploadProgress : `Importar ${selectedPins.size} pins`}
+                  {importingPins ? uploadProgress : tc.pinterestImport.replace('{n}', String(selectedPins.size))}
                 </button>
               </div>
             )}
             {pins.length === 0 && !pinterestLoading && (
-              <p className="text-xs text-carbon/50 text-center py-4">No se encontraron pins</p>
+              <p className="text-xs text-carbon/50 text-center py-4">{tc.pinterestEmptyPins}</p>
             )}
           </div>
         )}
@@ -817,7 +822,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                     type="button"
                     onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
                     className="absolute top-2 right-2 w-6 h-6 rounded-full bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Quitar imagen"
+                    aria-label={tc.removeImageAria}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -833,7 +838,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold hover:bg-carbon/90 disabled:opacity-50 transition-colors"
               >
                 {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                {analyzing ? 'Analizando moodboard…' : 'Analizar moodboard y añadir pills'}
+                {analyzing ? tc.analyzing : tc.analyzeMoodboard}
               </button>
               {moodboardAnalyzeMsg && (
                 <p className="text-[12px] text-carbon/55 italic">{moodboardAnalyzeMsg}</p>
@@ -850,7 +855,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                 <div className="w-10 h-10 rounded-full bg-carbon/[0.06] flex items-center justify-center">
                   {pinterestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4 text-carbon/50" />}
                 </div>
-                <p className="text-[13px] font-medium text-carbon/70">Conectar Pinterest</p>
+                <p className="text-[13px] font-medium text-carbon/70">{tc.connectPinterest}</p>
               </button>
 
               <label
@@ -867,7 +872,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 text-carbon/50" />}
                 </div>
                 <p className="text-[13px] font-medium text-carbon/70">
-                  {uploading ? uploadProgress : 'Añadir más'}
+                  {uploading ? uploadProgress : tc.addMore}
                 </p>
               </label>
             </div>
@@ -880,11 +885,10 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         <div className="flex items-baseline justify-between mb-6">
           <div>
             <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-              Market trends
+              {tc.marketTrendsHeading}
             </h2>
             <p className="text-[13px] text-carbon/50 mt-1">
-              Aimily ya propuso tendencias relevantes para tu producto. Selecciona las que
-              quieres adoptar — añade las tuyas con "+" en cada sección.
+              {tc.marketTrendsSubheading}
             </p>
           </div>
           <button
@@ -894,7 +898,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/70 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors shrink-0"
           >
             {trendsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            Refrescar
+            {tc.refresh}
           </button>
         </div>
 
@@ -907,7 +911,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
         {trendsLoading && trends.length === 0 && (
           <div className="flex items-center justify-center gap-2 py-16 text-carbon/45">
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-[13px]">Aimily está leyendo el mercado…</span>
+            <span className="text-[13px]">{tc.readingMarket}</span>
           </div>
         )}
 
@@ -947,6 +951,13 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                       setBrands={setManualBrands}
                       onSubmit={submitManual}
                       onCancel={cancelManual}
+                      labels={{
+                        title: tc.manualTitleLabel,
+                        spec: tc.manualSpecLabel,
+                        brand: tc.manualBrandLabel,
+                        save: tc.manualSave,
+                        cancel: tc.manualCancel,
+                      }}
                     />
                   ) : (
                     <button
@@ -961,7 +972,7 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
                         {meta.addLabel}
                       </p>
                       <p className="text-[11px] text-carbon/40 mt-1">
-                        Manual — la añades tú
+                        {tc.manualByYou}
                       </p>
                     </button>
                   )}
@@ -996,10 +1007,10 @@ export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlo
           className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[14px] font-semibold hover:bg-carbon/90 disabled:opacity-40 transition-colors"
         >
           {confirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-          Validar dirección creativa y continuar
+          {tc.validateAndContinue}
         </button>
         <p className="text-[12px] text-carbon/45">
-          {totalSelected} pills seleccionadas · {images.length} imágenes
+          {tc.summaryPillsImages.replace('{n}', String(totalSelected)).replace('{count}', String(images.length))}
         </p>
       </div>
     </div>
@@ -1118,6 +1129,7 @@ function ManualAddForm({
   setBrands,
   onSubmit,
   onCancel,
+  labels,
 }: {
   label: string;
   isColor: boolean;
@@ -1131,6 +1143,13 @@ function ManualAddForm({
   setBrands: (v: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
+  labels: {
+    title: string;
+    spec: string;
+    brand: string;
+    save: string;
+    cancel: string;
+  };
 }) {
   return (
     <div className="bg-white rounded-[16px] p-4 ring-2 ring-carbon flex flex-col gap-2 min-h-[160px]">
@@ -1140,7 +1159,7 @@ function ManualAddForm({
           type="button"
           onClick={onCancel}
           className="text-carbon/40 hover:text-carbon/70"
-          aria-label="Cancelar"
+          aria-label={labels.cancel}
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -1150,7 +1169,7 @@ function ManualAddForm({
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Título"
+        placeholder={labels.title}
         className="w-full px-2.5 py-1.5 text-[13px] text-carbon bg-carbon/[0.03] rounded-[8px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none placeholder:text-carbon/30"
         autoFocus
       />
@@ -1169,7 +1188,7 @@ function ManualAddForm({
         value={spec}
         onChange={(e) => setSpec(e.target.value)}
         rows={2}
-        placeholder="Descripción rápida (opcional)"
+        placeholder={labels.spec}
         className="w-full px-2.5 py-1.5 text-[12px] text-carbon bg-carbon/[0.03] rounded-[8px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none placeholder:text-carbon/30 resize-none"
       />
 
@@ -1177,7 +1196,7 @@ function ManualAddForm({
         type="text"
         value={brands}
         onChange={(e) => setBrands(e.target.value)}
-        placeholder="Marcas (separadas por coma, opcional)"
+        placeholder={labels.brand}
         className="w-full px-2.5 py-1.5 text-[12px] text-carbon bg-carbon/[0.03] rounded-[8px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none placeholder:text-carbon/30"
       />
 
@@ -1188,7 +1207,7 @@ function ManualAddForm({
         className="mt-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 disabled:opacity-40 transition-colors"
       >
         <Plus className="h-3 w-3" />
-        Añadir
+        {labels.save}
       </button>
     </div>
   );
