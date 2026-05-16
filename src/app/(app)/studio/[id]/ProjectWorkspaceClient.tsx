@@ -2601,7 +2601,6 @@ function OutputLightbox({
                       <SegmentedPill<'5' | '8' | '10' | '15'>
                         options={[
                           { id: '5', label: '5s' },
-                          { id: '8', label: '8s' },
                           { id: '10', label: '10s' },
                           { id: '15', label: '15s' },
                         ]}
