@@ -180,6 +180,12 @@ export default async function DecisionPackPage({ params }: PageProps) {
         >
           ← Back to run
         </Link>
+        <Link
+          href={`/strategy/${tenant.slug}/runs/${run.id}/pdf-view`}
+          className="text-[12px] text-white bg-carbon hover:bg-carbon/90 px-3 py-1 rounded-full"
+        >
+          PDF · verdicts por SKU →
+        </Link>
         <DecisionPackPrintTrigger />
       </div>
 
