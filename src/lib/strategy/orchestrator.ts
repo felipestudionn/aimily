@@ -192,6 +192,9 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     thresholds,
     reverse_logistics_cost_per_unit: reverseLogisticsCost,
     observation_date: new Date().toISOString().slice(0, 10),
+    // F.2 · Brief context for creative_fit computation.
+    brief_family_pivot: (brief?.family_pivot as Record<string, number>) || undefined,
+    brief_color_story: (brief?.color_story as string[]) || undefined,
   };
 
   const familyBaselines = buildFamilyBaselines(inputs);

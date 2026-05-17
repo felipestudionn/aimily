@@ -58,6 +58,12 @@ export interface SkuVerdictInput {
   /** Operational metrics needed for the rotation-based quantity math. */
   velocity_7d: number | null;
   velocity_d1: number | null;
+  /** B.6 · Stockout-adjusted 7d velocity (= observed × correction factor
+   *  accounting for days the SKU was stocked out). Preferred over raw
+   *  velocity_7d in replenish math — heroes that ran out get bought
+   *  enough next time around. Null when no stockout-suppression data
+   *  available (in which case we fall back to observed velocity_7d). */
+  velocity_stockout_adjusted_7d: number | null;
   stores_active: number | null;
   stores_with_stock: number | null;
   stock_total: number | null;
@@ -109,6 +115,43 @@ export interface SkuVerdict {
  *  sana"). Buyers can override per SKU in the drawer. */
 export const DEFAULT_TARGET_ROTATION_DAYS = 4;
 
+/** B.3 · Per-family rotation overrides. The 4-day default is fast-fashion
+ *  fluido tops/blouses; tailoring/outerwear/decay-stage SKUs rotate slower.
+ *  Lookup is by family_code prefix (Zara coding). Retailer profiles override
+ *  this map at runtime — see the retailer-agnostic framework doc. */
+export const FAMILY_ROTATION_OVERRIDES_ZARA: Record<string, number> = {
+  // Fluidos (tops/blouses/dresses) → 4 days (default)
+  'W.A FLUIDOS': 4,
+  // Sastrería (tailoring) → 10 days
+  'W.A.SASTRE': 10,
+  // Capsule "Familias" / "Editions" → 14 days
+  'W.E FAMILIAS': 14,
+  // Coll. Denim → 7 days
+  'W.COLL D': 7,
+};
+
+/** Resolve target_rotation_days for a SKU given its family_code, using the
+ *  retailer's override map and falling back to the global default. Returns
+ *  the longest matching prefix's value (so "W.A.SASTRE CORTO" matches the
+ *  "W.A.SASTRE" override even though the suffix differs). */
+export function resolveTargetRotationDays(
+  familyCode: string | null,
+  overrides: Record<string, number> = FAMILY_ROTATION_OVERRIDES_ZARA,
+  fallback: number = DEFAULT_TARGET_ROTATION_DAYS
+): number {
+  if (!familyCode) return fallback;
+  const upper = familyCode.toUpperCase();
+  let best: { prefix: string; days: number } | null = null;
+  for (const [prefix, days] of Object.entries(overrides)) {
+    if (upper.startsWith(prefix.toUpperCase())) {
+      if (!best || prefix.length > best.prefix.length) {
+        best = { prefix, days };
+      }
+    }
+  }
+  return best ? best.days : fallback;
+}
+
 /** Map a recommend.ts action_type to our 7-verb verdict vocabulary.
  *  Returns null for engine actions that don't fit at SKU scope
  *  (new_sku_proposal, family_extension, tension_flag, recolor at lineage
@@ -139,35 +182,60 @@ function mapActionType(action: string): SkuVerdictAction | null {
  * Compute target buy units to hit the requested rotation.
  *
  * Math:
- *   velocity_per_day = velocity_d1 (preferred) || velocity_7d / 7
- *   target_units     = velocity_per_day × target_rotation_days
- *   gap              = max(0, target_units − (stock_total + pipeline_total))
+ *   velocity_per_day = velocity_stockout_adjusted_7d / 7    (B.6 — backed out from observed)
+ *                   || velocity_7d / 7                       (B.2 — 7d/7 is more stable than v_d1)
+ *                   || velocity_d1                           (last resort)
+ *   coverage_days   = target_rotation_days + lead_time_days  (B.5 — gate by lead time)
+ *   target_units    = velocity_per_day × coverage_days
+ *   currentStock    = pipeline_total                          (B.4 — pipeline already contains store+warehouse)
+ *   gap             = max(0, target_units − currentStock)
  *
- * IMPORTANT: velocity_7d from Zara RNK is the AGGREGATE units across all
- * stores over the 7-day window — it is NOT a per-store rate. Do NOT
- * multiply by stores_with_stock; that produces absurd 7-million-unit
- * recommendations on top SKUs.
+ * IMPORTANT: pipeline_total from Zara RNK already includes stock_store +
+ * stock_warehouse + stock_in_transit + stock_pending (verified 48/48 SKUs
+ * in dogfood corpus 2026-05-17). Do NOT add stock_total separately — that
+ * double-counts the on-hand inventory.
+ *
+ * velocity_7d from Zara RNK is the AGGREGATE units across all stores over
+ * the 7-day window — NOT a per-store rate. Do NOT multiply by
+ * stores_with_stock.
  *
  * Returns null for units when no velocity data is available.
  */
 export function computeReplenishUnits(
   input: Pick<
     SkuVerdictInput,
-    'velocity_7d' | 'velocity_d1' | 'stores_with_stock' | 'stock_total' | 'pipeline_total'
+    'velocity_7d' | 'velocity_d1' | 'velocity_stockout_adjusted_7d'
+      | 'stores_with_stock' | 'stock_total' | 'pipeline_total'
   >,
-  targetRotationDays: number
+  targetRotationDays: number,
+  leadTimeDays: number = 0
 ): { recommended_units: number | null; current_stock_days: number | null } {
+  // B.6: prefer stockout-adjusted velocity when available — heroes that ran
+  // out are systematically under-bought if we use observed only.
+  // B.2: 7d/7 is preferred over v_d1 because v_d1 alone is too volatile
+  // (Mondays vs Saturdays produce 50%+ swings; corpus had SKUs with v_d1=3
+  // and v_7d=1216 producing 19,726-day stock-cover artifacts).
   const velocityPerDay =
-    input.velocity_d1 != null && input.velocity_d1 > 0
-      ? input.velocity_d1
+    input.velocity_stockout_adjusted_7d != null && input.velocity_stockout_adjusted_7d > 0
+      ? input.velocity_stockout_adjusted_7d / 7
       : input.velocity_7d != null && input.velocity_7d > 0
       ? input.velocity_7d / 7
+      : input.velocity_d1 != null && input.velocity_d1 > 0
+      ? input.velocity_d1
       : null;
   if (velocityPerDay == null) {
     return { recommended_units: null, current_stock_days: null };
   }
-  const currentStock = (input.stock_total ?? 0) + (input.pipeline_total ?? 0);
-  const targetUnits = velocityPerDay * targetRotationDays;
+  // B.4: pipeline_total IS the total committed inventory (store + warehouse
+  // + in_transit + pending). Falling back to stock_total only when pipeline
+  // is missing (other retailers may report differently — see retailer
+  // profile semantics in the framework doc).
+  const currentStock = input.pipeline_total ?? input.stock_total ?? 0;
+  // B.5: coverage target is rotation + lead-time. A SKU with 9 days of
+  // stock and 14-day lead-time needs replenish NOW even if rotation says
+  // 4d is fine — by the time the new units arrive, current stock is gone.
+  const coverageDays = targetRotationDays + Math.max(0, leadTimeDays);
+  const targetUnits = velocityPerDay * coverageDays;
   const gap = Math.max(0, Math.round(targetUnits - currentStock));
   const currentStockDays = velocityPerDay > 0 ? currentStock / velocityPerDay : null;
   return {
@@ -185,7 +253,8 @@ function buildVerdictItem(
   candidate: RecommendationCandidate,
   input: SkuVerdictInput,
   targetRotationDays: number,
-  identity: { product_name: string | null; family_code: string | null; model_ref: string | null }
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null },
+  leadTimeDays: number = 0
 ): SkuVerdictItem | null {
   const action = mapActionType(candidate.action_type);
   if (!action) return null;
@@ -195,7 +264,7 @@ function buildVerdictItem(
   // before acting", etc. Surfacing a number on those confuses the buyer.
   const carry = shouldCarryUnits(action);
   const { recommended_units, current_stock_days } = carry
-    ? computeReplenishUnits(input, targetRotationDays)
+    ? computeReplenishUnits(input, targetRotationDays, leadTimeDays)
     : { recommended_units: null, current_stock_days: null };
 
   const evidence = (candidate.evidence as Record<string, unknown>) ?? {};
@@ -253,12 +322,13 @@ export function resolveSkuVerdict(
     product_name: null,
     family_code: null,
     model_ref: null,
-  }
+  },
+  leadTimeDays: number = 0
 ): SkuVerdict {
   // Build items for every candidate that maps to a SKU-scope action.
   const itemsByAction = new Map<SkuVerdictAction, SkuVerdictItem>();
   for (const c of input.candidates) {
-    const item = buildVerdictItem(c, input, targetRotationDays, identity);
+    const item = buildVerdictItem(c, input, targetRotationDays, identity, leadTimeDays);
     if (!item) continue;
     const existing = itemsByAction.get(item.action);
     if (!existing || item.confidence > existing.confidence) {
@@ -276,7 +346,7 @@ export function resolveSkuVerdict(
 
   // Diagnostic: current stock days at the SKU's velocity. Same number
   // for the whole SKU (independent of which actions apply).
-  const { current_stock_days } = computeReplenishUnits(input, targetRotationDays);
+  const { current_stock_days } = computeReplenishUnits(input, targetRotationDays, leadTimeDays);
 
   if (actions.length === 0) {
     // No usable signal — emit a hold so the UI always has something to
@@ -363,13 +433,72 @@ export function appendAmplifyWinnerAction(
     /** Color name of THIS SKU. Excluded from the brief-color suggestions
      *  since proposing the same colour the SKU already sells in is moot. */
     current_color: string | null;
+    /** A.5 · Price-anchor for operational rationale. The buyer briefs the
+     *  design team with a price slot ("seguir a €29.95" vs "subir a €34.95"). */
+    pvp?: number | null;
+    /** A.5 · Sibling model_refs that ALSO fire amplify_winner in this run.
+     *  Surfaces "el 250 también está en top 10" type context so the buyer
+     *  understands which colourways are co-validated. */
+    sibling_hero_model_refs?: string[];
   }
 ): SkuVerdict {
-  // Block ONLY when returns are catastrophic — Zara winners can hover at
-  // 25-30% returns and still be heroes. Below 0.35 we still propose
-  // amplification (the buyer can downgrade via override). The rationale
-  // surfaces the returns_pct so they see the risk.
-  if ((signals.returns_pct ?? 0) > 0.35) return verdict;
+  // A.4.b · Returns hard block (>35%). Used to silently skip — now we
+  // annotate the verdict so the buyer sees "we would have called this a
+  // hero but returns are eating it; review fit before considering for
+  // amplification". Implemented by appending an `investigate` flag in
+  // the existing verdict stack when there is no other action present.
+  if ((signals.returns_pct ?? 0) > 0.35) {
+    // If verdict already carries any signal, we let the existing kill /
+    // markdown / investigate speak for itself; we just don't promote to
+    // amplify. If verdict is empty, surface "investigate" so the SKU
+    // isn't silently un-action'd.
+    const wouldHaveFired =
+      (signals.pdf_rank != null && signals.pdf_rank <= 10) ||
+      ((signals.demand_score ?? 0) >= 0.7 && (signals.sell_through_bought_pct ?? 0) >= 0.5) ||
+      (signals.velocity_rank != null && signals.velocity_rank <= 10) ||
+      (signals.family_velocity_ratio ?? 0) >= 2.0;
+    if (wouldHaveFired && !verdict.actions.some((a) => a.action === 'investigate')) {
+      const newItem: SkuVerdictItem = {
+        action: 'investigate',
+        confidence: 0.7,
+        rationale:
+          `Mirror señal de hero (top RNK / velocidad / familia) PERO devoluciones al ${Math.round((signals.returns_pct ?? 0) * 100)}% — economía unitaria comprometida. ` +
+          `Revisar fit / tech-pack / calidad antes de considerar amplificar a próxima temporada. ` +
+          `Si la devolución es estructural (fit), kill; si es de talla específica, ajustar grading.`,
+        recommended_units: null,
+        confidence_breakdown: {
+          data_completeness: null,
+          identity: null,
+          demand: signals.demand_score ?? null,
+          margin: null,
+          creative_fit: null,
+        },
+        evidence: {
+          returns_pct: signals.returns_pct,
+          hero_signals_present: true,
+          hero_blocked_by_returns: true,
+          pdf_rank: signals.pdf_rank,
+          velocity_rank: signals.velocity_rank,
+          family_velocity_ratio: signals.family_velocity_ratio,
+        },
+        counter_evidence: {},
+        assumptions: [
+          'Amplify suppressed: returns_pct > 0.35. Investigate ANTES de cualquier replicación.',
+        ],
+        data_sufficiency_warning: null,
+      };
+      const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+      for (const a of verdict.actions) map.set(a.action, a);
+      map.set('investigate', newItem);
+      const reordered: SkuVerdictItem[] = [];
+      for (const a of ACTION_DISPLAY_ORDER) {
+        const item = map.get(a);
+        if (item) reordered.push(item);
+      }
+      return { ...verdict, actions: reordered };
+    }
+    return verdict;
+  }
 
   // Four independent triggers for hero detection. Any one fires.
   const pdfTopN =
@@ -385,6 +514,12 @@ export function appendAmplifyWinnerAction(
   if (!pdfTopN && !scoreBased && !rankBased && !familyBased) return verdict;
   // Skip if already present.
   if (verdict.actions.some((a) => a.action === 'amplify_winner')) return verdict;
+
+  // A.2 · Bifurcate the rationale based on trigger composition.
+  // CONFIRMED HERO: pdfTopN + at least one of {vel/score/family} also fires.
+  // ZARA-FLAG ONLY: pdfTopN alone (no corroborating signal from this run).
+  const corroboratingFired = scoreBased || rankBased || familyBased;
+  const isZaraFlagOnly = pdfTopN && !corroboratingFired;
 
   // Rationale composition: lead with the strongest visible signal.
   const parts: string[] = [];
@@ -410,29 +545,64 @@ export function appendAmplifyWinnerAction(
       `sell-through ${Math.round((signals.sell_through_bought_pct ?? 0) * 100)}%`
     );
   }
-  const head = parts.length > 0
+  // A.2 · Two rationale branches.
+  // - CONFIRMED hero (pdf + at least one corroborating signal, OR no pdf
+  //   but vel/score/family confirms): full "design 2-3 secuelas" rationale.
+  // - ZARA-FLAG-ONLY (pdf_top10 is the only trigger, run-internal signals
+  //   don't confirm): scope down to "Zara curated this — investigate why,
+  //   don't reflexively replicate".
+  const headConfirmed = parts.length > 0
     ? `Hero confirmado: ${parts.join(' · ')}.`
     : 'Hero confirmado.';
+  const headZaraFlag = signals.pdf_rank != null
+    ? `Zara lo posicionó en top ${signals.pdf_rank} del RNK pero las métricas internas del run no lo confirman como hero ` +
+      `(velocidad ${signals.velocity_7d ?? '?'} uds/7d, ` +
+      `sell-through ${Math.round((signals.sell_through_bought_pct ?? 0) * 100)}%).`
+    : 'Zara lo destacó en el RNK pero las métricas internas no lo confirman.';
 
   // Surface concrete colours from the brief's color_story so the
   // recommendation is actionable (Felipe: "proponer EL color, no solo
-  // identificar el ganador"). Skip the SKU's own colour.
+  // identificar el ganador"). Skip the SKU's own colour. Only for
+  // confirmed heroes — Zara-flag SKUs shouldn't be amplified by color.
   const currentColorLc = (signals.current_color ?? '').trim().toLowerCase();
   const candidateColors = (signals.brief_colors ?? [])
     .map((c) => (c ?? '').trim())
     .filter(Boolean)
     .filter((c) => c.toLowerCase() !== currentColorLc);
   const briefColorSentence =
-    candidateColors.length > 0
+    !isZaraFlagOnly && candidateColors.length > 0
       ? ` Probar también la misma silueta en colores del moodboard: ${candidateColors
           .slice(0, 4)
           .join(', ')}.`
       : '';
 
-  const rationale = `${head} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.${briefColorSentence}`;
+  // A.5 · Operational anchors: pvp price slot + sibling-hero references.
+  // Lifts rationale from "vague" toward "specific brief to design team".
+  const pvpAnchor = signals.pvp != null && signals.pvp > 0
+    ? ` Mantener el slot de precio €${Number(signals.pvp).toFixed(2)} como ancla.`
+    : '';
+  const siblingHeroes = (signals.sibling_hero_model_refs ?? []).filter(Boolean);
+  const siblingAnchor = siblingHeroes.length > 0
+    ? ` Co-validado por el lineage: ${siblingHeroes.slice(0, 3).join(', ')} también dispara amplify.`
+    : '';
 
-  // Confidence: highest of the four signals (capped at 0.95).
-  const confScore = (signals.demand_score ?? 0) >= 0.7 ? 0.85 : 0;
+  const rationale = isZaraFlagOnly
+    ? `${headZaraFlag} Antes de pedir secuelas, investigar contexto: ¿lanzamiento de cápsula, prioridad merchandiser, newness reciente? Si las métricas mejoran al cabo de 2 semanas, re-evaluar; si se mantienen planas, no replicar.${pvpAnchor}${siblingAnchor}`
+    : `${headConfirmed} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.${briefColorSentence}${pvpAnchor}${siblingAnchor}`;
+
+  // Confidence: highest of the four signals (capped at 0.95, no floor).
+  // A.6 · Floor 0.70 was inflating weak single-trigger fires — a SKU
+  // surviving only by pdf_top10 at rank 9 used to read 77% confidence
+  // even when velocity/sell-through said "not a hero". Now: weak fires
+  // read 0.55-0.65 honestly, strong multi-trigger fires read 0.85-0.95.
+  // scoreBased made proportional: was hard-coded 0.85 regardless of how
+  // strong demand × sell_through actually were.
+  const demand = signals.demand_score ?? 0;
+  const sellThrough = signals.sell_through_bought_pct ?? 0;
+  const confScore =
+    demand >= 0.7 && sellThrough >= 0.5
+      ? Math.min(0.95, 0.70 + ((demand - 0.7) / 0.3) * 0.125 + ((sellThrough - 0.5) / 0.5) * 0.125)
+      : 0;
   const confVelRank =
     signals.velocity_rank != null && signals.velocity_rank <= 10
       ? 0.92 - signals.velocity_rank * 0.02
@@ -445,10 +615,13 @@ export function appendAmplifyWinnerAction(
     (signals.family_velocity_ratio ?? 0) >= 2.0
       ? Math.min(0.95, 0.7 + (signals.family_velocity_ratio! - 2) * 0.1)
       : 0;
-  const confidence = Math.min(
+  const rawConfidence = Math.min(
     0.95,
-    Math.max(confScore, confVelRank, confPdfRank, confFamily, 0.7)
+    Math.max(confScore, confVelRank, confPdfRank, confFamily)
   );
+  // A.2 · Zara-flag-only fires cap at 0.60 — the source ranking IS signal,
+  // but without internal corroboration it's a curiosity flag, not a hero.
+  const confidence = isZaraFlagOnly ? Math.min(0.60, rawConfidence) : rawConfidence;
 
   const newItem: SkuVerdictItem = {
     action: 'amplify_winner',
@@ -503,6 +676,10 @@ export function appendAmplifyWinnerAction(
 export interface LineageColorWinner {
   color_name: string;
   color_code: string;
+  /** D.4 · Resolved hex (from strategy_taxonomies.code_to_hex). Null when
+   *  the taxonomy doesn't have a mapping; UI falls back to a neutral
+   *  swatch and surfaces a data-sufficiency warning. */
+  color_hex: string | null;
   confidence: number;
   rank: string;
   demand_score: number | null;
@@ -511,15 +688,30 @@ export interface LineageColorWinner {
 export function appendExtendColorsAction(
   verdict: SkuVerdict,
   winner: LineageColorWinner,
-  identity: { product_name: string | null; family_code: string | null; model_ref: string | null }
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null },
+  briefAdjacentColors: string[] = []
 ): SkuVerdict {
   // If extend_colors already in the stack, keep the higher-confidence one.
   const existing = verdict.actions.find((a) => a.action === 'extend_colors');
   if (existing && existing.confidence >= winner.confidence) return verdict;
 
+  // D.5 · Propose CONCRETE adjacent colors from the brief's color_story
+  // (when present). The old rationale said "extend toward adjacent tones"
+  // without naming any; now we list 1-3 brief tones (skipping the winner's
+  // own name) so the design team gets an operational shortlist.
+  const winnerLc = winner.color_name.trim().toLowerCase();
+  const adjacents = briefAdjacentColors
+    .map((c) => (c ?? '').trim())
+    .filter(Boolean)
+    .filter((c) => c.toLowerCase() !== winnerLc)
+    .slice(0, 3);
+  const adjacentClause = adjacents.length > 0
+    ? ` Considera extender la paleta a tonos adyacentes del moodboard: ${adjacents.join(', ')}. Mantén ${winner.color_name} como ancla.`
+    : ' Considera extender la paleta con tonos adyacentes para amplificar el winner.';
+
   const rationale =
     winner.rank === 'top'
-      ? `El color ${winner.color_name} es el ganador dentro de este lineage (${Math.round(winner.confidence * 100)}% confianza). Considera extender la paleta con tonos adyacentes para amplificar el winner.`
+      ? `El color ${winner.color_name} es el ganador dentro de este lineage (${Math.round(winner.confidence * 100)}% confianza).${adjacentClause}`
       : `Color ${winner.color_name} detectado como variante a evaluar dentro del lineage. Validar si extender o reasignar share de compra.`;
 
   const newItem: SkuVerdictItem = {
@@ -537,8 +729,10 @@ export function appendExtendColorsAction(
     evidence: {
       anchor_color_name: winner.color_name,
       anchor_color_code: winner.color_code,
+      anchor_color_hex: winner.color_hex,
       rank: winner.rank,
       lineage_family: identity.family_code ?? null,
+      proposed_adjacent_colors: adjacents,
     },
     counter_evidence: {},
     assumptions: [
@@ -551,6 +745,98 @@ export function appendExtendColorsAction(
   const map = new Map<SkuVerdictAction, SkuVerdictItem>();
   for (const a of verdict.actions) map.set(a.action, a);
   map.set('extend_colors', newItem);
+  const reordered: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = map.get(a);
+    if (item) reordered.push(item);
+  }
+  return { ...verdict, actions: reordered };
+}
+
+/**
+ * Append a synthetic `kill` action with color-scope semantics. Mirrors
+ * appendExtendColorsAction but for the loser colors within a lineage.
+ *
+ * C.5 (2026-05-17 audit) · Previously the engine emitted color-scope
+ * `kill` candidates (scope='color', rank='bottom') from
+ * generateColorWinnerCandidates, but the resolver had no appender for
+ * them — they sat orphaned in the DB and never reached the buyer's UI.
+ * This appender propagates each color-loser to every member SKU in the
+ * lineage, with rationale "drop this color from next season".
+ *
+ * To distinguish from a SKU-scope `kill`, the action evidence carries
+ * `scope_hint: 'color'` and the rationale phrases the recommendation as
+ * "retirar este color" not "matar este SKU".
+ */
+export interface LineageColorLoser {
+  color_name: string;
+  color_code: string;
+  /** D.4 · Resolved hex (from strategy_taxonomies.code_to_hex). */
+  color_hex: string | null;
+  confidence: number;
+  return_risk: number | null;
+  demand_score: number | null;
+  margin_score: number | null;
+}
+
+export function appendDropColorAction(
+  verdict: SkuVerdict,
+  loser: LineageColorLoser,
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null }
+): SkuVerdict {
+  // Don't override a SKU-scope kill — those are stronger signals (the
+  // entire SKU is being killed, not just one of its colorways).
+  const skuLevelKill = verdict.actions.find(
+    (a) => a.action === 'kill' && (a.evidence?.scope_hint as string | undefined) !== 'color'
+  );
+  if (skuLevelKill) return verdict;
+
+  const existing = verdict.actions.find(
+    (a) => a.action === 'kill' && (a.evidence?.scope_hint as string | undefined) === 'color'
+  );
+  if (existing && existing.confidence >= loser.confidence) return verdict;
+
+  const familyName = identity.family_code ?? 'esta familia';
+  const rationale =
+    `El color ${loser.color_name} es el de peor desempeño dentro del lineage ` +
+    `(confianza ${Math.round(loser.confidence * 100)}%, return-risk ${
+      loser.return_risk != null ? Math.round(loser.return_risk * 100) : '?'
+    }%). ` +
+    `Considera retirarlo de la próxima temporada en ${familyName} y rebalancear el share ` +
+    `hacia los colores supervivientes del mismo lineage.`;
+
+  const newItem: SkuVerdictItem = {
+    action: 'kill',
+    confidence: loser.confidence,
+    rationale,
+    recommended_units: null,
+    confidence_breakdown: {
+      data_completeness: null,
+      identity: null,
+      demand: loser.demand_score ?? null,
+      margin: loser.margin_score ?? null,
+      creative_fit: null,
+    },
+    evidence: {
+      scope_hint: 'color',
+      anchor_color_name: loser.color_name,
+      anchor_color_code: loser.color_code,
+      anchor_color_hex: loser.color_hex,
+      rank: 'bottom',
+      return_risk: loser.return_risk,
+      lineage_family: identity.family_code ?? null,
+    },
+    counter_evidence: {},
+    assumptions: [
+      'Recomendación al nivel de lineage: aplica al color, no al SKU completo. Si los otros colorways del modelo siguen sanos, mantén el modelo y retira solo este colorway.',
+    ],
+    data_sufficiency_warning: null,
+  };
+
+  // Reinsert with stable display order.
+  const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const a of verdict.actions) map.set(a.action, a);
+  map.set('kill', newItem);
   const reordered: SkuVerdictItem[] = [];
   for (const a of ACTION_DISPLAY_ORDER) {
     const item = map.get(a);

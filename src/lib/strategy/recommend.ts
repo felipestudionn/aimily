@@ -121,8 +121,15 @@ export function generateSkuCandidates(
       stores_active: input.stores_active,
       stores_with_stock: input.stores_with_stock,
       velocity_7d: input.velocity_7d,
+      // C.6 · Cap velocity_ratio displayed in evidence at 5.0. The raw
+      // ratio explodes to 100-500× on SKUs whose 8-14d window contains
+      // their initial activation (v_8_14d≈0). The classifier still uses
+      // the raw value internally for thresholding; the UI / rationale
+      // should never see "453.7×" — that destroys buyer trust.
       velocity_ratio:
-        input.velocity_8_14d > 0 ? input.velocity_7d / input.velocity_8_14d : null,
+        input.velocity_8_14d > 0
+          ? Math.min(5, input.velocity_7d / input.velocity_8_14d)
+          : null,
     };
 
     // Hero / Carryover candidate
@@ -157,7 +164,7 @@ export function generateSkuCandidates(
       });
     }
 
-    // Kill / Exit candidate
+    // Kill / Exit candidate (lifecycle-based)
     if (score.lifecycle_stage === 'exit') {
       out.push({
         scope: 'sku',
@@ -182,13 +189,55 @@ export function generateSkuCandidates(
       });
     }
 
-    // Markdown candidate
-    if (score.lifecycle_stage === 'decay' && (score.markdown_risk_score ?? 0) > 0.4) {
+    // C.4 · Margin-based kill gate — orthogonal to lifecycle.
+    // A SKU with negative effective_margin AND high returns is unit-loss
+    // economics: every shipped unit loses money even net of returns
+    // logistics. Senior buyer would call kill regardless of velocity or
+    // lifecycle (a high-velocity money-loser bleeds MORE, not less).
+    // This stacks with markdown_accelerate when the SKU also has stock
+    // to clear.
+    const isUnitLoss =
+      score.effective_margin != null &&
+      score.effective_margin < 0 &&
+      (input.returns_pct ?? 0) >= 0.30 &&
+      score.lifecycle_stage !== 'exit';  // don't double-fire on lifecycle-exit
+    if (isUnitLoss) {
+      out.push({
+        scope: 'sku',
+        scope_ref: input.product_fact_id,
+        action_type: 'kill',
+        proposed_magnitude: { reason: 'unit_economics_negative' },
+        evidence: { ...evidence, kill_trigger: 'margin_negative' },
+        counter_evidence: { velocity_currently: input.velocity_7d },
+        assumptions: [
+          ...assumptions,
+          'Unit economics turned negative after returns + reverse logistics. Killing the next-season buy AND clearing current stock via markdown is the right move; preserving for amplification would compound the loss.',
+        ],
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: 0.95,  // we have effective_margin computed
+        confidence_creative_fit: score.confidence_creative_fit,
+        confidence_action: 0.85,
+        data_sufficiency_warning: null,
+        narrative: null,
+      });
+    }
+
+    // Markdown candidate — C.4 also fires for ANY oversupplied SKU now
+    // (markdown_risk_score is computed regardless of lifecycle).
+    if ((score.markdown_risk_score ?? 0) > 0.4) {
+      // C.3 · Price-tier-aware discount cap. Fast-fashion (pvp <€40) can
+      // absorb 60% to move stuck stock; mid-market (€40-80) caps at 50%;
+      // premium (≥€80) caps at 40% to preserve brand price perception.
+      const pvp = Number(input.pvp ?? 30);
+      const tierCap = pvp < 40 ? 0.60 : pvp < 80 ? 0.50 : 0.40;
+      const discountPct = Math.min(tierCap, score.markdown_risk_score ?? 0.2);
       out.push({
         scope: 'sku',
         scope_ref: input.product_fact_id,
         action_type: 'markdown_accelerate',
-        proposed_magnitude: { discount_pct: Math.min(0.4, score.markdown_risk_score ?? 0.2) },
+        proposed_magnitude: { discount_pct: discountPct, price_tier_cap: tierCap, pvp_at_decision: pvp },
         evidence,
         counter_evidence: {
           carryover_potential:
@@ -207,7 +256,14 @@ export function generateSkuCandidates(
       });
     }
 
-    // Replenish candidate (stockout-suppressed climber)
+    // Replenish candidate (stockout-suppressed climber).
+    // B.7 · We do NOT compute the quantity here. The resolver's
+    // `computeReplenishUnits` is the single source of truth for buy units
+    // (uses the rotation + lead-time + stockout-adjusted velocity formula).
+    // The candidate's `proposed_magnitude.required_units` was a stale
+    // formula (velocity_7d × 4 weeks vs resolver's daily × rotation) and
+    // produced numbers ~7× larger than the resolver. Surface a flag only;
+    // let the resolver attach the actual units when building the verdict.
     const stockoutSuppressed =
       (score.stockout_risk_score ?? 0) > 0.3 && input.velocity_7d > 0;
     if (stockoutSuppressed) {
@@ -215,9 +271,7 @@ export function generateSkuCandidates(
         scope: 'sku',
         scope_ref: input.product_fact_id,
         action_type: 'replenish',
-        proposed_magnitude: {
-          required_units: Math.max(0, Math.round(input.velocity_7d * 4 - (input.pipeline_total ?? 0))),
-        },
+        proposed_magnitude: { stockout_diagnosis: true, units_computed_at_resolver: true },
         evidence: { ...evidence, stockout_diagnosis: true },
         counter_evidence: {},
         assumptions,
@@ -410,21 +464,44 @@ export function generateColorWinnerCandidates(
   for (const [lineageId, members] of Array.from(lineageSiblings.entries())) {
     if (members.length < 2) continue;
 
+    // D.2 · Additive, weighted, sell-through-aware ranking. The previous
+    // multiplicative `margin × demand − return_risk` gave noise when
+    // margin_score was near 0 across the corpus (degenerate to −return_risk).
+    // Additive form keeps all signals on the same 0-1 axis and explicitly
+    // rewards sell-through (the buyer's #1 indicator that demand exceeds
+    // supply at the chosen price/quantity).
+    //
+    // Weights: margin 0.40 · demand 0.30 · sell_through 0.20 · returns −0.10
+    // Tunable per archetype in v2 by reading archetype_id from constraint
+    // and rebalancing.
     const ranked = members
       .map((m) => ({ input: m, score: scoreByPid.get(m.product_fact_id) }))
       .filter((x) => x.score != null)
       .sort((a, b) => {
         const aRank =
-          (a.score!.margin_score ?? 0) * (a.score!.demand_score ?? 0) -
-          (a.score!.return_risk_score ?? 0);
+          0.40 * (a.score!.margin_score ?? 0) +
+          0.30 * (a.score!.demand_score ?? 0) +
+          0.20 * (a.input.sell_through_bought_pct ?? 0) -
+          0.10 * (a.score!.return_risk_score ?? 0);
         const bRank =
-          (b.score!.margin_score ?? 0) * (b.score!.demand_score ?? 0) -
-          (b.score!.return_risk_score ?? 0);
+          0.40 * (b.score!.margin_score ?? 0) +
+          0.30 * (b.score!.demand_score ?? 0) +
+          0.20 * (b.input.sell_through_bought_pct ?? 0) -
+          0.10 * (b.score!.return_risk_score ?? 0);
         return bRank - aRank;
       });
 
-    const winners = ranked.slice(0, thresholds.color_winner_top_n_per_lineage);
-    const losers = ranked.slice(-thresholds.color_winner_top_n_per_lineage);
+    // D.3 · Scale top_n by lineage size. A 9-member lineage gets 3 winners
+    // + 3 losers (signal density); a 2-member gets 1+1. Bounded by the
+    // threshold and never exceeds half the lineage so winners/losers don't
+    // overlap on small lineages.
+    const baseTopN = thresholds.color_winner_top_n_per_lineage;
+    const dynamicTopN = Math.max(
+      baseTopN,
+      Math.min(Math.floor(members.length / 3), Math.floor(members.length / 2))
+    );
+    const winners = ranked.slice(0, dynamicTopN);
+    const losers = ranked.slice(-dynamicTopN);
 
     for (const w of winners) {
       if (!w.input.color_ref) continue;

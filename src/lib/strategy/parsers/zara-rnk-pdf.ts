@@ -330,11 +330,60 @@ export async function parseZaraRnkPdf(
       ? records.reduce((a, r) => a + r.extraction_confidence, 0) / records.length
       : 0;
 
+  // Framework Guardrail #1 (retailer-agnostic skill) · Emit sanity-check
+  // warnings when ingested values fall outside expected retail ranges.
+  // These would have caught the 2026-05-17 markup_pct corruption (where
+  // 178% got persisted as 1.78% margin) before downstream classifiers
+  // saw it. Every parser across retailers must emit equivalent checks.
+  const sanityWarnings: string[] = [];
+  if (records.length > 0) {
+    const marginsBad = records.filter(
+      (r) => r.margin_pct_list != null && (r.margin_pct_list < 0.05 || r.margin_pct_list > 0.95)
+    ).length;
+    if (marginsBad / records.length > 0.10) {
+      sanityWarnings.push(
+        `Suspicious margin distribution: ${marginsBad}/${records.length} SKUs have margin_pct_list outside [0.05, 0.95]. Likely a markup/margin unit-conversion bug in the parser.`
+      );
+    }
+    const negativeCosts = records.filter(
+      (r) => r.cost_estimate != null && r.cost_estimate <= 0
+    ).length;
+    if (negativeCosts > 0) {
+      sanityWarnings.push(
+        `${negativeCosts} SKUs have cost_estimate ≤ 0. Likely pvp / markup misalignment.`
+      );
+    }
+    const costExceedsPvp = records.filter(
+      (r) => r.pvp != null && r.cost_estimate != null && r.cost_estimate >= r.pvp
+    ).length;
+    if (costExceedsPvp / records.length > 0.10) {
+      sanityWarnings.push(
+        `${costExceedsPvp}/${records.length} SKUs have cost_estimate ≥ pvp. Margin would be ≤ 0%. Almost certainly a unit-conversion bug.`
+      );
+    }
+    const pipelineLessThanOnHand = records.filter(
+      (r) =>
+        r.pipeline_total != null &&
+        r.stock_store != null &&
+        r.stock_warehouse != null &&
+        r.pipeline_total < (r.stock_store + r.stock_warehouse) - 1
+    ).length;
+    if (pipelineLessThanOnHand / records.length > 0.10) {
+      sanityWarnings.push(
+        `${pipelineLessThanOnHand}/${records.length} SKUs report pipeline_total < stock_store + stock_warehouse. ` +
+          `pipeline_total semantics may be "incoming only" instead of "total committed" — verify retailer profile.`
+      );
+    }
+  }
+
   return {
     parser_version: PARSER_VERSION,
     records,
     coverage_dimensions: coverage,
-    parser_warnings: Array.isArray(json.parser_warnings) ? json.parser_warnings : [],
+    parser_warnings: [
+      ...(Array.isArray(json.parser_warnings) ? json.parser_warnings : []),
+      ...sanityWarnings,
+    ],
     parse_confidence: avgConfidence,
   };
 }

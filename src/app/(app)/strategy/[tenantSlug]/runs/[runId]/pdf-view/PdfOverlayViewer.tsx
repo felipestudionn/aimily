@@ -142,20 +142,53 @@ function colorToHex(name: string): string | null {
   return null;
 }
 
-/** Extract the colour names a verdict-action wants to surface as swatches. */
-function actionColors(a: VerdictAction): string[] {
+// D.4 · Resolve a hex from an action's evidence first (backend-resolved
+// via strategy_taxonomies.code_to_hex), falling back to the local dict
+// when the taxonomy doesn't have a mapping. Removes the silent grey
+// fallback that hit 47% of corpus colors pre-fix.
+function resolveHex(
+  evidence: Record<string, unknown> | null | undefined,
+  nameFallback: string | null
+): string {
+  if (evidence) {
+    const hexFromBackend = evidence.anchor_color_hex;
+    if (typeof hexFromBackend === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(hexFromBackend)) {
+      return hexFromBackend;
+    }
+  }
+  if (nameFallback) {
+    const fromDict = colorToHex(nameFallback);
+    if (fromDict) return fromDict;
+  }
+  return '#cfcfcf';
+}
+
+/** Extract the colour names + resolved hex for an action's swatches.
+ *  D.4 · Returns paired (name, hex) so the renderer doesn't need to
+ *  re-resolve. Backend ships anchor_color_hex directly. */
+function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
   if (a.action === 'extend_colors') {
     const ev = a.evidence as Record<string, unknown>;
     const winner =
       typeof ev.anchor_color_name === 'string' ? (ev.anchor_color_name as string) : null;
-    return winner ? [winner] : [];
+    if (!winner) return [];
+    return [{ name: winner, hex: resolveHex(ev, winner) }];
+  }
+  if (a.action === 'kill') {
+    // C.5 · Color-scope kill carries scope_hint='color' and anchor_color_*.
+    const ev = a.evidence as Record<string, unknown>;
+    if (ev.scope_hint !== 'color') return [];
+    const loser =
+      typeof ev.anchor_color_name === 'string' ? (ev.anchor_color_name as string) : null;
+    if (!loser) return [];
+    return [{ name: loser, hex: resolveHex(ev, loser) }];
   }
   if (a.action === 'amplify_winner') {
     const ev = a.evidence as Record<string, unknown>;
     const proposed = Array.isArray(ev.proposed_brief_colors)
       ? (ev.proposed_brief_colors as string[])
       : [];
-    return proposed.filter(Boolean);
+    return proposed.filter(Boolean).map((n) => ({ name: n, hex: resolveHex(null, n) }));
   }
   return [];
 }
@@ -166,15 +199,44 @@ function actionColors(a: VerdictAction): string[] {
 // stock NOW (because it sells fast) cannot also be the one to under-buy
 // next season — those two signals are logically incompatible. Keep the
 // one with the highest confidence; the other was a noise candidate.
+//
+// G.2 · Preserve data_sufficiency_warning from a dropped `hold` by
+// copying it onto the surviving action so the buyer still sees the
+// "datos limitados" caveat.
+// G.3 · Annotate the surviving action when a contradiction is suppressed
+// so the buyer sees "1 verdict en conflicto suprimido" instead of nothing.
 function visibleActions(actions: VerdictAction[]): VerdictAction[] {
+  const droppedHold = actions.find(
+    (a) => a.action === 'hold' && a.data_sufficiency_warning
+  );
   let list = actions.filter((a) => a.action !== 'hold');
   if (list.length === 0) list = actions;
+
+  if (droppedHold && list.length > 0 && list[0]?.action !== 'hold') {
+    // Preserve the data_sufficiency_warning on the surviving top action.
+    const survivor = list[0];
+    if (!survivor.data_sufficiency_warning) {
+      list = [{ ...survivor, data_sufficiency_warning: droppedHold.data_sufficiency_warning }, ...list.slice(1)];
+    }
+  }
 
   const rep = list.find((a) => a.action === 'replenish');
   const down = list.find((a) => a.action === 'resize_down');
   if (rep && down) {
-    const loser = rep.confidence >= down.confidence ? 'resize_down' : 'replenish';
-    list = list.filter((a) => a.action !== loser);
+    const winnerAction = rep.confidence >= down.confidence ? rep : down;
+    const loserAction = rep.confidence >= down.confidence ? down : rep;
+    // G.3 · Mark the survivor so the UI can show a "1 verdict en conflicto"
+    // badge instead of silently dropping the loser.
+    const annotated = {
+      ...winnerAction,
+      evidence: {
+        ...(winnerAction.evidence ?? {}),
+        suppressed_conflicting_action: loserAction.action,
+        suppressed_conflicting_confidence: loserAction.confidence,
+      },
+    };
+    list = list.map((a) => (a.action === winnerAction.action ? annotated : a))
+      .filter((a) => a.action !== loserAction.action);
   }
   return list;
 }
@@ -413,7 +475,7 @@ function SkuPanel({
                               ? ` · ${a.recommended_units.toLocaleString()} uds`
                               : ''}
                           </span>
-                          {colors.length > 0 && <ColorSwatches names={colors} />}
+                          {colors.length > 0 && <ColorSwatches swatches={colors} />}
                         </span>
                       );
                     })}
@@ -521,7 +583,7 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
                     {ACTION_LABEL_ES[a.action]}
                   </span>
                   {actionColors(a).length > 0 && (
-                    <ColorSwatches names={actionColors(a)} size={18} />
+                    <ColorSwatches swatches={actionColors(a)} size={18} />
                   )}
                   <span className="text-[11px] text-carbon/50">
                     confianza {Math.round(a.confidence * 100)}%
@@ -575,20 +637,23 @@ function Stat({ label, value }: { label: string; value: string }) {
  *  amplify_winner pill. Squares with a thin neutral border. The colour
  *  name shows as a tooltip on hover. Falls back to a hashed grey when
  *  the name isn't in the dictionary. */
-function ColorSwatches({ names, size = 16 }: { names: string[]; size?: number }) {
+function ColorSwatches({
+  swatches,
+  size = 16,
+}: {
+  swatches: Array<{ name: string; hex: string }>;
+  size?: number;
+}) {
   return (
     <span className="inline-flex items-center gap-1 align-middle">
-      {names.slice(0, 4).map((n, i) => {
-        const hex = colorToHex(n) ?? '#cfcfcf';
-        return (
-          <span
-            key={`${n}-${i}`}
-            title={n}
-            className="inline-block rounded-[4px] ring-1 ring-carbon/15"
-            style={{ width: size, height: size, backgroundColor: hex }}
-          />
-        );
-      })}
+      {swatches.slice(0, 4).map((s, i) => (
+        <span
+          key={`${s.name}-${i}`}
+          title={s.name}
+          className="inline-block rounded-[4px] ring-1 ring-carbon/15"
+          style={{ width: size, height: size, backgroundColor: s.hex }}
+        />
+      ))}
     </span>
   );
 }
