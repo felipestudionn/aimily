@@ -217,9 +217,24 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     });
   }
 
-  // Resolve verdicts.
+  // Resolve verdicts — pass identity so the rationale templates can
+  // render brand/family names in the human sentence.
+  const identityByPid = new Map(
+    products.map((p) => [
+      p.id,
+      {
+        product_name: p.product_name ?? null,
+        family_code: p.family_code ?? null,
+        model_ref: p.model_ref ?? null,
+      },
+    ])
+  );
   const verdicts = Array.from(inputs.entries()).map(([pid, base]) =>
-    resolveSkuVerdict({ ...base, product_fact_id: pid, candidates: candidatesByPid.get(pid) ?? [] })
+    resolveSkuVerdict(
+      { ...base, product_fact_id: pid, candidates: candidatesByPid.get(pid) ?? [] },
+      undefined,
+      identityByPid.get(pid)
+    )
   );
 
   // Modulate by archetype + budget + brief.

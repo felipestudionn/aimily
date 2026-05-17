@@ -25,6 +25,7 @@ interface VerdictAction {
     | 'carryover'
     | 'hold';
   confidence: number;
+  rationale: string;
   recommended_units: number | null;
   confidence_breakdown: {
     data_completeness: number | null;
@@ -274,16 +275,23 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
                   </div>
                   <ChevronRight className="h-3.5 w-3.5 text-carbon/30 mt-1 shrink-0" />
                 </div>
-                <div className="flex flex-wrap gap-1 pl-[42px]">
-                  {sku.actions.map((a) => (
-                    <span
-                      key={a.action}
-                      className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
-                    >
-                      {ACTION_LABEL_ES[a.action]}
-                      {a.recommended_units != null && a.recommended_units > 0 ? ` · ${a.recommended_units}` : ''}
-                    </span>
-                  ))}
+                <div className="pl-[42px] space-y-1.5">
+                  <div className="flex flex-wrap gap-1">
+                    {sku.actions.map((a) => (
+                      <span
+                        key={a.action}
+                        className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                      >
+                        {ACTION_LABEL_ES[a.action]}
+                        {a.recommended_units != null && a.recommended_units > 0 ? ` · ${a.recommended_units} uds` : ''}
+                      </span>
+                    ))}
+                  </div>
+                  {sku.actions[0]?.rationale && (
+                    <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
+                      {sku.actions[0].rationale}
+                    </p>
+                  )}
                 </div>
               </button>
             </li>
@@ -390,17 +398,27 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
                   </span>
                 )}
               </div>
+              {a.rationale && (
+                <p className="text-[13px] text-carbon leading-[1.55] mb-3">
+                  {a.rationale}
+                </p>
+              )}
               {a.data_sufficiency_warning && (
                 <p className="text-[11px] text-amber-800 italic mb-2">⚠ {a.data_sufficiency_warning}</p>
               )}
-              <EvidenceList obj={a.evidence} />
-              {a.assumptions.length > 0 && (
-                <ul className="mt-2 text-[10px] text-carbon/55 space-y-0.5">
-                  {a.assumptions.map((s, j) => (
-                    <li key={j}>· {s}</li>
-                  ))}
-                </ul>
-              )}
+              <details className="text-[11px]">
+                <summary className="cursor-pointer text-carbon/50 hover:text-carbon select-none mb-2">
+                  Ver datos detrás
+                </summary>
+                <EvidenceList obj={a.evidence} />
+                {a.assumptions.length > 0 && (
+                  <ul className="mt-2 text-[10px] text-carbon/55 space-y-0.5">
+                    {a.assumptions.map((s, j) => (
+                      <li key={j}>· {s}</li>
+                    ))}
+                  </ul>
+                )}
+              </details>
             </div>
           ))}
         </section>

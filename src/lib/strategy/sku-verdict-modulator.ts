@@ -136,6 +136,8 @@ function applyArchetype(
       filteredActions.push({
         action: 'hold',
         confidence: 0.3,
+        rationale:
+          'Todas las acciones del motor fueron filtradas por el arquetipo de compra. Mantener línea actual y revisar si el arquetipo es el correcto.',
         recommended_units: null,
         confidence_breakdown: v.actions[0]?.confidence_breakdown ?? {
           data_completeness: null,
