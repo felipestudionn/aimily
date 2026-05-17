@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { EditorAxisCard } from './EditorAxisCard';
 import { Plus, Minus } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export interface FamilyPivotRow {
   family_code: string;
@@ -37,6 +38,8 @@ export function FamilyPivotCard({
   onDeepen,
   deepening,
 }: Props) {
+  const t = useTranslation();
+  const fp = t.strategy.axis.familyPivot;
   const [adjacentDraft, setAdjacentDraft] = useState('');
   const isD = archetypeId === 'D';
 
@@ -71,12 +74,8 @@ export function FamilyPivotCard({
 
   return (
     <EditorAxisCard
-      title="Family pivot"
-      description={
-        isD
-          ? 'Re-balance existing families AND name the adjacent target families you want to push into.'
-          : 'Pivot existing families (+ to amplify, − to shrink) based on last season ROI + hero share.'
-      }
+      title={fp.title}
+      description={isD ? fp.descriptionD : fp.descriptionDefault}
       axis="family_pivot"
       onDeepen={onDeepen}
       deepening={deepening}
@@ -84,7 +83,7 @@ export function FamilyPivotCard({
       <div className="space-y-3">
         {pivots.length === 0 && (
           <p className="text-[12px] text-carbon/45 italic">
-            No pivots defined. Add one to amplify or shrink a family relative to last season.
+            {fp.noPivots}
           </p>
         )}
         {pivots.map((row, idx) => (
@@ -129,14 +128,14 @@ export function FamilyPivotCard({
               type="text"
               value={row.rationale}
               onChange={(e) => update(idx, { rationale: e.target.value })}
-              placeholder="why?"
+              placeholder={fp.rationalePlaceholder}
               className="col-span-4 text-[12px] text-carbon/75 bg-white/60 rounded px-2 py-1 outline-none placeholder:text-carbon/30"
             />
             <button
               type="button"
               onClick={() => remove(idx)}
               className="col-span-1 w-7 h-7 rounded-full bg-carbon/[0.06] hover:bg-carbon/[0.12] text-carbon/55 flex items-center justify-center"
-              aria-label="Remove pivot"
+              aria-label={fp.removePivotAria}
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
@@ -147,7 +146,7 @@ export function FamilyPivotCard({
           onClick={add}
           className="w-full py-2 rounded-[12px] border border-dashed border-carbon/[0.12] hover:border-carbon/30 text-[12px] font-medium text-carbon/55 inline-flex items-center justify-center gap-1.5"
         >
-          <Plus className="h-3.5 w-3.5" /> Add pivot
+          <Plus className="h-3.5 w-3.5" /> {fp.addPivot}
         </button>
       </div>
 
@@ -155,20 +154,19 @@ export function FamilyPivotCard({
         <div className="mt-6 pt-5 border-t border-carbon/[0.06]">
           <div className="mb-3">
             <div className="text-[12px] font-semibold text-carbon tracking-[-0.01em] mb-1">
-              Target adjacent families
+              {fp.adjacentTitle}
               <span className="ml-2 text-[11px] font-medium text-amber-700 uppercase tracking-[0.08em]">
-                Required for archetype D
+                {fp.adjacentRequiredBadge}
               </span>
             </div>
             <p className="text-[12px] text-carbon/55">
-              Family codes outside your historical top-family list. Generative proposers will bias
-              new SKU + family extension into these.
+              {fp.adjacentDescription}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-3">
             {adjacentFamilies.length === 0 && (
-              <span className="text-[12px] text-carbon/40 italic">No adjacent targets yet.</span>
+              <span className="text-[12px] text-carbon/40 italic">{fp.adjacentEmpty}</span>
             )}
             {adjacentFamilies.map((code) => (
               <span
@@ -180,7 +178,7 @@ export function FamilyPivotCard({
                   type="button"
                   onClick={() => removeAdjacent(code)}
                   className="text-white/70 hover:text-white"
-                  aria-label={`Remove ${code}`}
+                  aria-label={fp.removeAdjacentAria.replace('{code}', code)}
                 >
                   ×
                 </button>
@@ -199,7 +197,7 @@ export function FamilyPivotCard({
                   addAdjacent();
                 }
               }}
-              placeholder="e.g. KIDSWEAR_BASICS"
+              placeholder={fp.adjacentPlaceholder}
               className="flex-1 px-3 py-2 text-[13px] text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/30 font-mono"
             />
             <button
@@ -208,7 +206,7 @@ export function FamilyPivotCard({
               disabled={!adjacentDraft.trim()}
               className="px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold disabled:opacity-40 hover:bg-carbon/90"
             >
-              Add
+              {fp.adjacentAdd}
             </button>
           </div>
         </div>

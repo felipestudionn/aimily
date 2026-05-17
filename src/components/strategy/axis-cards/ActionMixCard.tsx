@@ -7,6 +7,7 @@
  */
 
 import { EditorAxisCard } from './EditorAxisCard';
+import { useTranslation } from '@/i18n';
 
 export interface ActionMix {
   replenish_pct: number;
@@ -22,14 +23,15 @@ interface Props {
   deepening?: string | null;
 }
 
-const ROWS: Array<{ key: keyof ActionMix; label: string; color: string }> = [
-  { key: 'replenish_pct', label: 'Replenish', color: '#b6c8c7' },
-  { key: 'new_sku_proposal_pct', label: 'New SKUs', color: '#c5caa8' },
-  { key: 'family_extension_pct', label: 'Family extensions', color: '#fff4ce' },
-  { key: 'kill_pct', label: 'Kill', color: '#f1efed' },
-];
-
 export function ActionMixCard({ mix, onChange, onDeepen, deepening }: Props) {
+  const t = useTranslation();
+  const am = t.strategy.axis.actionMix;
+  const ROWS: Array<{ key: keyof ActionMix; label: string; color: string }> = [
+    { key: 'replenish_pct', label: am.replenish, color: '#b6c8c7' },
+    { key: 'new_sku_proposal_pct', label: am.newSkus, color: '#c5caa8' },
+    { key: 'family_extension_pct', label: am.familyExtensions, color: '#fff4ce' },
+    { key: 'kill_pct', label: am.kill, color: '#f1efed' },
+  ];
   const total =
     mix.replenish_pct + mix.new_sku_proposal_pct + mix.family_extension_pct + mix.kill_pct;
   const sumValid = Math.abs(total - 100) <= 0.5;
@@ -40,8 +42,8 @@ export function ActionMixCard({ mix, onChange, onDeepen, deepening }: Props) {
 
   return (
     <EditorAxisCard
-      title="Action mix"
-      description="How next season's SKU budget splits across replenish, new, family-extension, and kill."
+      title={am.title}
+      description={am.description}
       axis="action_mix"
       onDeepen={onDeepen}
       deepening={deepening}
@@ -94,7 +96,7 @@ export function ActionMixCard({ mix, onChange, onDeepen, deepening }: Props) {
       </div>
 
       <div className="mt-5 pt-4 border-t border-carbon/[0.06] flex items-baseline justify-between text-[12px]">
-        <span className="text-carbon/50 uppercase tracking-[0.08em]">Total</span>
+        <span className="text-carbon/50 uppercase tracking-[0.08em]">{am.total}</span>
         <span
           className={`text-[16px] font-semibold tabular-nums ${
             sumValid ? 'text-carbon' : 'text-red-600'
@@ -102,7 +104,7 @@ export function ActionMixCard({ mix, onChange, onDeepen, deepening }: Props) {
         >
           {Math.round(total * 10) / 10}%
           {!sumValid && (
-            <span className="ml-2 text-[11px] font-normal">Must equal 100</span>
+            <span className="ml-2 text-[11px] font-normal">{am.mustEqual100}</span>
           )}
         </span>
       </div>

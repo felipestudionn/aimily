@@ -9,6 +9,7 @@
 
 import { EditorAxisCard } from './EditorAxisCard';
 import { Plus, Minus } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export interface BuyWave {
   name: string;
@@ -26,6 +27,8 @@ interface Props {
 const DEFAULT_WAVE: BuyWave = { name: 'Wave', share_pct: 0, target_lead_time_days: 30 };
 
 export function LeadTimeCalendarCard({ waves, onChange, onDeepen, deepening }: Props) {
+  const t = useTranslation();
+  const lt = t.strategy.axis.leadTime;
   const sum = waves.reduce((acc, w) => acc + (w.share_pct ?? 0), 0);
   const sumValid = waves.length === 0 || Math.abs(sum - 100) <= 0.5;
 
@@ -50,8 +53,8 @@ export function LeadTimeCalendarCard({ waves, onChange, onDeepen, deepening }: P
 
   return (
     <EditorAxisCard
-      title="Lead-time calendar"
-      description="Buy waves with target supplier lead time per wave. Late-to-market waves surface tension flags."
+      title={lt.title}
+      description={lt.description}
       axis="lead_time_calendar"
       onDeepen={onDeepen}
       deepening={deepening}
@@ -62,7 +65,7 @@ export function LeadTimeCalendarCard({ waves, onChange, onDeepen, deepening }: P
           onClick={addWave}
           className="w-full py-6 rounded-[12px] border-2 border-dashed border-carbon/[0.12] hover:border-carbon/30 text-[13px] font-medium text-carbon/55 transition-colors"
         >
-          + Add first buy wave
+          {lt.addFirst}
         </button>
       ) : (
         <div className="space-y-3">
@@ -96,13 +99,13 @@ export function LeadTimeCalendarCard({ waves, onChange, onDeepen, deepening }: P
                   onChange={(e) => updateWave(idx, { target_lead_time_days: Number(e.target.value) })}
                   className="w-full text-[13px] text-carbon tabular-nums bg-white/60 rounded px-2 py-1 outline-none"
                 />
-                <span className="text-[12px] text-carbon/45">d lead</span>
+                <span className="text-[12px] text-carbon/45">{lt.dLead}</span>
               </div>
               <button
                 type="button"
                 onClick={() => removeWave(idx)}
                 className="col-span-1 w-7 h-7 rounded-full bg-carbon/[0.06] hover:bg-carbon/[0.12] text-carbon/55 flex items-center justify-center"
-                aria-label="Remove wave"
+                aria-label={lt.removeWaveAria}
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -114,21 +117,21 @@ export function LeadTimeCalendarCard({ waves, onChange, onDeepen, deepening }: P
             disabled={waves.length >= 8}
             className="w-full py-2 rounded-[12px] border border-dashed border-carbon/[0.12] hover:border-carbon/30 text-[12px] font-medium text-carbon/55 inline-flex items-center justify-center gap-1.5 disabled:opacity-40"
           >
-            <Plus className="h-3.5 w-3.5" /> Add wave
+            <Plus className="h-3.5 w-3.5" /> {lt.addWave}
           </button>
         </div>
       )}
 
       {waves.length > 0 && (
         <div className="mt-4 pt-3 border-t border-carbon/[0.06] flex items-baseline justify-between text-[12px]">
-          <span className="text-carbon/50 uppercase tracking-[0.08em]">Total share</span>
+          <span className="text-carbon/50 uppercase tracking-[0.08em]">{lt.totalShare}</span>
           <span
             className={`text-[14px] font-semibold tabular-nums ${
               sumValid ? 'text-carbon' : 'text-amber-600'
             }`}
           >
             {Math.round(sum * 10) / 10}%
-            {!sumValid && <span className="ml-2 text-[11px] font-normal">Tip: aim for 100</span>}
+            {!sumValid && <span className="ml-2 text-[11px] font-normal">{lt.tipAimFor100}</span>}
           </span>
         </div>
       )}

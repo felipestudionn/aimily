@@ -6,6 +6,7 @@
  */
 
 import { EditorAxisCard } from './EditorAxisCard';
+import { useTranslation } from '@/i18n';
 
 export interface BudgetState {
   target_buy_budget_eur: number | null;
@@ -31,6 +32,8 @@ function fmtEur(n: number | null): string {
 }
 
 export function BudgetCard({ budget, onChange, onDeepen, deepening }: Props) {
+  const t = useTranslation();
+  const b = t.strategy.axis.budget;
   const roi =
     budget.target_buy_budget_eur != null &&
     budget.target_buy_budget_eur > 0 &&
@@ -45,25 +48,25 @@ export function BudgetCard({ budget, onChange, onDeepen, deepening }: Props) {
 
   return (
     <EditorAxisCard
-      title="Budget"
-      description="Buy budget · sales target · margin target. ROI implied = target / buy budget."
+      title={b.title}
+      description={b.description}
       axis="budget"
       onDeepen={onDeepen}
       deepening={deepening}
     >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <Stat
-          label="Buy budget"
+          label={b.buyBudget}
           value={budget.target_buy_budget_eur}
           onEdit={(v) => handleChange('target_buy_budget_eur', v)}
         />
         <Stat
-          label="Sales target Y1"
+          label={b.salesTargetY1}
           value={budget.target_sales_y1_eur}
           onEdit={(v) => handleChange('target_sales_y1_eur', v)}
         />
         <StatPct
-          label="Target margin"
+          label={b.targetMargin}
           value={budget.target_margin_pct}
           onEdit={(v) => handleChange('target_margin_pct', v)}
         />
@@ -71,26 +74,26 @@ export function BudgetCard({ budget, onChange, onDeepen, deepening }: Props) {
 
       {roi != null && (
         <div className="text-[12px] text-carbon/55 italic mb-4">
-          Implied ROI · {roi.toFixed(2)}× on the buy budget.
+          {b.impliedRoi.replace('{roi}', roi.toFixed(2))}
         </div>
       )}
 
       {/* Last-season actuals footnote */}
       <div className="pt-4 border-t border-carbon/[0.06] grid grid-cols-3 gap-4 text-[11px] text-carbon/45">
         <div>
-          <div className="uppercase tracking-[0.08em]">Last buy</div>
+          <div className="uppercase tracking-[0.08em]">{b.lastBuy}</div>
           <div className="text-[13px] text-carbon/75 tabular-nums mt-1">
             {fmtEur(budget.last_season_buy_budget_eur)}
           </div>
         </div>
         <div>
-          <div className="uppercase tracking-[0.08em]">Last revenue</div>
+          <div className="uppercase tracking-[0.08em]">{b.lastRevenue}</div>
           <div className="text-[13px] text-carbon/75 tabular-nums mt-1">
             {fmtEur(budget.last_season_revenue_eur)}
           </div>
         </div>
         <div>
-          <div className="uppercase tracking-[0.08em]">Last margin</div>
+          <div className="uppercase tracking-[0.08em]">{b.lastMargin}</div>
           <div className="text-[13px] text-carbon/75 tabular-nums mt-1">
             {budget.last_season_margin_pct != null
               ? `${budget.last_season_margin_pct.toFixed(0)}%`
