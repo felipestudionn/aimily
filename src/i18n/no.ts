@@ -4315,6 +4315,7 @@ export const no: Dictionary = {
       scenarios: 'Scenarier',
       familyScoreboard: 'Familie-scoreboard',
       topRecommendations: 'Toppanbefalinger',
+      topRecommendationsIntro: 'Hver rad bærer handlingen, datasignalene bak og antakelsene du kan utfordre i decision workshop.',
       backtestScorecard: 'Backtest-scorecard',
       methodology: 'Metodikk & caveats',
       skusScored: 'SKU-er scoret',

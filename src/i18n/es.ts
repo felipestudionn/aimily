@@ -4523,6 +4523,7 @@ export const es: Dictionary = {
       scenarios: 'Escenarios',
       familyScoreboard: 'Scoreboard de familias',
       topRecommendations: 'Top recomendaciones',
+      topRecommendationsIntro: 'Cada fila lleva la acción, las señales de datos detrás y los supuestos que puedes debatir en el decision workshop.',
       backtestScorecard: 'Scorecard de backtest',
       methodology: 'Metodología y caveats',
       skusScored: 'SKUs puntuados',

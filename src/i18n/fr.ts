@@ -4430,6 +4430,7 @@ export const fr: Dictionary = {
       scenarios: 'Scénarios',
       familyScoreboard: 'Tableau de bord des familles',
       topRecommendations: 'Top recommandations',
+      topRecommendationsIntro: 'Chaque ligne porte l\'action, les signaux de données et les hypothèses que tu peux contester en decision workshop.',
       backtestScorecard: 'Scorecard de backtest',
       methodology: 'Méthodologie et caveats',
       skusScored: 'SKU scorés',

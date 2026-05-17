@@ -4429,6 +4429,7 @@ export const nl: Dictionary = {
       scenarios: 'Scenario\'s',
       familyScoreboard: 'Familie-scoreboard',
       topRecommendations: 'Top aanbevelingen',
+      topRecommendationsIntro: 'Elke rij draagt de actie, de datasignalen erachter en de aannames die je in de decision workshop kunt aanvechten.',
       backtestScorecard: 'Backtest-scorecard',
       methodology: 'Methodologie & caveats',
       skusScored: 'SKUs gescored',

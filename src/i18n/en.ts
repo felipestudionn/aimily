@@ -4570,6 +4570,7 @@ export const en = {
       scenarios: 'Scenarios',
       familyScoreboard: 'Family scoreboard',
       topRecommendations: 'Top recommendations',
+      topRecommendationsIntro: 'Each row carries the action, the data signals behind it, and the assumptions you can challenge in the decision workshop.',
       backtestScorecard: 'Backtest scorecard',
       methodology: 'Methodology + caveats',
       skusScored: 'SKUs scored',

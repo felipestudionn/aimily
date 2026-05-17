@@ -4411,6 +4411,7 @@ export const pt: Dictionary = {
       scenarios: 'Cenários',
       familyScoreboard: 'Scoreboard de famílias',
       topRecommendations: 'Top recomendações',
+      topRecommendationsIntro: 'Cada linha leva a ação, os sinais de dados por trás e as suposições que podes debater no decision workshop.',
       backtestScorecard: 'Scorecard de backtest',
       methodology: 'Metodologia e caveats',
       skusScored: 'SKUs pontuados',

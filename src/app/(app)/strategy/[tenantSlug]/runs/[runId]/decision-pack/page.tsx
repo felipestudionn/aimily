@@ -22,6 +22,10 @@ import { getServerSession } from '@/lib/auth/server-session';
 import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
+import {
+  humanizeEvidence,
+  resolveCandidateIdentity,
+} from '@/lib/strategy/recommendation-presenter';
 import { DecisionPackPrintTrigger } from './DecisionPackPrintTrigger';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +40,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
 
   const dict = getStrategyDictForUser(user);
   const ACTION_LABELS = dict.strategy.run.actions as Record<string, string>;
+  const evidenceLabels = dict.strategy.run.evidence;
   const dp = dict.strategy.decisionPack;
   const rs = dict.strategy.run.sections;
 
@@ -88,6 +93,54 @@ export default async function DecisionPackPage({ params }: PageProps) {
       .select('season, source_format, observation_date, record_count')
       .in('id', (run.source_set_ids as string[]) || []),
   ]);
+
+  // Hydrate product / lineage / color taxonomy so cards render names not UUIDs
+  // (same pattern as run-detail/page.tsx). Without these the resolver falls
+  // back to short UUIDs + "details unavailable" — still better than dumping
+  // a full 36-char ref into the headline.
+  const candidateRows = candidates.data || [];
+  const skuIds = Array.from(
+    new Set(
+      candidateRows.filter((c: any) => c.scope === 'sku').map((c: any) => c.scope_ref as string)
+    )
+  );
+  const lineageIds = Array.from(
+    new Set(
+      candidateRows
+        .filter((c: any) => c.scope === 'color' || c.scope === 'lineage')
+        .map((c: any) => (c.scope_ref as string).split('#')[0])
+    )
+  );
+  const [productIdRes, lineageIdRes, colorTaxRes] = await Promise.all([
+    skuIds.length > 0
+      ? supabaseAdmin
+          .from('strategy_product_facts')
+          .select('id, model_ref, color_ref, product_name, family_code, pvp')
+          .in('id', skuIds)
+      : Promise.resolve({ data: [] as any[] }),
+    lineageIds.length > 0
+      ? supabaseAdmin
+          .from('strategy_sku_identity_graph')
+          .select('id, canonical_id, display_name')
+          .in('id', lineageIds)
+      : Promise.resolve({ data: [] as any[] }),
+    supabaseAdmin
+      .from('strategy_taxonomies')
+      .select('mapping')
+      .eq('tenant_id', tenant.id)
+      .eq('taxonomy_kind', 'color')
+      .eq('is_active', true)
+      .maybeSingle(),
+  ]);
+  const productById = new Map<string, any>(
+    (productIdRes.data || []).map((p: any) => [p.id, p])
+  );
+  const lineageById = new Map<string, any>(
+    (lineageIdRes.data || []).map((l: any) => [l.id, l])
+  );
+  const colorCodeMap = (
+    ((colorTaxRes && (colorTaxRes as any).data?.mapping?.code_to_name) || {}) as Record<string, string>
+  );
 
   const coverage = (run.data_coverage_summary || {}) as any;
   const learningsNarrative = coverage.learnings_narrative as string | undefined;
@@ -288,23 +341,33 @@ export default async function DecisionPackPage({ params }: PageProps) {
           <section className="page-break-before" style={{ paddingTop: '8mm' }}>
             <h2 className="text-[22px] font-medium tracking-[-0.02em] mb-3">{dp.topRecommendations}</h2>
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
-              Each card carries 6 confidence dimensions, evidence + counter-evidence, and the
-              assumptions you can challenge in the decision workshop.
+              {dp.topRecommendationsIntro}
             </p>
             <div className="space-y-3">
-              {candidates.data.slice(0, 12).map((c: any) => (
+              {candidates.data.slice(0, 12).map((c: any) => {
+                const identity = resolveCandidateIdentity(c, productById, lineageById, colorCodeMap, evidenceLabels);
+                const evidenceRows = humanizeEvidence((c.evidence || {}) as Record<string, unknown>, evidenceLabels, ACTION_LABELS);
+                return (
                 <article
                   key={c.id}
                   className="page-break-inside-avoid border border-carbon/12 rounded-[10px] p-4"
                 >
-                  <header className="flex items-start justify-between gap-3 mb-2">
-                    <div>
-                      <p className="text-[8px] uppercase tracking-[0.1em] text-carbon/40">
+                  <header className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[8px] uppercase tracking-[0.1em] text-carbon/40 mb-0.5">
                         {c.scope}
+                        {identity.family ? ` · ${identity.family}` : ''}
                       </p>
-                      <p className="text-[11px] font-mono break-all">{c.scope_ref}</p>
+                      <p className="text-[12px] font-semibold truncate" title={identity.headline}>
+                        {identity.headline}
+                      </p>
+                      {identity.sub && (
+                        <p className={`text-[10px] mt-0.5 truncate ${identity.subIsCode ? 'text-carbon/40 font-mono' : 'text-carbon/55'}`}>
+                          {identity.sub}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span
                         className="px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.08em]"
                         style={{
@@ -327,26 +390,26 @@ export default async function DecisionPackPage({ params }: PageProps) {
                       </span>
                     </div>
                   </header>
-                  <div className="grid grid-cols-6 gap-1 mb-3">
-                    {[
-                      ['Data', c.confidence_data_completeness],
-                      ['Identity', c.confidence_identity],
-                      ['Demand', c.confidence_demand],
-                      ['Margin', c.confidence_margin],
-                      ['Creative', c.confidence_creative_fit],
-                      ['Action', c.confidence_action],
-                    ].map(([label, v]: any) => (
-                      <div key={label} className="text-center bg-carbon/[0.04] rounded p-1">
-                        <div className="text-[8px] uppercase tracking-[0.06em] text-carbon/40">
-                          {label}
-                        </div>
-                        <div className="text-[10px] font-semibold">{pct(v)}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-[9px] text-carbon/70 font-mono whitespace-pre-line">
-                    {formatEvidence(c.evidence || {})}
-                  </div>
+                  {evidenceRows.length > 0 && (
+                    <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] mb-2">
+                      {evidenceRows.map((row) => (
+                        <li key={row.key} className="flex items-baseline justify-between gap-2">
+                          <span className="text-carbon/45 truncate">{row.label}</span>
+                          <span
+                            className={`font-medium tabular-nums text-right ${
+                              row.tone === 'good'
+                                ? 'text-emerald-700'
+                                : row.tone === 'bad'
+                                ? 'text-red-700'
+                                : 'text-carbon/80'
+                            }`}
+                          >
+                            {row.value}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {Array.isArray(c.assumptions) && c.assumptions.length > 0 && (
                     <ul className="mt-2 text-[9px] text-carbon/55 space-y-0.5">
                       {c.assumptions.map((a: string, i: number) => (
@@ -360,7 +423,8 @@ export default async function DecisionPackPage({ params }: PageProps) {
                     </p>
                   )}
                 </article>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
