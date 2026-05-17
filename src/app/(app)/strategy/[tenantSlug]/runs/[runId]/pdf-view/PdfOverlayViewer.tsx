@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, X, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
 
 interface VerdictAction {
   action:
@@ -86,17 +86,28 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   hold: 'Esperar',
 };
 
+// Aimily palette: carbon-only. Three tiers:
+//   strong  = bg-carbon text-white       → buyer must act
+//   soft    = border + carbon text       → notable, not urgent
+//   neutral = bg-carbon/[0.04] text-carbon/45 → informational
 const ACTION_TONE: Record<VerdictAction['action'], string> = {
-  kill: 'bg-red-50 text-red-700',
-  markdown_accelerate: 'bg-amber-50 text-amber-700',
-  replenish: 'bg-emerald-50 text-emerald-700',
-  resize_down: 'bg-orange-50 text-orange-700',
-  investigate: 'bg-blue-50 text-blue-700',
-  amplify_winner: 'bg-violet-50 text-violet-700',
-  extend_colors: 'bg-indigo-50 text-indigo-700',
-  carryover: 'bg-emerald-50 text-emerald-700',
-  hold: 'bg-carbon/[0.06] text-carbon/55',
+  kill: 'bg-carbon text-white',
+  markdown_accelerate: 'bg-carbon text-white',
+  replenish: 'bg-carbon text-white',
+  resize_down: 'bg-carbon text-white',
+  amplify_winner: 'bg-carbon text-white',
+  investigate: 'border border-carbon/[0.15] text-carbon/70 bg-white',
+  extend_colors: 'border border-carbon/[0.15] text-carbon/70 bg-white',
+  carryover: 'bg-carbon/[0.04] text-carbon/55',
+  hold: 'bg-carbon/[0.04] text-carbon/45',
 };
+
+// When a SKU stack contains real actions, the "hold" fallback is noise.
+// Drop it; only surface hold when it is the ONLY thing the engine has.
+function visibleActions(actions: VerdictAction[]): VerdictAction[] {
+  const nonHold = actions.filter((a) => a.action !== 'hold');
+  return nonHold.length > 0 ? nonHold : actions;
+}
 
 export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: string; tenantSlug: string }) {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -227,8 +238,42 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         )}
       </div>
 
-      {/* SKU verdicts column · fixed width */}
-      <aside className="w-[420px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
+      {/* Right side: drawer when a SKU is selected, otherwise the SKU panel.
+       *  They share the column slot so the drawer expands into the panel
+       *  width instead of stacking on top of it. */}
+      {activeSku ? (
+        <SkuDrawer sku={activeSku} onClose={() => setActiveSkuId(null)} />
+      ) : (
+        <SkuPanel
+          data={data}
+          actionFilter={actionFilter}
+          setActionFilter={setActionFilter}
+          filteredSkus={filteredSkus}
+          activeSkuId={activeSkuId}
+          setActiveSkuId={setActiveSkuId}
+        />
+      )}
+    </div>
+  );
+}
+
+function SkuPanel({
+  data,
+  actionFilter,
+  setActionFilter,
+  filteredSkus,
+  activeSkuId,
+  setActiveSkuId,
+}: {
+  data: ApiResponse;
+  actionFilter: VerdictAction['action'] | 'all';
+  setActionFilter: (a: VerdictAction['action'] | 'all') => void;
+  filteredSkus: SkuRow[];
+  activeSkuId: string | null;
+  setActiveSkuId: (id: string | null) => void;
+}) {
+  return (
+    <aside className="w-[460px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
         {/* Filter bar */}
         <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-3">
           <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40 mb-2">
@@ -283,19 +328,19 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
                 </div>
                 <div className="pl-[42px] space-y-1.5">
                   <div className="flex flex-wrap gap-1">
-                    {sku.actions.map((a) => (
+                    {visibleActions(sku.actions).map((a) => (
                       <span
                         key={a.action}
                         className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
                       >
                         {ACTION_LABEL_ES[a.action]}
-                        {a.recommended_units != null && a.recommended_units > 0 ? ` · ${a.recommended_units} uds` : ''}
+                        {a.recommended_units != null && a.recommended_units > 0 ? ` · ${a.recommended_units.toLocaleString()} uds` : ''}
                       </span>
                     ))}
                   </div>
-                  {sku.actions[0]?.rationale && (
+                  {visibleActions(sku.actions)[0]?.rationale && (
                     <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
-                      {sku.actions[0].rationale}
+                      {visibleActions(sku.actions)[0].rationale}
                     </p>
                   )}
                 </div>
@@ -304,12 +349,6 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
           ))}
         </ul>
       </aside>
-
-      {/* Drawer with verdict detail */}
-      {activeSku && (
-        <SkuDrawer sku={activeSku} onClose={() => setActiveSkuId(null)} />
-      )}
-    </div>
   );
 }
 
@@ -343,22 +382,29 @@ function FilterChip({
 
 function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
   return (
-    <div className="fixed inset-y-0 right-0 z-20 w-[520px] bg-white border-l border-carbon/[0.06] shadow-2xl overflow-y-auto">
-      <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-4 flex items-start gap-3">
-        <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 bg-carbon text-white text-[14px] font-semibold tabular-nums rounded-[8px]">
-          {sku.rank}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] text-carbon/40 uppercase tracking-[0.08em] truncate">
-            {sku.family_code || 'sku'} · {sku.model_ref || ''}
-          </p>
-          <h2 className="text-[16px] font-semibold text-carbon truncate" title={sku.product_name || ''}>
-            {sku.product_name || sku.model_ref || sku.product_fact_id.slice(0, 8)}
-          </h2>
-        </div>
-        <button type="button" onClick={onClose} className="text-carbon/40 hover:text-carbon shrink-0 mt-1">
-          <X className="h-4 w-4" />
+    <aside className="w-[560px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
+      <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-carbon/60 hover:text-carbon mb-3 transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Volver al panel
         </button>
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 bg-carbon text-white text-[14px] font-semibold tabular-nums rounded-[8px]">
+            {sku.rank}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] text-carbon/40 uppercase tracking-[0.08em] truncate">
+              {sku.family_code || 'sku'} · {sku.model_ref || ''}
+            </p>
+            <h2 className="text-[16px] font-semibold text-carbon truncate" title={sku.product_name || ''}>
+              {sku.product_name || sku.model_ref || sku.product_fact_id.slice(0, 8)}
+            </h2>
+          </div>
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -385,7 +431,7 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
 
         {/* Actions stack */}
         <section className="space-y-3">
-          {sku.actions.map((a, i) => (
+          {visibleActions(sku.actions).map((a, i) => (
             <div key={`${a.action}-${i}`} className="border border-carbon/[0.06] rounded-[12px] p-3">
               <div className="flex items-baseline justify-between mb-2">
                 <div className="flex items-baseline gap-2">
@@ -429,7 +475,7 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
           ))}
         </section>
       </div>
-    </div>
+    </aside>
   );
 }
 
