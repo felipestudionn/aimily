@@ -118,24 +118,58 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     sourcesCount: ((sourcesRes as any).data || []).length,
   });
 
-  const productFactsRes =
+  // strategy_product_facts only carries identity (model_ref, color, family,
+  // pvp, markup). Velocity / stock / stores live in strategy_sales_windows
+  // (window_type d1 / 7d / 8_14d) and strategy_inventory_facts. Pull all
+  // three in parallel and join in code.
+  const [productFactsRes, salesWindowsRes, inventoryRes] =
     targetPids.length > 0
-      ? await supabaseAdmin
-          .from('strategy_product_facts')
-          .select(
-            'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, velocity_d1, velocity_7d, stores_active, stores_with_stock, stock_total, pipeline_total, unit_cost'
-          )
-          .in('id', targetPids)
-      : { data: [] as any[] };
+      ? await Promise.all([
+          supabaseAdmin
+            .from('strategy_product_facts')
+            .select(
+              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate'
+            )
+            .in('id', targetPids),
+          supabaseAdmin
+            .from('strategy_sales_windows')
+            .select('product_fact_id, window_type, units')
+            .in('product_fact_id', targetPids)
+            .in('window_type', ['d1', '7d']),
+          supabaseAdmin
+            .from('strategy_inventory_facts')
+            .select('product_fact_id, stores_active, stores_with_stock, stock_store, stock_warehouse, pipeline_total'),
+        ])
+      : [{ data: [] as any[] }, { data: [] as any[] }, { data: [] as any[] }];
 
   const products = (productFactsRes.data || []) as any[];
   const candidates = allCandidates;
 
-  console.log('[runs/skus] products fetched', {
+  // Index velocity (units per window) and inventory rows by product_fact_id
+  // so we can merge them into the per-SKU output.
+  const velocityByPid = new Map<string, { d1: number | null; '7d': number | null }>();
+  for (const row of (salesWindowsRes.data || []) as any[]) {
+    const bucket = velocityByPid.get(row.product_fact_id) ?? { d1: null, '7d': null };
+    if (row.window_type === 'd1') bucket.d1 = Number(row.units) || 0;
+    if (row.window_type === '7d') bucket['7d'] = Number(row.units) || 0;
+    velocityByPid.set(row.product_fact_id, bucket);
+  }
+  const inventoryByPid = new Map<string, any>();
+  for (const row of (inventoryRes.data || []) as any[]) {
+    if (targetPids.includes(row.product_fact_id)) {
+      inventoryByPid.set(row.product_fact_id, row);
+    }
+  }
+
+  console.log('[runs/skus] joined', {
     runId,
     productsFound: products.length,
     targetPidsRequested: targetPids.length,
+    salesWindowRows: (salesWindowsRes.data || []).length,
+    inventoryRowsMatched: inventoryByPid.size,
     productsError: (productFactsRes as any).error?.message,
+    salesError: (salesWindowsRes as any).error?.message,
+    inventoryError: (inventoryRes as any).error?.message,
   });
   const constraint = (constraintRes as any).data;
   const brief = (briefRes as any).data;
@@ -153,26 +187,30 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     candidatesByPid.set(c.scope_ref, arr);
   }
 
-  // Build SkuVerdictInput per product (every SKU in the tenant's facts,
-  // even those without candidates → fallback hold).
+  // Build SkuVerdictInput per product. Merges identity (from product_facts),
+  // velocity (from sales_windows), and stock/stores (from inventory_facts).
   const inputs = new Map<string, Omit<SkuVerdictInput, 'candidates'>>();
   const financialsByPid = new Map<string, PerSkuFinancials>();
   for (const p of products) {
+    const vel = velocityByPid.get(p.id) ?? { d1: null, '7d': null };
+    const inv = inventoryByPid.get(p.id) ?? {};
+    const stockTotal =
+      (Number(inv.stock_store) || 0) + (Number(inv.stock_warehouse) || 0);
     inputs.set(p.id, {
       product_fact_id: p.id,
-      velocity_7d: p.velocity_7d,
-      velocity_d1: p.velocity_d1,
-      stores_active: p.stores_active,
-      stores_with_stock: p.stores_with_stock,
-      stock_total: p.stock_total,
-      pipeline_total: p.pipeline_total,
+      velocity_7d: vel['7d'],
+      velocity_d1: vel.d1,
+      stores_active: inv.stores_active ?? null,
+      stores_with_stock: inv.stores_with_stock ?? null,
+      stock_total: stockTotal > 0 ? stockTotal : null,
+      pipeline_total: inv.pipeline_total ?? null,
     });
     financialsByPid.set(p.id, {
       product_fact_id: p.id,
       family_code: p.family_code,
       pvp: p.pvp,
       margin_pct_list: p.margin_pct_list,
-      cost_per_unit_eur: p.unit_cost,
+      cost_per_unit_eur: p.cost_estimate,
     });
   }
 
@@ -208,10 +246,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     pdfSignedUrl = signed?.signedUrl ?? null;
   }
 
-  // Build SkuRow output. Joins verdict + identity (product fields) so the
-  // front-end has everything to render the overlay + drawer.
+  // Build SkuRow output. Joins verdict + identity (product fields) + the
+  // operational metrics we resolved from sales_windows + inventory_facts.
   const skus = modulated.map((v) => {
     const p = products.find((x) => x.id === v.product_fact_id);
+    const baseInput = inputs.get(v.product_fact_id);
     return {
       product_fact_id: v.product_fact_id,
       model_ref: p?.model_ref ?? null,
@@ -219,11 +258,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       product_name: p?.product_name ?? null,
       family_code: p?.family_code ?? null,
       pvp: p?.pvp ?? null,
-      velocity_7d: p?.velocity_7d ?? null,
-      velocity_d1: p?.velocity_d1 ?? null,
-      stores_active: p?.stores_active ?? null,
-      stores_with_stock: p?.stores_with_stock ?? null,
-      stock_total: p?.stock_total ?? null,
+      velocity_7d: baseInput?.velocity_7d ?? null,
+      velocity_d1: baseInput?.velocity_d1 ?? null,
+      stores_active: baseInput?.stores_active ?? null,
+      stores_with_stock: baseInput?.stores_with_stock ?? null,
+      stock_total: baseInput?.stock_total ?? null,
       target_rotation_days: v.target_rotation_days,
       current_stock_days: v.current_stock_days,
       actions: v.actions,
