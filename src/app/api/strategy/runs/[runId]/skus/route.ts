@@ -42,6 +42,7 @@ import {
   type BriefContext,
   type PerSkuFinancials,
 } from '@/lib/strategy/sku-verdict-modulator';
+import { computeHeadlineKpis, type HeadlineKpis } from '@/lib/strategy/headline-kpis';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -185,7 +186,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           supabaseAdmin
             .from('strategy_product_facts')
             .select(
-              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, created_at'
+              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, activation_date, observation_date, created_at'
             )
             .in('id', targetPids)
             // Order by insertion → matches the PDF row order so the panel
@@ -645,9 +646,52 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // memory/product-spec_aimily-in-season-2026-05-17.md §4.
   const enriched = modulated.map(enrichVerdict);
   const modulatedByPid = new Map(enriched.map((m) => [m.product_fact_id, m]));
+  // Today's date for days_in_store. Production: would come from the run's
+  // observation_date. For dogfood: today's run.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayMs = new Date(todayIso).getTime();
   const skus = products.map((p, idx) => {
     const v = modulatedByPid.get(p.id);
     const baseInput = inputs.get(p.id);
+    const score = scoresByPid.get(p.id);
+    // Compute days_in_store from activation_date when available, else
+    // fall back to days since observation_date (Zara RNK ingests as
+    // observation_date = the report date).
+    const activationDate = (p as { activation_date?: string | null }).activation_date ?? null;
+    const observationDate = (p as { observation_date?: string | null }).observation_date ?? null;
+    const anchorDate = activationDate ?? observationDate;
+    const daysInStore = anchorDate
+      ? Math.max(0, Math.floor((todayMs - new Date(anchorDate).getTime()) / (1000 * 60 * 60 * 24)))
+      : null;
+    // total_sold approximation for SKUs without explicit total_sold in
+    // efficiency_facts: velocity_7d × (days_in_store / 7). Reasonable for
+    // short-lived fast-fashion SKUs (Caro et al. 2010 — Zara store-level
+    // life cycle is 5-6 weeks). Marks GMROI as 'tenant' source since the
+    // velocity is tenant-provided.
+    const totalSoldApprox =
+      baseInput?.velocity_7d != null && daysInStore != null
+        ? baseInput.velocity_7d * (daysInStore / 7)
+        : null;
+    // Retailer profile: heuristic on family_code prefix. V26 corpus =
+    // Zara → 'zara_fast_fashion'. Future: read from tenant settings.
+    const retailerProfile: 'zara_fast_fashion' | 'mango_mid_market' | 'shopify_smb' | 'generic' =
+      (p.family_code ?? '').startsWith('W.') ? 'zara_fast_fashion' : 'generic';
+    const headlineKpis: HeadlineKpis = computeHeadlineKpis({
+      pvp: p.pvp ?? null,
+      cost_estimate: (p.cost_estimate as number | null) ?? null,
+      margin_pct_list: (p.margin_pct_list as number | null) ?? null,
+      velocity_7d: baseInput?.velocity_7d ?? null,
+      total_sold: totalSoldApprox,
+      total_bought: null,
+      sell_through_bought_pct: score?.sell_through_bought_pct ?? null,
+      returns_pct: score?.returns_pct ?? null,
+      pipeline_total: baseInput?.pipeline_total ?? null,
+      stock_total: baseInput?.stock_total ?? null,
+      days_in_store: daysInStore,
+      supplier_lead_time_days: null,        // synthetic from retailer profile (Zara = 15d)
+      planned_str_curve: null,              // synthetic linear ramp
+      retailer_profile: retailerProfile,
+    });
     return {
       rank: idx + 1,
       product_fact_id: p.id,
@@ -661,10 +705,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       stores_active: baseInput?.stores_active ?? null,
       stores_with_stock: baseInput?.stores_with_stock ?? null,
       stock_total: baseInput?.stock_total ?? null,
+      days_in_store: daysInStore,
       target_rotation_days: v?.target_rotation_days ?? 4,
       current_stock_days: v?.current_stock_days ?? null,
       actions: v?.actions ?? [],
       modulator_notes: v?.modulator_notes ?? [],
+      headline_kpis: headlineKpis,
     };
   });
 

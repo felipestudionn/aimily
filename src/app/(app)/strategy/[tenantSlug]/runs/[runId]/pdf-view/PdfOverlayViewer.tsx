@@ -89,6 +89,20 @@ const OWNER_LABEL_ES: Record<NonNullable<VerdictAction['owner']>, string> = {
   supply_chain: 'Supply chain',
 };
 
+interface HeadlineKpiValue {
+  value: number | null;
+  source: 'tenant' | 'synthetic';
+  label?: string;
+}
+
+interface HeadlineKpis {
+  gmroi: HeadlineKpiValue;
+  str_vs_plan_pp: HeadlineKpiValue;
+  fwoc_lt_ratio: HeadlineKpiValue;
+  s_s_ratio: HeadlineKpiValue;
+  maintained_markup_pct: HeadlineKpiValue;
+}
+
 interface SkuRow {
   /** 1-based position matching the SKU's row order in the original PDF.
    *  Renders as a small numbered square so the buyer can map a verdict
@@ -105,10 +119,14 @@ interface SkuRow {
   stores_active: number | null;
   stores_with_stock: number | null;
   stock_total: number | null;
+  days_in_store: number | null;
   target_rotation_days: number;
   current_stock_days: number | null;
   actions: VerdictAction[];
   modulator_notes: Array<{ kind: 'archetype' | 'budget' | 'brief'; note: string }>;
+  /** Spec v1 — the 5 headline KPIs a buyer expects to see before drilling
+   *  into verdicts. Populated by computeHeadlineKpis on the server. */
+  headline_kpis?: HeadlineKpis;
 }
 
 interface ApiResponse {
@@ -625,6 +643,45 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Headline KPIs — the 5 numbers a buyer expects to see first.
+         *  Spec v1 §3.1. Sources cited per KPI in the source code; the
+         *  small 'estimate' badge surfaces when a value derives from
+         *  retailer-profile defaults rather than tenant input. */}
+        {sku.headline_kpis && (
+          <section className="grid grid-cols-5 gap-2 text-[10px]">
+            <HeadlineKpi
+              title="GMROI"
+              hint="target 3.0–3.5"
+              kpi={sku.headline_kpis.gmroi}
+              format={(v) => v.toFixed(2)}
+            />
+            <HeadlineKpi
+              title="STR vs plan"
+              hint="pp delta"
+              kpi={sku.headline_kpis.str_vs_plan_pp}
+              format={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`}
+            />
+            <HeadlineKpi
+              title="FWOC / LT"
+              hint="< 1 = stockout · > 2 = oversupplied"
+              kpi={sku.headline_kpis.fwoc_lt_ratio}
+              format={(v) => `${v.toFixed(1)}×`}
+            />
+            <HeadlineKpi
+              title="S / S ratio"
+              hint="parked stock when > 10"
+              kpi={sku.headline_kpis.s_s_ratio}
+              format={(v) => v.toFixed(1)}
+            />
+            <HeadlineKpi
+              title="Maint. MU"
+              hint="markup post-returns"
+              kpi={sku.headline_kpis.maintained_markup_pct}
+              format={(v) => `${v.toFixed(0)}%`}
+            />
+          </section>
+        )}
+
         {/* Operational quick-stats */}
         <section className="grid grid-cols-3 gap-2 text-[11px]">
           <Stat label="Precio" value={sku.pvp != null ? `€${Number(sku.pvp).toFixed(2)}` : '—'} />
@@ -720,6 +777,49 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="bg-carbon/[0.03] rounded-[8px] p-2">
       <div className="text-[9px] text-carbon/40 uppercase tracking-[0.06em] truncate">{label}</div>
       <div className="text-[13px] font-semibold text-carbon tabular-nums mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+/** Headline KPI tile — the 5 numbers that anchor the buyer's review.
+ *  Renders the value + a subtle directional label + an 'estimate' badge
+ *  when the underlying KPI is computed from synthetic retailer-profile
+ *  defaults rather than tenant-provided data. */
+function HeadlineKpi({
+  title,
+  hint,
+  kpi,
+  format,
+}: {
+  title: string;
+  hint: string;
+  kpi: HeadlineKpiValue;
+  format: (v: number) => string;
+}) {
+  const isSynthetic = kpi.source === 'synthetic';
+  return (
+    <div className="bg-white border border-carbon/[0.06] rounded-[8px] p-2" title={hint}>
+      <div className="flex items-center justify-between gap-1">
+        <div className="text-[9px] text-carbon/45 uppercase tracking-[0.06em] truncate">
+          {title}
+        </div>
+        {isSynthetic && (
+          <span
+            className="text-[8px] text-carbon/40 uppercase tracking-[0.04em] px-1 py-px rounded-sm bg-carbon/[0.04]"
+            title="Estimate from retailer profile (no tenant input)"
+          >
+            est
+          </span>
+        )}
+      </div>
+      <div className="text-[14px] font-semibold text-carbon tabular-nums mt-0.5">
+        {kpi.value != null ? format(kpi.value) : '—'}
+      </div>
+      {kpi.label && (
+        <div className="text-[9px] text-carbon/45 mt-0.5 truncate" title={kpi.label}>
+          {kpi.label}
+        </div>
+      )}
     </div>
   );
 }
