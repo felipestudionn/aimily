@@ -253,7 +253,7 @@ function buildVerdictItem(
   candidate: RecommendationCandidate,
   input: SkuVerdictInput,
   targetRotationDays: number,
-  identity: { product_name: string | null; family_code: string | null; model_ref: string | null },
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null },
   leadTimeDays: number = 0
 ): SkuVerdictItem | null {
   const action = mapActionType(candidate.action_type);
@@ -318,10 +318,12 @@ function buildVerdictItem(
 export function resolveSkuVerdict(
   input: SkuVerdictInput,
   targetRotationDays: number = DEFAULT_TARGET_ROTATION_DAYS,
-  identity: { product_name: string | null; family_code: string | null; model_ref: string | null } = {
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null } = {
     product_name: null,
     family_code: null,
     model_ref: null,
+    color_ref: null,
+    color_name: null,
   },
   leadTimeDays: number = 0
 ): SkuVerdict {
@@ -688,9 +690,24 @@ export interface LineageColorWinner {
 export function appendExtendColorsAction(
   verdict: SkuVerdict,
   winner: LineageColorWinner,
-  identity: { product_name: string | null; family_code: string | null; model_ref: string | null },
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null },
   briefAdjacentColors: string[] = []
 ): SkuVerdict {
+  // 8.1 (2026-05-17) — Output unit = SKU cardinal rule. Color-scope
+  // propagation must FILTER by SKU color. extend_colors attaches ONLY
+  // to the SKU whose own color IS the winner. Other SKUs in the same
+  // style may reference the winning colorway in the rationale of OTHER
+  // actions (e.g., amplify_winner) as context, but the extend_colors
+  // verb itself is SKU-specific.
+  //
+  // Pre-fix bug: extend_colors propagated to every SKU in the lineage,
+  // even those whose own color was unrelated to the winner. Less
+  // catastrophic than the kill propagation (no MATAR on a hero SKU) but
+  // still violated the cardinal rule and produced confusing rationales.
+  if (identity.color_ref == null || identity.color_ref !== winner.color_code) {
+    return verdict;
+  }
+
   // If extend_colors already in the stack, keep the higher-confidence one.
   const existing = verdict.actions.find((a) => a.action === 'extend_colors');
   if (existing && existing.confidence >= winner.confidence) return verdict;
@@ -709,10 +726,12 @@ export function appendExtendColorsAction(
     ? ` Considera extender la paleta a tonos adyacentes del moodboard: ${adjacents.join(', ')}. Mantén ${winner.color_name} como ancla.`
     : ' Considera extender la paleta con tonos adyacentes para amplificar el winner.';
 
+  // Per-SKU rationale (post 8.1 fix): we know this SKU IS the winner color.
+  // Phrase directly to THIS SKU rather than abstractly to the style.
   const rationale =
     winner.rank === 'top'
-      ? `El color ${winner.color_name} es el ganador dentro de este lineage (${Math.round(winner.confidence * 100)}% confianza).${adjacentClause}`
-      : `Color ${winner.color_name} detectado como variante a evaluar dentro del lineage. Validar si extender o reasignar share de compra.`;
+      ? `Este SKU (color ${winner.color_name}) es el ganador dentro de su estilo (${Math.round(winner.confidence * 100)}% confianza).${adjacentClause}`
+      : `Este SKU (color ${winner.color_name}) detectado como variante a evaluar dentro del estilo. Validar si extender o reasignar share de compra.`;
 
   const newItem: SkuVerdictItem = {
     action: 'extend_colors',
@@ -731,12 +750,15 @@ export function appendExtendColorsAction(
       anchor_color_code: winner.color_code,
       anchor_color_hex: winner.color_hex,
       rank: winner.rank,
+      style_family: identity.family_code ?? null,
+      // Preserve legacy field name for any downstream consumers that read
+      // it; safe to remove after lineage→style rename pass (P2).
       lineage_family: identity.family_code ?? null,
       proposed_adjacent_colors: adjacents,
     },
     counter_evidence: {},
     assumptions: [
-      'Recomendación al nivel de lineage: aplica a todos los SKUs del mismo modelo.',
+      'Action applies to THIS SKU (its colorway is the winner within the style). The other colorways are unaffected by this verb.',
     ],
     data_sufficiency_warning: null,
   };
@@ -782,8 +804,28 @@ export interface LineageColorLoser {
 export function appendDropColorAction(
   verdict: SkuVerdict,
   loser: LineageColorLoser,
-  identity: { product_name: string | null; family_code: string | null; model_ref: string | null }
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null }
 ): SkuVerdict {
+  // 8.1 (2026-05-17) — Output unit = SKU cardinal rule. Color-scope
+  // propagation must FILTER by SKU color. If this SKU's own color does
+  // not match the loser color of the lineage, do nothing.
+  //
+  // Pre-fix bug: every SKU in the lineage received a `kill` action with
+  // rationale "color X is the worst performer". Even SKUs whose own
+  // color was a winner showed up as "MATAR" because they shared a
+  // lineage with a loser colorway. 22/48 SKUs (46%) of the V26 corpus
+  // were affected. SKU 1 (color 401, top of RNK PDF, confirmed hero)
+  // received a rogue KILL because color 250 in the same lineage was a
+  // loser.
+  //
+  // Post-fix: kill action attaches ONLY to SKUs whose color_ref matches
+  // loser.color_code. Other SKUs in the lineage are unaffected by this
+  // verb. The rationale of those other SKUs may reference the lineage's
+  // color performance as CONTEXT (e.g., inside amplify_winner evidence),
+  // but the kill action verb itself stays SKU-specific.
+  if (identity.color_ref == null || identity.color_ref !== loser.color_code) {
+    return verdict;
+  }
   // Don't override a SKU-scope kill — those are stronger signals (the
   // entire SKU is being killed, not just one of its colorways).
   const skuLevelKill = verdict.actions.find(
@@ -797,13 +839,16 @@ export function appendDropColorAction(
   if (existing && existing.confidence >= loser.confidence) return verdict;
 
   const familyName = identity.family_code ?? 'esta familia';
+  // Per-SKU rationale (post 8.1 fix): we know this SKU IS the loser color.
+  // Phrase the recommendation directly to THIS SKU rather than abstractly
+  // to the style/lineage.
   const rationale =
-    `El color ${loser.color_name} es el de peor desempeño dentro del lineage ` +
+    `Este SKU (color ${loser.color_name}) es el de peor desempeño dentro del estilo ` +
     `(confianza ${Math.round(loser.confidence * 100)}%, return-risk ${
       loser.return_risk != null ? Math.round(loser.return_risk * 100) : '?'
     }%). ` +
     `Considera retirarlo de la próxima temporada en ${familyName} y rebalancear el share ` +
-    `hacia los colores supervivientes del mismo lineage.`;
+    `hacia los colorways supervivientes del mismo estilo.`;
 
   const newItem: SkuVerdictItem = {
     action: 'kill',
@@ -824,11 +869,14 @@ export function appendDropColorAction(
       anchor_color_hex: loser.color_hex,
       rank: 'bottom',
       return_risk: loser.return_risk,
+      style_family: identity.family_code ?? null,
+      // Preserve legacy field name for any downstream consumers that read
+      // it; safe to remove after lineage→style rename pass (P2).
       lineage_family: identity.family_code ?? null,
     },
     counter_evidence: {},
     assumptions: [
-      'Recomendación al nivel de lineage: aplica al color, no al SKU completo. Si los otros colorways del modelo siguen sanos, mantén el modelo y retira solo este colorway.',
+      'Action applies to THIS SKU (its colorway is the worst performer within the style). The other colorways of the same style are unaffected.',
     ],
     data_sufficiency_warning: null,
   };
@@ -856,7 +904,7 @@ export function appendDropColorAction(
 export function resolveAllSkuVerdicts(
   inputsByProductFactId: Map<string, Omit<SkuVerdictInput, 'candidates'>>,
   candidatesByProductFactId: Map<string, RecommendationCandidate[]>,
-  identityByProductFactId: Map<string, { product_name: string | null; family_code: string | null; model_ref: string | null }>,
+  identityByProductFactId: Map<string, { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null }>,
   defaultTargetRotationDays: number = DEFAULT_TARGET_ROTATION_DAYS,
   perSkuOverrides?: Map<string, number>
 ): SkuVerdict[] {
@@ -868,6 +916,8 @@ export function resolveAllSkuVerdicts(
       product_name: null,
       family_code: null,
       model_ref: null,
+      color_ref: null,
+      color_name: null,
     };
     out.push(
       resolveSkuVerdict(

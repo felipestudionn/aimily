@@ -449,15 +449,28 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 
   // Resolve verdicts — pass identity so the rationale templates can
   // render brand/family names in the human sentence.
+  //
+  // 8.1 (2026-05-17) — color_ref and color_name are now part of identity
+  // so the color-scope appenders (appendDropColorAction,
+  // appendExtendColorsAction) can filter by SKU color match per the
+  // output-unit cardinal rule. See sku-verdict-resolver.ts for context.
   const identityByPid = new Map(
-    products.map((p) => [
-      p.id,
-      {
-        product_name: p.product_name ?? null,
-        family_code: p.family_code ?? null,
-        model_ref: p.model_ref ?? null,
-      },
-    ])
+    products.map((p) => {
+      const colorRef = (p.color_ref as string | null | undefined) ?? null;
+      const colorName = colorRef
+        ? (colorCodeMap[colorRef] ?? colorRef).replace(/_/g, ' ')
+        : null;
+      return [
+        p.id,
+        {
+          product_name: p.product_name ?? null,
+          family_code: p.family_code ?? null,
+          model_ref: p.model_ref ?? null,
+          color_ref: colorRef,
+          color_name: colorName,
+        },
+      ] as const;
+    })
   );
   const verdicts = Array.from(inputs.entries()).map(([pid, base]) => {
     const ident = identityByPid.get(pid);
@@ -530,6 +543,8 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       product_name: null,
       family_code: null,
       model_ref: null,
+      color_ref: null,
+      color_name: null,
     };
     const winner = winnerByMemberPid.get(v.product_fact_id);
     if (winner) {
