@@ -77,8 +77,8 @@ interface ApiResponse {
 const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   kill: 'Kill',
   markdown_accelerate: 'Markdown',
-  replenish: 'Reponer ahora',
-  resize_down: 'Reducir próxima T.',
+  replenish: 'Reponer',
+  resize_down: 'Reducir compra',
   investigate: 'Investigar',
   amplify_winner: 'Replicar estilo',
   extend_colors: 'Extender colores',
@@ -162,9 +162,21 @@ function actionColors(a: VerdictAction): string[] {
 
 // When a SKU stack contains real actions, the "hold" fallback is noise.
 // Drop it; only surface hold when it is the ONLY thing the engine has.
+// Also drop the "replenish + resize_down" contradiction: a SKU that needs
+// stock NOW (because it sells fast) cannot also be the one to under-buy
+// next season — those two signals are logically incompatible. Keep the
+// one with the highest confidence; the other was a noise candidate.
 function visibleActions(actions: VerdictAction[]): VerdictAction[] {
-  const nonHold = actions.filter((a) => a.action !== 'hold');
-  return nonHold.length > 0 ? nonHold : actions;
+  let list = actions.filter((a) => a.action !== 'hold');
+  if (list.length === 0) list = actions;
+
+  const rep = list.find((a) => a.action === 'replenish');
+  const down = list.find((a) => a.action === 'resize_down');
+  if (rep && down) {
+    const loser = rep.confidence >= down.confidence ? 'resize_down' : 'replenish';
+    list = list.filter((a) => a.action !== loser);
+  }
+  return list;
 }
 
 export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: string; tenantSlug: string }) {
