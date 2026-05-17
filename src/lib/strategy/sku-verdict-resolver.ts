@@ -22,13 +22,15 @@
 import type { RecommendationCandidate } from './recommend';
 import { generateRationale, shouldCarryUnits, type RationaleContext } from './sku-verdict-rationale';
 
-/** The seven action types a per-SKU verdict can surface. */
+/** The nine action types a per-SKU verdict can surface. */
 export type SkuVerdictAction =
   | 'kill'
   | 'markdown_accelerate'
   | 'replenish'
   | 'resize_down'
   | 'investigate'
+  | 'amplify_winner'
+  | 'extend_colors'
   | 'carryover'
   | 'hold';
 
@@ -43,6 +45,8 @@ const ACTION_DISPLAY_ORDER: SkuVerdictAction[] = [
   'replenish',
   'resize_down',
   'investigate',
+  'amplify_winner',
+  'extend_colors',
   'carryover',
   'hold',
 ];
@@ -320,6 +324,150 @@ export function resolveSkuVerdict(
     target_rotation_days: targetRotationDays,
     current_stock_days,
   };
+}
+
+/**
+ * Append an `amplify_winner` action when the SKU is materially out-
+ * performing its family (Felipe's "vende 2× la media" rule). For these
+ * winners, surfacing "carryover" alone is insufficient — the right
+ * second-order action is "design the next generation in this winning
+ * archetype" so next season captures the demand the current SKU is
+ * already proving.
+ *
+ * Trigger: demand_score ≥ 0.7 (top quintile in family) + hero indicators
+ * (sell-through ≥ 50%, returns ≤ 18%). The signal becomes a strong
+ * candidate-for-followups for the merchandising team to brief design.
+ */
+export function appendAmplifyWinnerAction(
+  verdict: SkuVerdict,
+  signals: {
+    demand_score: number | null;
+    sell_through_bought_pct: number | null;
+    returns_pct: number | null;
+    velocity_7d: number | null;
+    family_code: string | null;
+  }
+): SkuVerdict {
+  if (
+    (signals.demand_score ?? 0) < 0.7 ||
+    (signals.sell_through_bought_pct ?? 0) < 0.5 ||
+    (signals.returns_pct ?? 1) > 0.18
+  ) {
+    return verdict;
+  }
+  // Skip if already present.
+  if (verdict.actions.some((a) => a.action === 'amplify_winner')) return verdict;
+
+  const demandPct = Math.round((signals.demand_score ?? 0) * 100);
+  const rationale = `Hero claro · puntúa ${demandPct}% sobre la media de su familia${
+    signals.family_code ? ` (${signals.family_code})` : ''
+  } con sell-through ${Math.round(
+    (signals.sell_through_bought_pct ?? 0) * 100
+  )}% y devoluciones controladas. Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.`;
+
+  const newItem: SkuVerdictItem = {
+    action: 'amplify_winner',
+    confidence: Math.min(0.95, 0.6 + (signals.demand_score ?? 0) * 0.4),
+    rationale,
+    recommended_units: null,
+    confidence_breakdown: {
+      data_completeness: null,
+      identity: null,
+      demand: signals.demand_score ?? null,
+      margin: null,
+      creative_fit: null,
+    },
+    evidence: {
+      demand_score: signals.demand_score,
+      sell_through_bought_pct: signals.sell_through_bought_pct,
+      returns_pct: signals.returns_pct,
+      velocity_7d: signals.velocity_7d,
+      family_code: signals.family_code,
+    },
+    counter_evidence: {},
+    assumptions: [
+      'Recomendación estratégica al equipo de diseño/merch, no operacional.',
+    ],
+    data_sufficiency_warning: null,
+  };
+
+  // Reinsert with stable display order.
+  const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const a of verdict.actions) map.set(a.action, a);
+  map.set('amplify_winner', newItem);
+  const reordered: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = map.get(a);
+    if (item) reordered.push(item);
+  }
+  return { ...verdict, actions: reordered };
+}
+
+/**
+ * Append a synthetic `extend_colors` action to a SKU verdict when its
+ * lineage has a `recolor` candidate (color winner detected). The
+ * recommendation is at the lineage level so all sibling SKUs share it.
+ *
+ * The action carries the winning color name + confidence; the rationale
+ * surfaces both pieces in human language. Returns a new SkuVerdict.
+ */
+export interface LineageColorWinner {
+  color_name: string;
+  color_code: string;
+  confidence: number;
+  rank: string;
+  demand_score: number | null;
+}
+
+export function appendExtendColorsAction(
+  verdict: SkuVerdict,
+  winner: LineageColorWinner,
+  identity: { product_name: string | null; family_code: string | null; model_ref: string | null }
+): SkuVerdict {
+  // If extend_colors already in the stack, keep the higher-confidence one.
+  const existing = verdict.actions.find((a) => a.action === 'extend_colors');
+  if (existing && existing.confidence >= winner.confidence) return verdict;
+
+  const rationale =
+    winner.rank === 'top'
+      ? `El color ${winner.color_name} es el ganador dentro de este lineage (${Math.round(winner.confidence * 100)}% confianza). Considera extender la paleta con tonos adyacentes para amplificar el winner.`
+      : `Color ${winner.color_name} detectado como variante a evaluar dentro del lineage. Validar si extender o reasignar share de compra.`;
+
+  const newItem: SkuVerdictItem = {
+    action: 'extend_colors',
+    confidence: winner.confidence,
+    rationale,
+    recommended_units: null,
+    confidence_breakdown: {
+      data_completeness: null,
+      identity: null,
+      demand: winner.demand_score ?? null,
+      margin: null,
+      creative_fit: null,
+    },
+    evidence: {
+      anchor_color_name: winner.color_name,
+      anchor_color_code: winner.color_code,
+      rank: winner.rank,
+      lineage_family: identity.family_code ?? null,
+    },
+    counter_evidence: {},
+    assumptions: [
+      'Recomendación al nivel de lineage: aplica a todos los SKUs del mismo modelo.',
+    ],
+    data_sufficiency_warning: null,
+  };
+
+  // Reinsert with stable display order.
+  const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const a of verdict.actions) map.set(a.action, a);
+  map.set('extend_colors', newItem);
+  const reordered: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = map.get(a);
+    if (item) reordered.push(item);
+  }
+  return { ...verdict, actions: reordered };
 }
 
 /**

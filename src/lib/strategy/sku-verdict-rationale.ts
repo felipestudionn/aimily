@@ -157,6 +157,21 @@ export function generateRationale(
       return `Vuela pero también vuela de vuelta: ${head}. ${ask}`;
     }
 
+    case 'extend_colors': {
+      // The lineage-level helper in sku-verdict-resolver.ts already
+      // generates a contextual rationale with the winner color name.
+      // This branch is a fallback only — never expected to fire during
+      // normal flow.
+      return 'Color winner detectado en el lineage. Considera extender la paleta.';
+    }
+
+    case 'amplify_winner': {
+      // The hero-detection helper in sku-verdict-resolver.ts already
+      // generates a contextual rationale with the family + demand_score.
+      // This branch is a fallback only.
+      return 'Hero confirmado: vende muy por encima de su familia. Diseñar secuelas para próxima temporada.';
+    }
+
     case 'hold': {
       const newStage = ctx.lifecycle_stage === 'new';
       if (newStage) {

@@ -22,6 +22,8 @@ interface VerdictAction {
     | 'replenish'
     | 'resize_down'
     | 'investigate'
+    | 'amplify_winner'
+    | 'extend_colors'
     | 'carryover'
     | 'hold';
   confidence: number;
@@ -78,6 +80,8 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   replenish: 'Reponer',
   resize_down: 'Reducir',
   investigate: 'Investigar',
+  amplify_winner: 'Replicar arquetipo',
+  extend_colors: 'Extender colores',
   carryover: 'Mantener',
   hold: 'Esperar',
 };
@@ -88,6 +92,8 @@ const ACTION_TONE: Record<VerdictAction['action'], string> = {
   replenish: 'bg-emerald-50 text-emerald-700',
   resize_down: 'bg-orange-50 text-orange-700',
   investigate: 'bg-blue-50 text-blue-700',
+  amplify_winner: 'bg-violet-50 text-violet-700',
+  extend_colors: 'bg-indigo-50 text-indigo-700',
   carryover: 'bg-emerald-50 text-emerald-700',
   hold: 'bg-carbon/[0.06] text-carbon/55',
 };

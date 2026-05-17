@@ -24,9 +24,12 @@ import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   resolveSkuVerdict,
+  appendExtendColorsAction,
+  appendAmplifyWinnerAction,
   DEFAULT_TARGET_ROTATION_DAYS,
   type SkuVerdictInput,
   type SkuVerdictAction,
+  type LineageColorWinner,
 } from '@/lib/strategy/sku-verdict-resolver';
 import {
   modulateSkuVerdicts,
@@ -64,7 +67,14 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // product_facts for the tenant — that returns rows from other runs.
   // Instead we get the product_fact_ids that THIS run actually scored
   // (via strategy_sku_scores) and look up their facts in step 2.
-  const [skuScoresRes, candidatesRes, constraintRes, briefRes, sourcesRes] = await Promise.all([
+  const [
+    skuScoresRes,
+    candidatesRes,
+    constraintRes,
+    briefRes,
+    sourcesRes,
+    colorTaxRes,
+  ] = await Promise.all([
     supabaseAdmin
       .from('strategy_sku_scores')
       .select('product_fact_id')
@@ -75,7 +85,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         'scope, scope_ref, action_type, evidence, counter_evidence, assumptions, confidence_data_completeness, confidence_identity, confidence_demand, confidence_margin, confidence_creative_fit, confidence_action, data_sufficiency_warning, proposed_magnitude, narrative'
       )
       .eq('run_id', runId)
-      .eq('scope', 'sku'),
+      .in('scope', ['sku', 'color']),
     run.constraint_id
       ? supabaseAdmin
           .from('strategy_constraints')
@@ -96,16 +106,27 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           .select('id, storage_path, source_format')
           .in('id', run.source_set_ids as string[])
       : Promise.resolve({ data: [] as any[] }),
+    supabaseAdmin
+      .from('strategy_taxonomies')
+      .select('mapping')
+      .eq('tenant_id', run.tenant_id)
+      .eq('taxonomy_kind', 'color')
+      .eq('is_active', true)
+      .maybeSingle(),
   ]);
+
+  const colorCodeMap = (
+    ((colorTaxRes as any)?.data?.mapping?.code_to_name) || {}
+  ) as Record<string, string>;
 
   // Resolve product_fact_ids: union of the run's sku_scores +
   // the candidate scope_refs. Some runs only persist one or the other.
   const skuScoreRows = (skuScoresRes.data || []) as Array<{ product_fact_id: string }>;
   const allCandidates = (candidatesRes.data || []) as any[];
+  const skuCandidates = allCandidates.filter((c) => c.scope === 'sku');
+  const colorCandidates = allCandidates.filter((c) => c.scope === 'color');
   const pidsFromScores = skuScoreRows.map((s) => s.product_fact_id).filter(Boolean);
-  const pidsFromCandidates = allCandidates
-    .filter((c) => c.scope === 'sku')
-    .map((c) => c.scope_ref as string);
+  const pidsFromCandidates = skuCandidates.map((c) => c.scope_ref as string);
   const targetPids = Array.from(new Set([...pidsFromScores, ...pidsFromCandidates]));
 
   console.log('[runs/skus] diagnostics', {
@@ -113,7 +134,8 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     tenantId: run.tenant_id,
     skuScoreRows: skuScoreRows.length,
     candidatesTotal: allCandidates.length,
-    candidatesSku: pidsFromCandidates.length,
+    candidatesSku: skuCandidates.length,
+    candidatesColor: colorCandidates.length,
     targetPids: targetPids.length,
     sourcesCount: ((sourcesRes as any).data || []).length,
   });
@@ -182,12 +204,60 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     source_format: string;
   }>;
 
-  // Group candidates by scope_ref (= product_fact_id for sku scope).
+  // Group sku-scope candidates by product_fact_id for the resolver.
   const candidatesByPid = new Map<string, any[]>();
-  for (const c of candidates) {
+  for (const c of skuCandidates) {
     const arr = candidatesByPid.get(c.scope_ref) ?? [];
     arr.push(c);
     candidatesByPid.set(c.scope_ref, arr);
+  }
+
+  // Aggregate color winners per lineage. color candidates carry
+  // scope_ref = `<lineage_id>#<color_code>` and evidence.rank/demand_score
+  // describing the lineage's top color performer.
+  const colorWinnersByLineage = new Map<string, LineageColorWinner>();
+  for (const c of colorCandidates) {
+    const [lineageId, colorCode] = String(c.scope_ref).split('#');
+    if (!lineageId || !colorCode) continue;
+    const conf = Number(c.confidence_action) || 0;
+    const existing = colorWinnersByLineage.get(lineageId);
+    if (existing && existing.confidence >= conf) continue;
+    const evidence = (c.evidence || {}) as Record<string, unknown>;
+    const colorName = colorCodeMap[colorCode]
+      ? colorCodeMap[colorCode].replace(/_/g, ' ')
+      : colorCode;
+    colorWinnersByLineage.set(lineageId, {
+      color_name: colorName,
+      color_code: colorCode,
+      confidence: conf,
+      rank: typeof evidence.rank === 'string' ? (evidence.rank as string) : 'top',
+      demand_score:
+        typeof evidence.demand_score === 'number' ? (evidence.demand_score as number) : null,
+    });
+  }
+
+  // Look up lineage → member_product_fact_ids so we can attach the
+  // extend_colors action to every SKU in the lineage.
+  const lineageIdsForColors = Array.from(colorWinnersByLineage.keys());
+  const { data: lineageRowsForColors } =
+    lineageIdsForColors.length > 0
+      ? await supabaseAdmin
+          .from('strategy_sku_identity_graph')
+          .select('id, member_product_fact_ids')
+          .in('id', lineageIdsForColors)
+      : { data: [] as any[] };
+  const winnerByMemberPid = new Map<string, LineageColorWinner>();
+  for (const row of (lineageRowsForColors || []) as any[]) {
+    const winner = colorWinnersByLineage.get(row.id);
+    if (!winner) continue;
+    const members = (row.member_product_fact_ids as string[]) || [];
+    for (const pid of members) {
+      // Higher-confidence winner wins when a SKU sits in multiple lineages.
+      const existing = winnerByMemberPid.get(pid);
+      if (!existing || winner.confidence > existing.confidence) {
+        winnerByMemberPid.set(pid, winner);
+      }
+    }
   }
 
   // Build SkuVerdictInput per product. Merges identity (from product_facts),
@@ -251,7 +321,40 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     color_story: (brief?.color_story as string[]) || [],
     archetypes_focus: (brief?.archetypes_focus as string[]) || [],
   };
-  const modulated = modulateSkuVerdicts(verdicts, archetype, budget, briefCtx, financialsByPid);
+  let modulated = modulateSkuVerdicts(verdicts, archetype, budget, briefCtx, financialsByPid);
+
+  // Layer in lineage-level + hero-level actions after modulation.
+  // extend_colors comes from the color-scope candidates of this run;
+  // amplify_winner is computed from each SKU's evidence + sell-through.
+  modulated = modulated.map((v) => {
+    let next = v;
+    const identity = identityByPid.get(v.product_fact_id) ?? {
+      product_name: null,
+      family_code: null,
+      model_ref: null,
+    };
+    const winner = winnerByMemberPid.get(v.product_fact_id);
+    if (winner) {
+      next = { ...appendExtendColorsAction(next, winner, identity), modulator_notes: next.modulator_notes };
+    }
+    // Pull the signals amplify_winner needs from any of the SKU's existing
+    // verdict items (evidence is duplicated across them via the resolver).
+    const anyEvidence = (next.actions[0]?.evidence ?? {}) as Record<string, unknown>;
+    next = {
+      ...appendAmplifyWinnerAction(next, {
+        demand_score: typeof anyEvidence.demand_score === 'number' ? (anyEvidence.demand_score as number) : null,
+        sell_through_bought_pct:
+          typeof anyEvidence.sell_through_bought_pct === 'number'
+            ? (anyEvidence.sell_through_bought_pct as number)
+            : null,
+        returns_pct: typeof anyEvidence.returns_pct === 'number' ? (anyEvidence.returns_pct as number) : null,
+        velocity_7d: inputs.get(v.product_fact_id)?.velocity_7d ?? null,
+        family_code: identity.family_code,
+      }),
+      modulator_notes: next.modulator_notes,
+    };
+    return next;
+  });
 
   // Find the most likely PDF among the sources (zara_rnk_pdf is the
   // primary case). Generate a 1h signed URL for the client to render.
