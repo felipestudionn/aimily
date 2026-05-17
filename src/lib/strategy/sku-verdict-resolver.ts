@@ -1,0 +1,297 @@
+/**
+ * SKU verdict resolver — multi-action verdict per SKU.
+ *
+ * Felipe's rule: each SKU surfaces ALL the actions the engine detected
+ * (typically 1-3). A hero with rising returns shows up as both
+ * `carryover` and `investigate`. The buyer reads the stack and decides
+ * which one to act on.
+ *
+ * For each action that involves buying (replenish, carryover) we compute
+ * a recommended_units anchored on a healthy rotation target:
+ *
+ *   recommended_units = (velocity_per_day × target_rotation_days × stores_with_stock)
+ *                       − (stock_total + pipeline_total)
+ *
+ * Default rotation is 4 days (Felipe's baseline) but lives per-action so
+ * the UI can let the buyer override per SKU.
+ *
+ * Output is a `SkuVerdict` that becomes the data shape for the PDF
+ * overlay + drawer UI: one row per SKU with multiple action chips.
+ */
+
+import type { RecommendationCandidate } from './recommend';
+
+/** The seven action types a per-SKU verdict can surface. */
+export type SkuVerdictAction =
+  | 'kill'
+  | 'markdown_accelerate'
+  | 'replenish'
+  | 'resize_down'
+  | 'investigate'
+  | 'carryover'
+  | 'hold';
+
+/**
+ * Stable display order when a SKU stacks multiple actions. Most
+ * consequential / urgent at the top so the buyer scans the right thing
+ * first. Kill leads; hold is the fallback when nothing else fits.
+ */
+const ACTION_DISPLAY_ORDER: SkuVerdictAction[] = [
+  'kill',
+  'markdown_accelerate',
+  'replenish',
+  'resize_down',
+  'investigate',
+  'carryover',
+  'hold',
+];
+
+export interface SkuVerdictInput {
+  product_fact_id: string;
+  /** All candidates emitted by recommend.ts for this SKU. */
+  candidates: RecommendationCandidate[];
+  /** Operational metrics needed for the rotation-based quantity math. */
+  velocity_7d: number | null;
+  velocity_d1: number | null;
+  stores_active: number | null;
+  stores_with_stock: number | null;
+  stock_total: number | null;
+  pipeline_total: number | null;
+}
+
+/** One row in the per-SKU action stack. */
+export interface SkuVerdictItem {
+  action: SkuVerdictAction;
+  /** Confidence of the underlying candidate that produced this action. */
+  confidence: number;
+  /** Units to buy (only set for replenish / carryover). Null when not
+   *  applicable (kill / markdown / investigate / hold). */
+  recommended_units: number | null;
+  /** Confidence dimensions inherited from the source candidate. */
+  confidence_breakdown: {
+    data_completeness: number | null;
+    identity: number | null;
+    demand: number | null;
+    margin: number | null;
+    creative_fit: number | null;
+  };
+  /** Evidence + counter-evidence + assumptions for the drawer detail view. */
+  evidence: Record<string, unknown>;
+  counter_evidence: Record<string, unknown>;
+  assumptions: string[];
+  /** Optional warning the engine attached to this candidate. */
+  data_sufficiency_warning: string | null;
+}
+
+export interface SkuVerdict {
+  product_fact_id: string;
+  /** 1-N actions, ordered by ACTION_DISPLAY_ORDER. Always at least one
+   *  (defaults to `hold` when no candidate maps cleanly). */
+  actions: SkuVerdictItem[];
+  /** Buyer-editable rotation target in days. Default 4d (Felipe's baseline).
+   *  Applied to every replenish/carryover action in the stack. */
+  target_rotation_days: number;
+  /** Days of stock currently on hand at the SKU's velocity. Same number
+   *  across all actions for this SKU so we store it at SKU scope. */
+  current_stock_days: number | null;
+}
+
+/** Default rotation a healthy fast-fashion product should sit at. Comes
+ *  from Felipe's explicit guidance ("una rotación de cuatro días sería
+ *  sana"). Buyers can override per SKU in the drawer. */
+export const DEFAULT_TARGET_ROTATION_DAYS = 4;
+
+/** Map a recommend.ts action_type to our 7-verb verdict vocabulary.
+ *  Returns null for engine actions that don't fit at SKU scope
+ *  (new_sku_proposal, family_extension, tension_flag, recolor at lineage
+ *  scope, substitute, geographic_redistribute). */
+function mapActionType(action: string): SkuVerdictAction | null {
+  switch (action) {
+    case 'kill':
+      return 'kill';
+    case 'markdown_accelerate':
+    case 'markdown_delay':
+      return 'markdown_accelerate';
+    case 'replenish':
+      return 'replenish';
+    case 'resize_up':
+      return 'carryover';
+    case 'resize_down':
+      return 'resize_down';
+    case 'investigate':
+      return 'investigate';
+    case 'carryover':
+      return 'carryover';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Compute target buy units to hit the requested rotation.
+ *
+ * Math:
+ *   velocity_per_day = velocity_d1 (preferred) || velocity_7d / 7
+ *   target_units     = velocity_per_day × target_rotation_days × stores_with_stock
+ *   gap              = max(0, target_units − (stock_total + pipeline_total))
+ *
+ * Returns null for units when no velocity data is available.
+ */
+export function computeReplenishUnits(
+  input: Pick<
+    SkuVerdictInput,
+    'velocity_7d' | 'velocity_d1' | 'stores_with_stock' | 'stock_total' | 'pipeline_total'
+  >,
+  targetRotationDays: number
+): { recommended_units: number | null; current_stock_days: number | null } {
+  const velocityPerDay =
+    input.velocity_d1 != null && input.velocity_d1 > 0
+      ? input.velocity_d1
+      : input.velocity_7d != null && input.velocity_7d > 0
+      ? input.velocity_7d / 7
+      : null;
+  if (velocityPerDay == null) {
+    return { recommended_units: null, current_stock_days: null };
+  }
+  const currentStock = (input.stock_total ?? 0) + (input.pipeline_total ?? 0);
+  const stores = Math.max(1, input.stores_with_stock ?? 1);
+  const targetUnits = velocityPerDay * targetRotationDays * stores;
+  const gap = Math.max(0, Math.round(targetUnits - currentStock));
+  const currentStockDays = velocityPerDay > 0 ? currentStock / velocityPerDay : null;
+  return {
+    recommended_units: gap,
+    current_stock_days: currentStockDays != null ? Math.round(currentStockDays * 10) / 10 : null,
+  };
+}
+
+/**
+ * Build a single SkuVerdictItem from a recommend.ts candidate.
+ * Returns null when the candidate's action doesn't map to a SKU-scope
+ * verdict (those are filtered out upstream).
+ */
+function buildVerdictItem(
+  candidate: RecommendationCandidate,
+  input: SkuVerdictInput,
+  targetRotationDays: number
+): SkuVerdictItem | null {
+  const action = mapActionType(candidate.action_type);
+  if (!action) return null;
+
+  const needsUnits = action === 'replenish' || action === 'carryover';
+  const { recommended_units } = needsUnits
+    ? computeReplenishUnits(input, targetRotationDays)
+    : { recommended_units: null };
+
+  return {
+    action,
+    confidence: Number(candidate.confidence_action) || 0,
+    recommended_units,
+    confidence_breakdown: {
+      data_completeness: candidate.confidence_data_completeness ?? null,
+      identity: candidate.confidence_identity ?? null,
+      demand: candidate.confidence_demand ?? null,
+      margin: candidate.confidence_margin ?? null,
+      creative_fit: candidate.confidence_creative_fit ?? null,
+    },
+    evidence: (candidate.evidence as Record<string, unknown>) ?? {},
+    counter_evidence: (candidate.counter_evidence as Record<string, unknown>) ?? {},
+    assumptions: (candidate.assumptions as string[]) ?? [],
+    data_sufficiency_warning: candidate.data_sufficiency_warning,
+  };
+}
+
+/**
+ * Resolve a SKU's full set of candidates into a stack of verdict items.
+ * Multiple actions for the same SKU are allowed and surfaced — Felipe's
+ * rule: "se ponen todas las que haya, puede tener dos o tres acciones".
+ *
+ * When two candidates collapse to the same SkuVerdictAction (e.g. two
+ * markdown variants) we keep the one with higher confidence. When no
+ * candidate maps to a usable action, we emit a single `hold`.
+ */
+export function resolveSkuVerdict(
+  input: SkuVerdictInput,
+  targetRotationDays: number = DEFAULT_TARGET_ROTATION_DAYS
+): SkuVerdict {
+  // Build items for every candidate that maps to a SKU-scope action.
+  const itemsByAction = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const c of input.candidates) {
+    const item = buildVerdictItem(c, input, targetRotationDays);
+    if (!item) continue;
+    const existing = itemsByAction.get(item.action);
+    if (!existing || item.confidence > existing.confidence) {
+      itemsByAction.set(item.action, item);
+    }
+  }
+
+  // Sort by stable display order so the UI always shows the most
+  // consequential action first.
+  const actions: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = itemsByAction.get(a);
+    if (item) actions.push(item);
+  }
+
+  // Diagnostic: current stock days at the SKU's velocity. Same number
+  // for the whole SKU (independent of which actions apply).
+  const { current_stock_days } = computeReplenishUnits(input, targetRotationDays);
+
+  if (actions.length === 0) {
+    // No usable signal — emit a hold so the UI always has something to
+    // render and the buyer sees "nothing actionable here, reassess".
+    const fallback = input.candidates[0];
+    actions.push({
+      action: 'hold',
+      confidence: 0.3,
+      recommended_units: null,
+      confidence_breakdown: {
+        data_completeness: fallback?.confidence_data_completeness ?? null,
+        identity: fallback?.confidence_identity ?? null,
+        demand: fallback?.confidence_demand ?? null,
+        margin: fallback?.confidence_margin ?? null,
+        creative_fit: fallback?.confidence_creative_fit ?? null,
+      },
+      evidence: (fallback?.evidence as Record<string, unknown>) ?? {},
+      counter_evidence: (fallback?.counter_evidence as Record<string, unknown>) ?? {},
+      assumptions: (fallback?.assumptions as string[]) ?? [],
+      data_sufficiency_warning:
+        fallback?.data_sufficiency_warning ??
+        'No clear signal for this SKU — hold and reassess next run',
+    });
+  }
+
+  return {
+    product_fact_id: input.product_fact_id,
+    actions,
+    target_rotation_days: targetRotationDays,
+    current_stock_days,
+  };
+}
+
+/**
+ * Batch-resolve all SKUs in a run into a verdict-per-SKU map.
+ *
+ * `inputsByProductFactId` keys the per-SKU operational metrics (velocity,
+ * stock, etc.) by product_fact_id. `candidatesByProductFactId` maps the
+ * raw candidates emitted by recommend.ts. SKUs that appear in inputs but
+ * have no candidates still get a `hold` verdict.
+ */
+export function resolveAllSkuVerdicts(
+  inputsByProductFactId: Map<string, Omit<SkuVerdictInput, 'candidates'>>,
+  candidatesByProductFactId: Map<string, RecommendationCandidate[]>,
+  defaultTargetRotationDays: number = DEFAULT_TARGET_ROTATION_DAYS,
+  perSkuOverrides?: Map<string, number>
+): SkuVerdict[] {
+  const out: SkuVerdict[] = [];
+  for (const [pid, base] of Array.from(inputsByProductFactId.entries())) {
+    const candidates = candidatesByProductFactId.get(pid) ?? [];
+    const rotation = perSkuOverrides?.get(pid) ?? defaultTargetRotationDays;
+    out.push(
+      resolveSkuVerdict(
+        { ...base, product_fact_id: pid, candidates },
+        rotation
+      )
+    );
+  }
+  return out;
+}
