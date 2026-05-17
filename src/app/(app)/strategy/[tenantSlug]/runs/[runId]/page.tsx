@@ -262,13 +262,23 @@ export default async function RunDetailPage({ params }: PageProps) {
             </p>
           </div>
 
-          <RunActionsClient
-            runId={run.id}
-            runStatus={run.run_status}
-            hasBacktest={!!backtest.data}
-            tenantSlug={tenant.slug}
-            familyCodes={(families.data || []).map((f: any) => f.family_code as string)}
-          />
+          <div className="flex items-center gap-3">
+            {run.run_status === 'complete' && (
+              <Link
+                href={`/strategy/${tenant.slug}/runs/${run.id}/pdf-view`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-medium hover:bg-carbon/90 transition-colors"
+              >
+                PDF · verdicts por SKU →
+              </Link>
+            )}
+            <RunActionsClient
+              runId={run.id}
+              runStatus={run.run_status}
+              hasBacktest={!!backtest.data}
+              tenantSlug={tenant.slug}
+              familyCodes={(families.data || []).map((f: any) => f.family_code as string)}
+            />
+          </div>
         </header>
 
         {run.run_status === 'failed' && (run.error_log as any[])?.length > 0 && (
