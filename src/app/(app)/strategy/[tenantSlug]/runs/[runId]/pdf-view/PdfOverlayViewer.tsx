@@ -77,8 +77,8 @@ interface ApiResponse {
 const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   kill: 'Kill',
   markdown_accelerate: 'Markdown',
-  replenish: 'Reponer',
-  resize_down: 'Reducir',
+  replenish: 'Reponer ahora',
+  resize_down: 'Reducir próxima T.',
   investigate: 'Investigar',
   amplify_winner: 'Replicar estilo',
   extend_colors: 'Extender colores',
@@ -86,21 +86,79 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   hold: 'Esperar',
 };
 
-// Aimily palette: carbon-only. Three tiers:
-//   strong  = bg-carbon text-white       → buyer must act
-//   soft    = border + carbon text       → notable, not urgent
-//   neutral = bg-carbon/[0.04] text-carbon/45 → informational
+// Aimily accent palette. Each action keys to a different brand colour so
+// the buyer can scan a page of SKUs and tell verdicts apart at a glance.
+// Tokens (tailwind.config.js): error / warning / success / sea-foam / moss
+// / clay / citronella / midnight / linen / carbon.
 const ACTION_TONE: Record<VerdictAction['action'], string> = {
-  kill: 'bg-carbon text-white',
-  markdown_accelerate: 'bg-carbon text-white',
-  replenish: 'bg-carbon text-white',
-  resize_down: 'bg-carbon text-white',
-  amplify_winner: 'bg-carbon text-white',
-  investigate: 'border border-carbon/[0.15] text-carbon/70 bg-white',
-  extend_colors: 'border border-carbon/[0.15] text-carbon/70 bg-white',
-  carryover: 'bg-carbon/[0.04] text-carbon/55',
+  kill: 'bg-error/15 text-error',
+  markdown_accelerate: 'bg-warning/15 text-warning',
+  replenish: 'bg-success/20 text-success',
+  resize_down: 'bg-clay text-carbon',
+  investigate: 'bg-sea-foam text-carbon',
+  amplify_winner: 'bg-midnight text-white',
+  extend_colors: 'bg-moss text-carbon',
+  carryover: 'bg-linen text-carbon/70',
   hold: 'bg-carbon/[0.04] text-carbon/45',
 };
+
+// Approximate hex for typical Spanish/RNK colour names. Used to render
+// little swatches next to "Extender colores" / "Replicar estilo". Keys
+// are lowercased and unaccented before lookup.
+const COLOR_NAME_HEX: Record<string, string> = {
+  negro: '#101010', blanco: '#fafaf7', beige: '#e7d9c3', crudo: '#efe7d8',
+  hueso: '#f3eee0', marfil: '#f0e8d4', crema: '#f1e8d2', arena: '#d9c6a4',
+  camel: '#c1986c', tostado: '#9a6a3d', cuero: '#8a5a32', cognac: '#a45c2a',
+  marron: '#6b4528', chocolate: '#4a2c1a', tabaco: '#7c5a3a',
+  caqui: '#a79770', oliva: '#7a8538', kaki: '#a79770', verde: '#3f7a4f',
+  'verde botella': '#1f4634', 'verde militar': '#4a5a37', 'verde menta': '#a8d8b9',
+  azul: '#3a5da9', 'azul marino': '#1a3162', 'azul claro': '#9bc4e2',
+  celeste: '#9bc4e2', turquesa: '#4ea8a4', petroleo: '#1f5b66',
+  morado: '#5a3a7a', violeta: '#7a4f8a', lila: '#bba2c8', malva: '#a385a3',
+  rojo: '#a82828', 'rojo cereza': '#7a1c1c', granate: '#6e1a1a',
+  burdeos: '#5b1a22', vino: '#5b1a22', coral: '#e08a6e',
+  rosa: '#e8b4b4', 'rosa palo': '#e8c4c4', 'rosa empolvado': '#deb5b5',
+  fucsia: '#d63b6a', salmon: '#e8a48a',
+  naranja: '#d68040', mostaza: '#c8a64a', ocre: '#c89548',
+  amarillo: '#e8c84a', dorado: '#c89a4a',
+  gris: '#9e9e9e', 'gris claro': '#c8c8c8', 'gris oscuro': '#5a5a5a',
+  'gris perla': '#cfcfcf', plata: '#c8c8c8',
+};
+
+function normaliseColorName(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
+function colorToHex(name: string): string | null {
+  const key = normaliseColorName(name);
+  if (COLOR_NAME_HEX[key]) return COLOR_NAME_HEX[key];
+  // Try first word in case of two-word names (e.g. "rojo intenso").
+  const first = key.split(' ')[0];
+  if (first && COLOR_NAME_HEX[first]) return COLOR_NAME_HEX[first];
+  return null;
+}
+
+/** Extract the colour names a verdict-action wants to surface as swatches. */
+function actionColors(a: VerdictAction): string[] {
+  if (a.action === 'extend_colors') {
+    const ev = a.evidence as Record<string, unknown>;
+    const winner =
+      typeof ev.anchor_color_name === 'string' ? (ev.anchor_color_name as string) : null;
+    return winner ? [winner] : [];
+  }
+  if (a.action === 'amplify_winner') {
+    const ev = a.evidence as Record<string, unknown>;
+    const proposed = Array.isArray(ev.proposed_brief_colors)
+      ? (ev.proposed_brief_colors as string[])
+      : [];
+    return proposed.filter(Boolean);
+  }
+  return [];
+}
 
 // When a SKU stack contains real actions, the "hold" fallback is noise.
 // Drop it; only surface hold when it is the ONLY thing the engine has.
@@ -327,16 +385,22 @@ function SkuPanel({
                   <ChevronRight className="h-3.5 w-3.5 text-carbon/30 mt-1 shrink-0" />
                 </div>
                 <div className="pl-[42px] space-y-1.5">
-                  <div className="flex flex-wrap gap-1">
-                    {visibleActions(sku.actions).map((a) => (
-                      <span
-                        key={a.action}
-                        className={`px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
-                      >
-                        {ACTION_LABEL_ES[a.action]}
-                        {a.recommended_units != null && a.recommended_units > 0 ? ` · ${a.recommended_units.toLocaleString()} uds` : ''}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap items-center gap-1">
+                    {visibleActions(sku.actions).map((a) => {
+                      const colors = actionColors(a);
+                      return (
+                        <span
+                          key={a.action}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                        >
+                          {ACTION_LABEL_ES[a.action]}
+                          {a.recommended_units != null && a.recommended_units > 0
+                            ? ` · ${a.recommended_units.toLocaleString()} uds`
+                            : ''}
+                          {colors.length > 0 && <ColorSwatches names={colors} />}
+                        </span>
+                      );
+                    })}
                   </div>
                   {visibleActions(sku.actions)[0]?.rationale && (
                     <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
@@ -433,12 +497,13 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
         <section className="space-y-3">
           {visibleActions(sku.actions).map((a, i) => (
             <div key={`${a.action}-${i}`} className="border border-carbon/[0.06] rounded-[12px] p-3">
-              <div className="flex items-baseline justify-between mb-2">
-                <div className="flex items-baseline gap-2">
+              <div className="flex items-center justify-between mb-2 gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] uppercase tracking-[0.06em] font-semibold ${ACTION_TONE[a.action]}`}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] uppercase tracking-[0.06em] font-semibold ${ACTION_TONE[a.action]}`}
                   >
                     {ACTION_LABEL_ES[a.action]}
+                    {actionColors(a).length > 0 && <ColorSwatches names={actionColors(a)} size={10} />}
                   </span>
                   <span className="text-[11px] text-carbon/50">
                     confianza {Math.round(a.confidence * 100)}%
@@ -485,6 +550,27 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="text-[9px] text-carbon/40 uppercase tracking-[0.06em] truncate">{label}</div>
       <div className="text-[13px] font-semibold text-carbon tabular-nums mt-0.5">{value}</div>
     </div>
+  );
+}
+
+/** Small colour swatches rendered next to extend_colors / amplify_winner.
+ *  Renders up to 4 dots with a tooltip carrying the colour name. Falls
+ *  back to a hashed grey when the name isn't in the dictionary. */
+function ColorSwatches({ names, size = 9 }: { names: string[]; size?: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 ml-0.5 align-middle">
+      {names.slice(0, 4).map((n, i) => {
+        const hex = colorToHex(n) ?? '#cfcfcf';
+        return (
+          <span
+            key={`${n}-${i}`}
+            title={n}
+            className="inline-block rounded-full ring-1 ring-black/10"
+            style={{ width: size, height: size, backgroundColor: hex }}
+          />
+        );
+      })}
+    </span>
   );
 }
 
