@@ -350,6 +350,12 @@ export function appendAmplifyWinnerAction(
     velocity_rank: number | null;
     /** velocity_7d divided by family average velocity. */
     family_velocity_ratio: number | null;
+    /** Color names from the creative brief's color_story. When present, the
+     *  rationale recommends shooting the winner silhouette in these colors. */
+    brief_colors: string[];
+    /** Color name of THIS SKU. Excluded from the brief-color suggestions
+     *  since proposing the same colour the SKU already sells in is moot. */
+    current_color: string | null;
   }
 ): SkuVerdict {
   // Block if returns are too high — winners with bad fit are not "amplify",
@@ -394,7 +400,23 @@ export function appendAmplifyWinnerAction(
   const head = parts.length > 0
     ? `Hero confirmado: ${parts.join(' · ')}.`
     : 'Hero confirmado.';
-  const rationale = `${head} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.`;
+
+  // Surface concrete colours from the brief's color_story so the
+  // recommendation is actionable (Felipe: "proponer EL color, no solo
+  // identificar el ganador"). Skip the SKU's own colour.
+  const currentColorLc = (signals.current_color ?? '').trim().toLowerCase();
+  const candidateColors = (signals.brief_colors ?? [])
+    .map((c) => (c ?? '').trim())
+    .filter(Boolean)
+    .filter((c) => c.toLowerCase() !== currentColorLc);
+  const briefColorSentence =
+    candidateColors.length > 0
+      ? ` Probar también la misma silueta en colores del moodboard: ${candidateColors
+          .slice(0, 4)
+          .join(', ')}.`
+      : '';
+
+  const rationale = `${head} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.${briefColorSentence}`;
 
   // Confidence: highest of the three signals (capped at 0.95).
   const confScore = (signals.demand_score ?? 0) >= 0.7 ? 0.85 : 0;
@@ -428,6 +450,7 @@ export function appendAmplifyWinnerAction(
       family_code: signals.family_code,
       velocity_rank: signals.velocity_rank,
       family_velocity_ratio: signals.family_velocity_ratio,
+      proposed_brief_colors: candidateColors.slice(0, 4),
     },
     counter_evidence: {},
     assumptions: [

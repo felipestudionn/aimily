@@ -407,6 +407,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       : null;
     const famRatio =
       vel != null && famAvg != null && famAvg > 0 ? vel / famAvg : null;
+    // Resolve this SKU's colour name (used to drop it from suggestions).
+    const product = products.find((p) => p.id === v.product_fact_id);
+    const currentColorRaw = product?.color_ref as string | null | undefined;
+    const currentColorName = currentColorRaw
+      ? (colorCodeMap[currentColorRaw] ?? currentColorRaw).replace(/_/g, ' ')
+      : null;
     next = {
       ...appendAmplifyWinnerAction(next, {
         demand_score:
@@ -428,6 +434,8 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         family_code: identity.family_code,
         velocity_rank: velocityRankByPid.get(v.product_fact_id) ?? null,
         family_velocity_ratio: famRatio,
+        brief_colors: briefCtx.color_story ?? [],
+        current_color: currentColorName,
       }),
       modulator_notes: next.modulator_notes,
     };

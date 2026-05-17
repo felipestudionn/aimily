@@ -80,7 +80,7 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   replenish: 'Reponer',
   resize_down: 'Reducir',
   investigate: 'Investigar',
-  amplify_winner: 'Replicar arquetipo',
+  amplify_winner: 'Replicar estilo',
   extend_colors: 'Extender colores',
   carryover: 'Mantener',
   hold: 'Esperar',
