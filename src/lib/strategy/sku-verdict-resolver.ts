@@ -346,28 +346,71 @@ export function appendAmplifyWinnerAction(
     returns_pct: number | null;
     velocity_7d: number | null;
     family_code: string | null;
+    /** 1-based rank by velocity across the run (1 = top seller). */
+    velocity_rank: number | null;
+    /** velocity_7d divided by family average velocity. */
+    family_velocity_ratio: number | null;
   }
 ): SkuVerdict {
-  if (
-    (signals.demand_score ?? 0) < 0.7 ||
-    (signals.sell_through_bought_pct ?? 0) < 0.5 ||
-    (signals.returns_pct ?? 1) > 0.18
-  ) {
-    return verdict;
-  }
+  // Block if returns are too high — winners with bad fit are not "amplify",
+  // they're "investigate".
+  if ((signals.returns_pct ?? 0) > 0.22) return verdict;
+
+  // Three independent triggers for hero detection. Any one fires.
+  const scoreBased =
+    (signals.demand_score ?? 0) >= 0.7 &&
+    (signals.sell_through_bought_pct ?? 0) >= 0.5;
+  const rankBased =
+    signals.velocity_rank != null && signals.velocity_rank <= 10;
+  const familyBased =
+    (signals.family_velocity_ratio ?? 0) >= 2.0;
+
+  if (!scoreBased && !rankBased && !familyBased) return verdict;
   // Skip if already present.
   if (verdict.actions.some((a) => a.action === 'amplify_winner')) return verdict;
 
-  const demandPct = Math.round((signals.demand_score ?? 0) * 100);
-  const rationale = `Hero claro · puntúa ${demandPct}% sobre la media de su familia${
-    signals.family_code ? ` (${signals.family_code})` : ''
-  } con sell-through ${Math.round(
-    (signals.sell_through_bought_pct ?? 0) * 100
-  )}% y devoluciones controladas. Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.`;
+  // Rationale composition: lead with the strongest visible signal.
+  const parts: string[] = [];
+  if (signals.velocity_rank != null && signals.velocity_rank <= 10) {
+    parts.push(`top ${signals.velocity_rank} en velocidad del run`);
+  }
+  if ((signals.family_velocity_ratio ?? 0) >= 2.0) {
+    parts.push(
+      `vende ${signals.family_velocity_ratio!.toFixed(1)}× la media de su familia${
+        signals.family_code ? ` ${signals.family_code}` : ''
+      }`
+    );
+  }
+  if ((signals.demand_score ?? 0) >= 0.7) {
+    parts.push(
+      `demand-score ${Math.round((signals.demand_score ?? 0) * 100)}% (top quintil)`
+    );
+  }
+  if ((signals.sell_through_bought_pct ?? 0) >= 0.5) {
+    parts.push(
+      `sell-through ${Math.round((signals.sell_through_bought_pct ?? 0) * 100)}%`
+    );
+  }
+  const head = parts.length > 0
+    ? `Hero confirmado: ${parts.join(' · ')}.`
+    : 'Hero confirmado.';
+  const rationale = `${head} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.`;
+
+  // Confidence: highest of the three signals (capped at 0.95).
+  const confScore = (signals.demand_score ?? 0) >= 0.7 ? 0.85 : 0;
+  const confRank =
+    signals.velocity_rank != null && signals.velocity_rank <= 10
+      ? 0.92 - signals.velocity_rank * 0.02
+      : 0;
+  const confFamily =
+    (signals.family_velocity_ratio ?? 0) >= 2.0
+      ? Math.min(0.95, 0.7 + (signals.family_velocity_ratio! - 2) * 0.1)
+      : 0;
+  const confidence = Math.min(0.95, Math.max(confScore, confRank, confFamily, 0.7));
 
   const newItem: SkuVerdictItem = {
     action: 'amplify_winner',
-    confidence: Math.min(0.95, 0.6 + (signals.demand_score ?? 0) * 0.4),
+    confidence,
     rationale,
     recommended_units: null,
     confidence_breakdown: {
@@ -383,6 +426,8 @@ export function appendAmplifyWinnerAction(
       returns_pct: signals.returns_pct,
       velocity_7d: signals.velocity_7d,
       family_code: signals.family_code,
+      velocity_rank: signals.velocity_rank,
+      family_velocity_ratio: signals.family_velocity_ratio,
     },
     counter_evidence: {},
     assumptions: [

@@ -142,9 +142,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 
   // strategy_product_facts only carries identity (model_ref, color, family,
   // pvp, markup). Velocity / stock / stores live in strategy_sales_windows
-  // (window_type d1 / 7d / 8_14d) and strategy_inventory_facts. Pull all
-  // three in parallel and join in code.
-  const [productFactsRes, salesWindowsRes, inventoryRes] =
+  // (window_type d1 / 7d / 8_14d) and strategy_inventory_facts.
+  // strategy_sku_scores carries demand_score / sell_through / returns from
+  // the scoring pass — we need those so amplify_winner can recognise the
+  // top SKUs even when no candidate was generated for them.
+  const [productFactsRes, salesWindowsRes, inventoryRes, scoresRes] =
     targetPids.length > 0
       ? await Promise.all([
           supabaseAdmin
@@ -164,8 +166,18 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           supabaseAdmin
             .from('strategy_inventory_facts')
             .select('product_fact_id, stores_active, stores_with_stock, stock_store, stock_warehouse, pipeline_total'),
+          supabaseAdmin
+            .from('strategy_sku_scores')
+            .select('product_fact_id, demand_score, sell_through_bought_pct, returns_pct')
+            .eq('run_id', runId)
+            .in('product_fact_id', targetPids),
         ])
-      : [{ data: [] as any[] }, { data: [] as any[] }, { data: [] as any[] }];
+      : [
+          { data: [] as any[] },
+          { data: [] as any[] },
+          { data: [] as any[] },
+          { data: [] as any[] },
+        ];
 
   const products = (productFactsRes.data || []) as any[];
   const candidates = allCandidates;
@@ -184,6 +196,52 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     if (targetPids.includes(row.product_fact_id)) {
       inventoryByPid.set(row.product_fact_id, row);
     }
+  }
+
+  // Index scoring signals per SKU.
+  const scoresByPid = new Map<
+    string,
+    {
+      demand_score: number | null;
+      sell_through_bought_pct: number | null;
+      returns_pct: number | null;
+    }
+  >();
+  for (const row of ((scoresRes as any).data || []) as any[]) {
+    scoresByPid.set(row.product_fact_id, {
+      demand_score: row.demand_score ?? null,
+      sell_through_bought_pct: row.sell_through_bought_pct ?? null,
+      returns_pct: row.returns_pct ?? null,
+    });
+  }
+
+  // Velocity rank across the run (1 = top seller by 7d units).
+  const velocityRankByPid = new Map<string, number>();
+  const pidsByVelocity = Array.from(velocityByPid.entries())
+    .filter(([, v]) => v['7d'] != null && (v['7d'] as number) > 0)
+    .sort(
+      (a: [string, { d1: number | null; '7d': number | null }], b: [string, { d1: number | null; '7d': number | null }]) =>
+        ((b[1]['7d'] as number) ?? 0) - ((a[1]['7d'] as number) ?? 0)
+    );
+  pidsByVelocity.forEach(([pid], idx) => velocityRankByPid.set(pid, idx + 1));
+
+  // Average velocity by family — anchor for "this SKU sells 2× its family".
+  const familyVelocityAvg = new Map<string, number>();
+  {
+    const buckets = new Map<string, number[]>();
+    for (const p of products) {
+      const fam = p.family_code;
+      if (!fam) continue;
+      const vel = (velocityByPid.get(p.id)?.['7d'] as number | null) ?? null;
+      if (vel == null) continue;
+      const arr = buckets.get(fam) ?? [];
+      arr.push(vel);
+      buckets.set(fam, arr);
+    }
+    buckets.forEach((arr, fam) => {
+      if (arr.length === 0) return;
+      familyVelocityAvg.set(fam, arr.reduce((a, b) => a + b, 0) / arr.length);
+    });
   }
 
   console.log('[runs/skus] joined', {
@@ -337,19 +395,39 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     if (winner) {
       next = { ...appendExtendColorsAction(next, winner, identity), modulator_notes: next.modulator_notes };
     }
-    // Pull the signals amplify_winner needs from any of the SKU's existing
-    // verdict items (evidence is duplicated across them via the resolver).
+    // Amplify-winner signals: prefer the scored values from sku_scores,
+    // fall back to any evidence already in the verdict stack. Add rank and
+    // family-relative velocity so the helper fires for top sellers even
+    // when no candidate was generated for them.
     const anyEvidence = (next.actions[0]?.evidence ?? {}) as Record<string, unknown>;
+    const score = scoresByPid.get(v.product_fact_id);
+    const vel = inputs.get(v.product_fact_id)?.velocity_7d ?? null;
+    const famAvg = identity.family_code
+      ? familyVelocityAvg.get(identity.family_code) ?? null
+      : null;
+    const famRatio =
+      vel != null && famAvg != null && famAvg > 0 ? vel / famAvg : null;
     next = {
       ...appendAmplifyWinnerAction(next, {
-        demand_score: typeof anyEvidence.demand_score === 'number' ? (anyEvidence.demand_score as number) : null,
+        demand_score:
+          score?.demand_score ??
+          (typeof anyEvidence.demand_score === 'number'
+            ? (anyEvidence.demand_score as number)
+            : null),
         sell_through_bought_pct:
-          typeof anyEvidence.sell_through_bought_pct === 'number'
+          score?.sell_through_bought_pct ??
+          (typeof anyEvidence.sell_through_bought_pct === 'number'
             ? (anyEvidence.sell_through_bought_pct as number)
-            : null,
-        returns_pct: typeof anyEvidence.returns_pct === 'number' ? (anyEvidence.returns_pct as number) : null,
-        velocity_7d: inputs.get(v.product_fact_id)?.velocity_7d ?? null,
+            : null),
+        returns_pct:
+          score?.returns_pct ??
+          (typeof anyEvidence.returns_pct === 'number'
+            ? (anyEvidence.returns_pct as number)
+            : null),
+        velocity_7d: vel,
         family_code: identity.family_code,
+        velocity_rank: velocityRankByPid.get(v.product_fact_id) ?? null,
+        family_velocity_ratio: famRatio,
       }),
       modulator_notes: next.modulator_notes,
     };
