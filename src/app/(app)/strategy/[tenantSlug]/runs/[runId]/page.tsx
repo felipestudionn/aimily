@@ -403,7 +403,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {generativeCandidates.map((c: any) => (
-                  <RecommendationCard actionLabels={ACTION_LABELS} dimLabels={dict.strategy.run.dims}
+                  <RecommendationCard actionLabels={ACTION_LABELS} dimLabels={dict.strategy.run.dims} evidenceLabels={dict.strategy.run.evidence}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -562,7 +562,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {deterministic.map((c: any) => (
-                  <RecommendationCard actionLabels={ACTION_LABELS} dimLabels={dict.strategy.run.dims}
+                  <RecommendationCard actionLabels={ACTION_LABELS} dimLabels={dict.strategy.run.dims} evidenceLabels={dict.strategy.run.evidence}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -682,6 +682,7 @@ function RecommendationCard({
   colorCodeMap,
   actionLabels,
   dimLabels,
+  evidenceLabels,
 }: {
   candidate: any;
   productById: Map<string, any>;
@@ -696,6 +697,7 @@ function RecommendationCard({
     creative_fit: string;
     action: string;
   };
+  evidenceLabels: EvidenceLabels;
 }) {
   const evidence = (candidate.evidence || {}) as Record<string, unknown>;
   const counter = (candidate.counter_evidence || {}) as Record<string, unknown>;
@@ -712,7 +714,7 @@ function RecommendationCard({
   // Resolve visual identity (product name + model_ref + color name) so the
   // card header is human-readable, not a UUID. Falls back gracefully when
   // a lookup misses or for non-sku/color scopes.
-  const identity = resolveCandidateIdentity(candidate, productById, lineageById, colorCodeMap);
+  const identity = resolveCandidateIdentity(candidate, productById, lineageById, colorCodeMap, evidenceLabels);
 
   // 6 confidence dimensions per Codex P1 fix — render the breakdown that
   // the BP §9 value prop hinges on. NULL creative_fit means "no brief".
@@ -725,19 +727,39 @@ function RecommendationCard({
     { key: 'action', label: dimLabels.action, value: confidence },
   ];
 
+  // Visual swatch for color-scope candidates: parse the trailing color_ref
+  // out of `<lineage_id>#<color_ref>` and use the color name from the
+  // tenant taxonomy. The swatch shows the color name as plain text inside
+  // a chip since the taxonomy doesn't currently expose hex codes — when
+  // strategy_taxonomies starts carrying hex we can render a real circle.
+  const isColorScope = candidate.scope === 'color';
+  const colorRef = isColorScope ? String(candidate.scope_ref).split('#')[1] : null;
+  const colorName = colorRef ? (colorCodeMap[colorRef] || colorRef).replace(/_/g, ' ') : null;
+
   return (
     <article className="bg-white rounded-[20px] p-6 md:p-8">
       <header className="flex items-start justify-between gap-3 mb-4">
         <div className="flex gap-3 items-start flex-1 min-w-0">
-          {/* Visual thumbnail slot — placeholder until image_url is on facts */}
-          <div
-            className="flex-shrink-0 w-14 h-14 rounded-[10px] bg-carbon/[0.06] flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <span className="text-[10px] uppercase tracking-[0.08em] text-carbon/35">
-              {candidate.scope === 'sku' ? 'SKU' : candidate.scope === 'color' ? 'COL' : candidate.scope.slice(0, 3).toUpperCase()}
-            </span>
-          </div>
+          {/* Visual thumbnail slot — swatch for color, scope chip otherwise */}
+          {isColorScope ? (
+            <div
+              className="flex-shrink-0 w-14 h-14 rounded-[10px] bg-carbon/[0.06] flex flex-col items-center justify-center text-center px-1"
+              aria-hidden="true"
+            >
+              <span className="text-[9px] uppercase tracking-[0.06em] text-carbon/50 font-semibold leading-none truncate w-full">
+                {colorName || 'COLOR'}
+              </span>
+            </div>
+          ) : (
+            <div
+              className="flex-shrink-0 w-14 h-14 rounded-[10px] bg-carbon/[0.06] flex items-center justify-center"
+              aria-hidden="true"
+            >
+              <span className="text-[10px] uppercase tracking-[0.08em] text-carbon/35">
+                {candidate.scope === 'sku' ? 'SKU' : candidate.scope.slice(0, 3).toUpperCase()}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] mb-1">
               {candidate.scope}
@@ -747,7 +769,10 @@ function RecommendationCard({
               {identity.headline}
             </h3>
             {identity.sub && (
-              <p className="text-[11px] text-carbon/50 font-mono mt-1 truncate" title={identity.sub}>
+              <p
+                className={`text-[11px] mt-1 truncate ${identity.subIsCode ? 'text-carbon/40 font-mono' : 'text-carbon/55'}`}
+                title={identity.sub}
+              >
                 {identity.sub}
               </p>
             )}
@@ -761,7 +786,7 @@ function RecommendationCard({
       {/* Confidence dimensions breakdown */}
       <section className="mb-4">
         <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-2">
-          Confidence breakdown · 6 dimensions
+          {evidenceLabels.confidenceBreakdown}
         </p>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {dims.map((d) => (
@@ -794,24 +819,20 @@ function RecommendationCard({
       )}
 
       <section className="mb-3">
-        <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-1">Evidence</p>
-        <pre className="text-[12px] text-carbon/70 bg-carbon/[0.03] rounded-[8px] p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono">
-          {formatEvidence(evidence)}
-        </pre>
+        <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-2">{evidenceLabels.title}</p>
+        <EvidenceRows rows={humanizeEvidence(evidence, evidenceLabels, actionLabels)} />
       </section>
 
       {Object.keys(counter).length > 0 && (
         <section className="mb-3">
-          <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-1">Counter-evidence</p>
-          <pre className="text-[12px] text-carbon/60 bg-carbon/[0.03] rounded-[8px] p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono">
-            {formatEvidence(counter)}
-          </pre>
+          <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-2">{evidenceLabels.counterTitle}</p>
+          <EvidenceRows rows={humanizeEvidence(counter, evidenceLabels, actionLabels)} muted />
         </section>
       )}
 
       {assumptions.length > 0 && (
         <section>
-          <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-1">Assumptions</p>
+          <p className="text-[11px] text-carbon/50 uppercase tracking-[0.08em] mb-1">{evidenceLabels.assumptionsTitle}</p>
           <ul className="text-[12px] text-carbon/60 space-y-1">
             {assumptions.map((a, i) => (
               <li key={i}>· {a}</li>
@@ -998,17 +1019,64 @@ interface CandidateIdentity {
   family: string | null;
 }
 
+/** Shape of the evidence dictionary passed into RecommendationCard. Kept
+ *  as a structural type so we don't import the full Dictionary tree here. */
+type EvidenceLabels = {
+  title: string;
+  counterTitle: string;
+  assumptionsTitle: string;
+  confidenceBreakdown: string;
+  skuMissing: string;
+  colorMissing: string;
+  lineageMissing: string;
+  velocity7d: string;
+  unitsLast7d: string;
+  velocityRatio: string;
+  returnsPct: string;
+  returnsFlag: string;
+  returnRisk: string;
+  effectiveMargin: string;
+  demandLevel: string;
+  marginLevel: string;
+  storesActive: string;
+  lifecycleStage: string;
+  rank: string;
+  high: string;
+  medium: string;
+  low: string;
+  yes: string;
+  creativeFitColor: string;
+  colorInPalette: string;
+  colorOffPalette: string;
+  creativeFitArchetype: string;
+  creativeFitFamilyPivot: string;
+  creativeFitFamilyPivotMisaligned: string;
+  tensionType: string;
+  underlyingAction: string;
+  lifecycleStages: Record<string, string>;
+  ranks: Record<string, string>;
+};
+
+/** Short the UUID for fallback display: first 6 + last 4 chars. */
+function shortUuid(ref: string): string {
+  if (ref.length <= 12) return ref;
+  return `${ref.slice(0, 6)}…${ref.slice(-4)}`;
+}
+
 /**
  * Turn a recommendation_candidate into a human-readable identity for the
  * card header. SKU candidates resolve via productById; color candidates
  * resolve via lineageById + colorCodeMap; family/archetype use the raw ref.
+ * Missing-data fallback returns a short UUID + locale-aware "details
+ * unavailable" sub-label so we never dump full UUIDs as the headline.
  */
 function resolveCandidateIdentity(
   candidate: { scope: string; scope_ref: string },
   productById: Map<string, any>,
   lineageById: Map<string, any>,
-  colorCodeMap: Record<string, string>
-): CandidateIdentity {
+  colorCodeMap: Record<string, string>,
+  evidenceLabels: EvidenceLabels
+): CandidateIdentity & { subIsCode?: boolean } {
   if (candidate.scope === 'sku') {
     const p = productById.get(candidate.scope_ref);
     if (p) {
@@ -1017,12 +1085,18 @@ function resolveCandidateIdentity(
           ? colorCodeMap[p.color_ref].replace(/_/g, ' ')
           : p.color_ref;
       return {
-        headline: p.product_name || p.model_ref,
-        sub: `${p.model_ref}${colorName ? ` · ${colorName}` : ''}${p.pvp ? ` · €${Number(p.pvp).toFixed(2)}` : ''}`,
+        headline: p.product_name || p.model_ref || shortUuid(candidate.scope_ref),
+        sub: `${p.model_ref || shortUuid(candidate.scope_ref)}${colorName ? ` · ${colorName}` : ''}${p.pvp ? ` · €${Number(p.pvp).toFixed(2)}` : ''}`,
         family: p.family_code || null,
+        subIsCode: true,
       };
     }
-    return { headline: candidate.scope_ref, sub: null, family: null };
+    return {
+      headline: `SKU ${shortUuid(candidate.scope_ref)}`,
+      sub: evidenceLabels.skuMissing,
+      family: null,
+      subIsCode: false,
+    };
   }
   if (candidate.scope === 'color') {
     const [lineageId, colorRef] = candidate.scope_ref.split('#');
@@ -1033,28 +1107,265 @@ function resolveCandidateIdentity(
         : colorRef;
     if (lineage) {
       return {
-        headline: lineage.display_name || lineage.canonical_id,
-        sub: `Lineage ${lineage.canonical_id} · ${colorName}`,
+        headline: colorName || shortUuid(colorRef ?? ''),
+        sub: lineage.display_name || lineage.canonical_id || shortUuid(lineageId),
         family: null,
+        subIsCode: false,
       };
     }
-    return { headline: candidate.scope_ref, sub: null, family: null };
+    return {
+      headline: colorName || shortUuid(colorRef ?? ''),
+      sub: evidenceLabels.lineageMissing,
+      family: null,
+      subIsCode: false,
+    };
   }
   if (candidate.scope === 'lineage') {
     const lineage = lineageById.get(candidate.scope_ref);
     if (lineage) {
       return {
-        headline: lineage.display_name || lineage.canonical_id,
-        sub: `Lineage ${lineage.canonical_id}`,
+        headline: lineage.display_name || lineage.canonical_id || shortUuid(candidate.scope_ref),
+        sub: lineage.canonical_id || null,
         family: null,
+        subIsCode: true,
       };
     }
+    return {
+      headline: shortUuid(candidate.scope_ref),
+      sub: evidenceLabels.lineageMissing,
+      family: null,
+      subIsCode: false,
+    };
   }
-  return { headline: candidate.scope_ref, sub: null, family: null };
+  return {
+    headline: candidate.scope_ref,
+    sub: null,
+    family: null,
+    subIsCode: false,
+  };
 }
 
-function formatEvidence(obj: Record<string, unknown>): string {
-  const entries = Object.entries(obj).filter(([, v]) => v != null && typeof v !== 'object');
-  if (entries.length === 0) return JSON.stringify(obj, null, 2).slice(0, 300);
-  return entries.map(([k, v]) => `${k}: ${typeof v === 'number' ? (Number.isInteger(v) ? v : (v as number).toFixed(3)) : v}`).join('\n');
+/** Tone applied to evidence values (visual cue for scanning the card). */
+type EvidenceTone = 'good' | 'bad' | 'neutral';
+
+interface EvidenceRow {
+  key: string;
+  label: string;
+  value: string;
+  tone?: EvidenceTone;
+}
+
+/**
+ * Translate the raw evidence/counter-evidence record into locale-aware,
+ * human-readable rows. Maps well-known backend fields (velocity_7d,
+ * returns_pct, etc.) to formatted values with proper units; unknown
+ * fields get a safe fallback display so we never lose information.
+ */
+function humanizeEvidence(
+  obj: Record<string, unknown>,
+  ev: EvidenceLabels,
+  actionLabels: Record<string, string>
+): EvidenceRow[] {
+  const rows: EvidenceRow[] = [];
+  const seen = new Set<string>();
+  const push = (row: EvidenceRow) => {
+    seen.add(row.key);
+    rows.push(row);
+  };
+
+  // SKU-level operational metrics
+  if (typeof obj.velocity_7d === 'number') {
+    push({
+      key: 'velocity_7d',
+      label: ev.velocity7d,
+      value: `${obj.velocity_7d.toLocaleString()} ${ev.unitsLast7d}`,
+    });
+  }
+  if (typeof obj.velocity_ratio === 'number') {
+    const r = obj.velocity_ratio;
+    push({
+      key: 'velocity_ratio',
+      label: ev.velocityRatio,
+      value: `${r.toFixed(2)}×`,
+      tone: r >= 1.1 ? 'good' : r <= 0.7 ? 'bad' : 'neutral',
+    });
+  }
+  if (typeof obj.returns_pct === 'number') {
+    const p = obj.returns_pct;
+    push({
+      key: 'returns_pct',
+      label: ev.returnsPct,
+      value: `${(p * 100).toFixed(1)}%`,
+      tone: p > 0.25 ? 'bad' : p > 0.15 ? 'neutral' : 'good',
+    });
+  }
+  if (obj.returns_flag === true) {
+    push({ key: 'returns_flag', label: ev.returnsFlag, value: ev.yes, tone: 'bad' });
+  }
+  if (typeof obj.return_risk === 'number') {
+    const r = obj.return_risk;
+    push({
+      key: 'return_risk',
+      label: ev.returnRisk,
+      value: `${(r * 100).toFixed(0)}%`,
+      tone: r > 0.5 ? 'bad' : r > 0.3 ? 'neutral' : 'good',
+    });
+  }
+  if (typeof obj.effective_margin === 'number') {
+    const m = obj.effective_margin;
+    push({
+      key: 'effective_margin',
+      label: ev.effectiveMargin,
+      value: `${(m * 100).toFixed(1)}%`,
+      tone: m < 0 ? 'bad' : m < 0.2 ? 'neutral' : 'good',
+    });
+  }
+  if (typeof obj.demand_score === 'number') {
+    const s = obj.demand_score;
+    const level = s >= 0.7 ? ev.high : s >= 0.4 ? ev.medium : ev.low;
+    push({
+      key: 'demand_score',
+      label: ev.demandLevel,
+      value: level,
+      tone: s >= 0.7 ? 'good' : s < 0.4 ? 'bad' : 'neutral',
+    });
+  }
+  if (typeof obj.margin_score === 'number') {
+    const s = obj.margin_score;
+    const level = s >= 0.7 ? ev.high : s >= 0.4 ? ev.medium : ev.low;
+    push({
+      key: 'margin_score',
+      label: ev.marginLevel,
+      value: level,
+      tone: s >= 0.7 ? 'good' : s < 0.4 ? 'bad' : 'neutral',
+    });
+  }
+  if (typeof obj.stores_active === 'number') {
+    push({
+      key: 'stores_active',
+      label: ev.storesActive,
+      value: obj.stores_active.toLocaleString(),
+    });
+  }
+  if (typeof obj.lifecycle_stage === 'string') {
+    const stage = obj.lifecycle_stage;
+    const stageLabel = ev.lifecycleStages[stage] || stage;
+    push({
+      key: 'lifecycle_stage',
+      label: ev.lifecycleStage,
+      value: stageLabel,
+      tone: stage === 'decay' || stage === 'dead' ? 'bad' : stage === 'peak' ? 'good' : 'neutral',
+    });
+  }
+  if (typeof obj.rank === 'string') {
+    const r = obj.rank;
+    const rankLabel = ev.ranks[r] || r;
+    push({
+      key: 'rank',
+      label: ev.rank,
+      value: rankLabel,
+      tone: r === 'top' ? 'good' : r === 'tail' ? 'bad' : 'neutral',
+    });
+  }
+
+  // Creative-application annotations (brief modulation traces)
+  if (typeof obj.color_story_hit === 'string') {
+    push({
+      key: 'color_story_hit',
+      label: ev.creativeFitColor,
+      value: `${ev.colorInPalette} · ${obj.color_story_hit}`,
+      tone: 'good',
+    });
+  }
+  if (obj.color_off_palette != null) {
+    push({
+      key: 'color_off_palette',
+      label: ev.creativeFitColor,
+      value: `${ev.colorOffPalette} · ${String(obj.color_off_palette)}`,
+      tone: 'bad',
+    });
+  }
+  if (typeof obj.archetype_focus === 'string') {
+    push({
+      key: 'archetype_focus',
+      label: ev.creativeFitArchetype,
+      value: obj.archetype_focus,
+      tone: 'good',
+    });
+  }
+  if (typeof obj.family_pivot === 'string') {
+    push({
+      key: 'family_pivot',
+      label: ev.creativeFitFamilyPivot,
+      value: obj.family_pivot,
+      tone: 'good',
+    });
+  }
+  if (typeof obj.family_pivot_misaligned === 'number') {
+    const pivot = obj.family_pivot_misaligned;
+    push({
+      key: 'family_pivot_misaligned',
+      label: ev.creativeFitFamilyPivotMisaligned,
+      value: `${pivot > 0 ? '+' : ''}${(pivot * 100).toFixed(0)}%`,
+      tone: 'bad',
+    });
+  }
+
+  // Tension-flag specifics
+  if (typeof obj.tension_type === 'string') {
+    push({
+      key: 'tension_type',
+      label: ev.tensionType,
+      value: obj.tension_type.replace(/_/g, ' '),
+    });
+  }
+  if (typeof obj.underlying_action === 'string') {
+    push({
+      key: 'underlying_action',
+      label: ev.underlyingAction,
+      value: actionLabels[obj.underlying_action] || obj.underlying_action,
+    });
+  }
+
+  // Catch-all: surface any remaining scalar fields verbatim so we never
+  // silently drop signal. Skip keys we already rendered + nested objects.
+  for (const [k, v] of Object.entries(obj)) {
+    if (seen.has(k)) continue;
+    if (v == null || typeof v === 'object') continue;
+    const value =
+      typeof v === 'number'
+        ? Number.isInteger(v)
+          ? v.toLocaleString()
+          : v.toFixed(3)
+        : String(v);
+    rows.push({ key: k, label: k.replace(/_/g, ' '), value });
+  }
+
+  return rows;
+}
+
+function EvidenceRows({ rows, muted = false }: { rows: EvidenceRow[]; muted?: boolean }) {
+  if (rows.length === 0) {
+    return <p className="text-[12px] text-carbon/40 italic">—</p>;
+  }
+  return (
+    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[12px]">
+      {rows.map((row) => {
+        const toneClass =
+          row.tone === 'good'
+            ? 'text-emerald-700'
+            : row.tone === 'bad'
+            ? 'text-red-700'
+            : muted
+            ? 'text-carbon/55'
+            : 'text-carbon/80';
+        return (
+          <li key={row.key} className="flex items-baseline justify-between gap-2">
+            <span className={`text-carbon/45 ${muted ? 'text-[11px]' : ''}`}>{row.label}</span>
+            <span className={`font-medium tabular-nums text-right truncate ${toneClass}`}>{row.value}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
