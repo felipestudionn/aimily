@@ -570,19 +570,46 @@ export function scoreSku(
     distribution_breadth_score = input.stores_active / input.stores_with_stock;
   }
 
-  // ── Classifier 8: markdown risk score ────────────────────────────────────
+  // ── Classifier 8: markdown risk score (FWOC vs season-end weeks) ────────
   //
-  // C.4 (2026-05-17 audit) · Decoupled from lifecycle. Previously only
-  // SKUs in `decay` or `exit` got a non-zero score, hiding the
-  // mature/ramp/peak SKUs sitting on 60+ days of stock that a senior buyer
-  // would mark down. New logic fires markdown_risk for ANY SKU (except
-  // `new`) when stockDays ≥ 60 OR (effective_margin ≤ 0.10 AND stockDays
-  // ≥ 30) OR original decay/exit. Score = min(1, stockDays / 90) regardless.
+  // Spec v1 (2026-05-17) — reframed from `stock_days / 90` to the canonical
+  // unit `Forward Weeks of Cover / Season Weeks Remaining`. Sources:
+  //   - Caro & Gallien 2012 (Operations Research): the documented Zara
+  //     clearance trigger is "estimated time to sell remaining stock at
+  //     current rate vs. time remaining in clearance window". Stock-days
+  //     denominator (90) was an absolute number with no season anchor.
+  //   - Goworek "Fashion Buying" Ch.10: markdowns are triggered when
+  //     forward weeks of cover exceeds remaining selling window.
+  //   - Smith & Achabal 1998 (Mgmt Sci) clearance-pricing optimal control.
+  //
+  // The new score = FWOC / season_weeks_remaining, capped at 1.
+  //   FWOC = pipeline_total / (velocity_7d/7) / 7   (weeks of cover)
+  //   season_weeks_remaining = days remaining in season ÷ 7 (synth fallback)
+  //
+  // When season metadata is unknown (no season-end date inferable from the
+  // tenant), we fall back to a retailer-profile default of 13 weeks (one
+  // quarter, the generic fast-fashion season window). The synthetic source
+  // is flagged on the trace so the UI can label the score as estimated.
+  //
+  // C.4 trigger conditions unchanged: fires when SKU is past `new` AND
+  // (decay/exit lifecycle, oversupplied >=60d kept as the safety net, OR
+  // thin margin + oversupplied). The reframe is to the SCORE unit, not the
+  // trigger gate.
   let markdown_risk_score: number | null = null;
   const stockDays =
     input.pipeline_total != null && velocityRaw7d > 0
       ? input.pipeline_total / Math.max(velocityRaw7d / 7, 0.01)
       : 0;
+  // FWOC (forward weeks of cover) = stockDays / 7.
+  const fwoc = stockDays / 7;
+  // Season weeks remaining — synthetic default 13 (one quarter) when not
+  // provided via input.season_weeks_remaining. Future: tenant supplies real
+  // season-end date via the planning OTB feed (graceful-degradation pattern,
+  // per memory/feedback_aimily-graceful-degradation-tenant-input-or-synthetic.md).
+  const seasonWeeksRemaining =
+    (input as { season_weeks_remaining?: number | null }).season_weeks_remaining ??
+    13;
+  const fwocRatio = seasonWeeksRemaining > 0 ? fwoc / seasonWeeksRemaining : 0;
   const marginThinAndOversupplied =
     effective_margin != null &&
     input.pvp != null &&
@@ -594,12 +621,22 @@ export function scoreSku(
   if (lifecycle === 'new') {
     markdown_risk_score = 0;
   } else if (decayOrExit || oversupplied || marginThinAndOversupplied) {
-    markdown_risk_score = Math.min(1, stockDays / 90);
+    // Score: FWOC / season_weeks_remaining (Caro & Gallien 2012 canon).
+    // Capped at 1; ratios above 1 mean "you will not sell out at this rate
+    // before the season closes — markdown urgent".
+    markdown_risk_score = Math.min(1, fwocRatio);
   } else {
     markdown_risk_score = 0;
   }
   traces.markdown_risk = {
     stock_days: Math.round(stockDays * 10) / 10,
+    fwoc_weeks: Math.round(fwoc * 10) / 10,
+    season_weeks_remaining: seasonWeeksRemaining,
+    fwoc_ratio: Math.round(fwocRatio * 100) / 100,
+    season_weeks_source:
+      (input as { season_weeks_remaining?: number | null }).season_weeks_remaining != null
+        ? 'tenant'
+        : 'synthetic_default_13',
     fired_by:
       decayOrExit ? 'lifecycle_decay_or_exit'
         : oversupplied ? 'oversupplied_60d'
