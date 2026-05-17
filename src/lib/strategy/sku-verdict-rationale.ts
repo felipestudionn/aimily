@@ -40,6 +40,11 @@ export interface RationaleContext {
   recommended_units: number | null;
   /** Target rotation in days (4 default). */
   target_rotation_days: number;
+  /** Forward Weeks of Cover from classifier trace (post-spec-v1). Optional —
+   *  when present, markdown rationale uses it explicitly. */
+  fwoc_weeks?: number | null;
+  /** Season weeks remaining (synthetic default 13 when no tenant data). */
+  season_weeks_remaining?: number | null;
 }
 
 function pct(n: number | null | undefined, digits = 0): string {
@@ -120,12 +125,63 @@ export function generateRationale(
     }
 
     case 'markdown_accelerate': {
+      // 3-step ladder rationale (Donnellan "Merchandise Buying and
+      // Management" ch.12 + universal LCF/FIT/LIM classroom canon):
+      //   Stage 1 (Initial)   = -25% to -30% at ~60% time-elapsed
+      //   Stage 2 (Second)    = -40% to -60% at ~80% time-elapsed (3 weeks after Stage 1)
+      //   Stage 3 (Terminal)  = -70%+ at end-of-season (3 weeks after Stage 2)
+      // Never-increase ratchet: once a cluster receives a markdown, it
+      // never reverses.
+      //
+      // Stage selection: derived from FWOC / season_weeks_remaining ratio
+      // (the new markdown_risk_score unit). Higher ratio = later stage.
+      //   ratio in [0.4, 0.7]  → Stage 1 Initial
+      //   ratio in (0.7, 0.9]  → Stage 2 Second
+      //   ratio > 0.9          → Stage 3 Terminal
       const stockDays = ctx.current_stock_days != null ? `${ctx.current_stock_days}d de stock` : 'stock elevado';
       const velocity = ctx.velocity_7d != null ? `${num(ctx.velocity_7d)} uds/7d` : '';
+      const fwoc = ctx.fwoc_weeks ?? null;
+      const seasonLeft = ctx.season_weeks_remaining ?? null;
+      const fwocRatio = fwoc != null && seasonLeft != null && seasonLeft > 0 ? fwoc / seasonLeft : null;
+
+      let stage: 'initial' | 'second' | 'terminal' = 'initial';
+      let depth = '−25%/−30%';
+      let stageName = 'Stage 1 Initial';
+      if (fwocRatio != null) {
+        if (fwocRatio > 0.9) {
+          stage = 'terminal';
+          depth = '−70% o más';
+          stageName = 'Stage 3 Terminal';
+        } else if (fwocRatio > 0.7) {
+          stage = 'second';
+          depth = '−40%/−60%';
+          stageName = 'Stage 2 Second';
+        }
+      } else if (ctx.lifecycle_stage === 'exit') {
+        stage = 'terminal';
+        depth = '−70% o más';
+        stageName = 'Stage 3 Terminal';
+      } else if (ctx.lifecycle_stage === 'decay') {
+        stage = 'second';
+        depth = '−40%/−60%';
+        stageName = 'Stage 2 Second';
+      }
+
       const head = `Declive ${ctx.lifecycle_stage === 'decay' ? 'confirmado' : 'probable'}: ${stockDays}${
         velocity ? ` a ${velocity}` : ''
       }.`;
-      return `${head} Markdown acelera salida y libera capital antes de fin de temporada.`;
+      const fwocClause =
+        fwoc != null && seasonLeft != null
+          ? ` FWOC ${fwoc.toFixed(1)} sem vs ${seasonLeft.toFixed(0)} sem hasta fin de temporada.`
+          : '';
+      const nextStageClause =
+        stage === 'initial'
+          ? ' Si tras 3 semanas el stock no se libera, escalar a Stage 2 (−40%/−60%).'
+          : stage === 'second'
+          ? ' Si tras 3 semanas el stock sigue parado, escalar a Stage 3 Terminal (−70%+).'
+          : ' Final del ladder — liquidar antes del cierre de temporada.';
+
+      return `${head}${fwocClause} Aplicar ${stageName} (${depth}) ahora — never-increase ratchet, los próximos updates solo pueden profundizar.${nextStageClause}`;
     }
 
     case 'resize_down': {

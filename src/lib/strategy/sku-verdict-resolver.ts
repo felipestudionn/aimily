@@ -460,6 +460,18 @@ function buildVerdictItem(
     : { recommended_units: null, current_stock_days: null };
 
   const evidence = (candidate.evidence as Record<string, unknown>) ?? {};
+  // Pull markdown_risk trace into the rationale context so the 3-step
+  // ladder logic can pick the right stage (Stage 1 / 2 / Terminal).
+  // The classifier writes these into the candidate evidence under
+  // traces.markdown_risk; we hoist the two key fields to the top-level
+  // context so the rationale doesn't need to know the trace structure.
+  const traces = (evidence.traces as Record<string, Record<string, unknown>> | undefined) ?? {};
+  const markdownTrace = traces.markdown_risk ?? {};
+  const fwocWeeks = typeof markdownTrace.fwoc_weeks === 'number' ? (markdownTrace.fwoc_weeks as number) : null;
+  const seasonWeeksRemaining =
+    typeof markdownTrace.season_weeks_remaining === 'number'
+      ? (markdownTrace.season_weeks_remaining as number)
+      : null;
   const rationaleCtx: RationaleContext = {
     product_name: identity.product_name,
     family_code: identity.family_code,
@@ -477,6 +489,8 @@ function buildVerdictItem(
     current_stock_days,
     recommended_units,
     target_rotation_days: targetRotationDays,
+    fwoc_weeks: fwocWeeks,
+    season_weeks_remaining: seasonWeeksRemaining,
   };
 
   return {
