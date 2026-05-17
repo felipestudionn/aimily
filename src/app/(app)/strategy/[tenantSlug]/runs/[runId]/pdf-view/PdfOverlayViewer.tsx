@@ -397,18 +397,22 @@ function SkuPanel({
                   <ChevronRight className="h-3.5 w-3.5 text-carbon/30 mt-1 shrink-0" />
                 </div>
                 <div className="pl-[42px] space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {visibleActions(sku.actions).map((a) => {
                       const colors = actionColors(a);
                       return (
                         <span
                           key={a.action}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                          className="inline-flex items-center gap-1.5"
                         >
-                          {ACTION_LABEL_ES[a.action]}
-                          {a.recommended_units != null && a.recommended_units > 0
-                            ? ` · ${a.recommended_units.toLocaleString()} uds`
-                            : ''}
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                          >
+                            {ACTION_LABEL_ES[a.action]}
+                            {a.recommended_units != null && a.recommended_units > 0
+                              ? ` · ${a.recommended_units.toLocaleString()} uds`
+                              : ''}
+                          </span>
                           {colors.length > 0 && <ColorSwatches names={colors} />}
                         </span>
                       );
@@ -512,11 +516,13 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
               <div className="flex items-center justify-between mb-2 gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] uppercase tracking-[0.06em] font-semibold ${ACTION_TONE[a.action]}`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] uppercase tracking-[0.06em] font-semibold ${ACTION_TONE[a.action]}`}
                   >
                     {ACTION_LABEL_ES[a.action]}
-                    {actionColors(a).length > 0 && <ColorSwatches names={actionColors(a)} size={10} />}
                   </span>
+                  {actionColors(a).length > 0 && (
+                    <ColorSwatches names={actionColors(a)} size={18} />
+                  )}
                   <span className="text-[11px] text-carbon/50">
                     confianza {Math.round(a.confidence * 100)}%
                   </span>
@@ -565,19 +571,20 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Small colour swatches rendered next to extend_colors / amplify_winner.
- *  Renders up to 4 dots with a tooltip carrying the colour name. Falls
- *  back to a hashed grey when the name isn't in the dictionary. */
-function ColorSwatches({ names, size = 9 }: { names: string[]; size?: number }) {
+/** Colour swatches rendered next to (NOT inside) the extend_colors /
+ *  amplify_winner pill. Squares with a thin neutral border. The colour
+ *  name shows as a tooltip on hover. Falls back to a hashed grey when
+ *  the name isn't in the dictionary. */
+function ColorSwatches({ names, size = 16 }: { names: string[]; size?: number }) {
   return (
-    <span className="inline-flex items-center gap-0.5 ml-0.5 align-middle">
+    <span className="inline-flex items-center gap-1 align-middle">
       {names.slice(0, 4).map((n, i) => {
         const hex = colorToHex(n) ?? '#cfcfcf';
         return (
           <span
             key={`${n}-${i}`}
             title={n}
-            className="inline-block rounded-full ring-1 ring-black/10"
+            className="inline-block rounded-[4px] ring-1 ring-carbon/15"
             style={{ width: size, height: size, backgroundColor: hex }}
           />
         );
