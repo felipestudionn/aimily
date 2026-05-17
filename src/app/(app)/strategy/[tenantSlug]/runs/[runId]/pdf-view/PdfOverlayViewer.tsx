@@ -54,7 +54,40 @@ interface VerdictAction {
   counter_evidence: Record<string, unknown>;
   assumptions: string[];
   data_sufficiency_warning: string | null;
+  /** Six Right anchor (Kincade & Gibson Ch.4). Populated by enrichVerdict
+   *  in sku-verdict-resolver.ts before the API responds. */
+  six_right?:
+    | 'right_product'
+    | 'right_price'
+    | 'right_place'
+    | 'right_time'
+    | 'right_quantity'
+    | 'right_promotion';
+  /** Owner role (Jackson & Shaw discipline boundary). Populated by
+   *  enrichVerdict in sku-verdict-resolver.ts. */
+  owner?: 'buyer' | 'merchandiser' | 'both' | 'marketing' | 'design' | 'supply_chain';
 }
+
+/** Spanish-language labels for the Six Right (right_product etc.) — used
+ *  as a small pill under the action title. */
+const SIX_RIGHT_LABEL_ES: Record<NonNullable<VerdictAction['six_right']>, string> = {
+  right_product: 'Right Product',
+  right_price: 'Right Price',
+  right_place: 'Right Place',
+  right_time: 'Right Time',
+  right_quantity: 'Right Quantity',
+  right_promotion: 'Right Promotion',
+};
+
+/** Spanish-language labels for the owner role. */
+const OWNER_LABEL_ES: Record<NonNullable<VerdictAction['owner']>, string> = {
+  buyer: 'Comprador',
+  merchandiser: 'Comercial',
+  both: 'Comprador + Comercial',
+  marketing: 'Marketing',
+  design: 'Diseño',
+  supply_chain: 'Supply chain',
+};
 
 interface SkuRow {
   /** 1-based position matching the SKU's row order in the original PDF.
@@ -626,6 +659,22 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
                   </span>
                   {actionColors(a).length > 0 && (
                     <ColorSwatches swatches={actionColors(a)} size={18} />
+                  )}
+                  {a.six_right && (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] tracking-[0.04em] bg-carbon/[0.04] text-carbon/55"
+                      title="Six Rights of Merchandising (Kincade & Gibson)"
+                    >
+                      {SIX_RIGHT_LABEL_ES[a.six_right]}
+                    </span>
+                  )}
+                  {a.owner && (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] tracking-[0.04em] bg-sea-foam/30 text-carbon/65"
+                      title="Owner del verdict (Jackson & Shaw discipline boundary)"
+                    >
+                      {OWNER_LABEL_ES[a.owner]}
+                    </span>
                   )}
                   <span className="text-[11px] text-carbon/50">
                     confianza {Math.round(a.confidence * 100)}%

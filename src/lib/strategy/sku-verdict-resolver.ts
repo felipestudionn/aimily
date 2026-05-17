@@ -95,6 +95,96 @@ const ACTION_DISPLAY_ORDER: SkuVerdictAction[] = [
   'hold',
 ];
 
+/**
+ * Six Rights of Merchandising (Kincade & Gibson "Merchandising of Fashion
+ * Products", ch.4) — every verdict ties to which Right it's optimizing.
+ * This is the credibility anchor for a buyer reviewing the verdict pack:
+ * they recognize the Six Rights framework from classroom training and see
+ * which dimension of their job aimily is helping with.
+ */
+export type SixRight =
+  | 'right_product'
+  | 'right_price'
+  | 'right_place'
+  | 'right_time'
+  | 'right_quantity'
+  | 'right_promotion';
+
+/**
+ * Owner of the verdict — who in the merch organization owns the action.
+ * Spec source: Jackson & Shaw "Mastering Fashion Buying and Merchandising
+ * Management" (LCF). Maps to the discipline boundary that classroom
+ * teaching enforces.
+ *
+ * - 'buyer' — Buyer (US: DMM/Buyer; ES: Comprador/Compradora)
+ * - 'merchandiser' — Merchandiser / Planner (ES: Comercial / Planner Comercial)
+ * - 'both' — Joint decision (buyer + merchandiser sign-off together)
+ * - 'marketing' — Joint with marketing (for PROMOTE_PUSH)
+ * - 'design' — Joint with design team (for AMPLIFY_NEXT_SEASON / EXTEND_COLORS)
+ * - 'supply_chain' — Joint with sourcing / supply chain (for PULL_FORWARD_INTAKE)
+ */
+export type VerdictOwner =
+  | 'buyer'
+  | 'merchandiser'
+  | 'both'
+  | 'marketing'
+  | 'design'
+  | 'supply_chain';
+
+/**
+ * Spec mapping: each verdict verb → its Six Right anchor (Kincade & Gibson).
+ * Spec source: memory/product-spec_aimily-in-season-2026-05-17.md §4.
+ */
+export const VERDICT_SIX_RIGHT: Record<SkuVerdictAction, SixRight> = {
+  // THIS WEEK
+  kill: 'right_product',
+  markdown_accelerate: 'right_price',
+  amplify_distribution: 'right_place',
+  pull_forward_intake: 'right_time',
+  // THIS MONTH
+  replenish: 'right_quantity',
+  amplify_in_season: 'right_quantity',
+  promote_push: 'right_promotion',
+  resize_down: 'right_quantity',
+  investigate_root_cause: 'right_product',
+  // NEXT SEASON
+  amplify_next_season: 'right_product',
+  extend_colors: 'right_product',
+  carryover: 'right_product',
+  // FALLBACK
+  hold: 'right_product',
+  // LEGACY ALIASES
+  investigate: 'right_product',
+  amplify_winner: 'right_quantity',
+};
+
+/**
+ * Spec mapping: each verdict verb → its owner role(s).
+ * Spec source: memory/product-spec_aimily-in-season-2026-05-17.md §4.
+ */
+export const VERDICT_OWNER: Record<SkuVerdictAction, VerdictOwner> = {
+  // THIS WEEK
+  kill: 'both',                       // buyer + merchandiser joint sign-off
+  markdown_accelerate: 'merchandiser',
+  amplify_distribution: 'merchandiser',
+  pull_forward_intake: 'supply_chain',
+  // THIS MONTH
+  replenish: 'merchandiser',
+  amplify_in_season: 'both',
+  promote_push: 'marketing',
+  resize_down: 'buyer',
+  investigate_root_cause: 'buyer',
+  // NEXT SEASON
+  amplify_next_season: 'design',      // buyer + design joint
+  extend_colors: 'design',            // buyer + design joint
+  carryover: 'both',
+  // FALLBACK
+  hold: 'buyer',                      // re-evaluation owner
+  // LEGACY ALIASES
+  investigate: 'buyer',
+  amplify_winner: 'both',
+};
+
 export interface SkuVerdictInput {
   product_fact_id: string;
   /** All candidates emitted by recommend.ts for this SKU. */
@@ -139,6 +229,43 @@ export interface SkuVerdictItem {
   assumptions: string[];
   /** Optional warning the engine attached to this candidate. */
   data_sufficiency_warning: string | null;
+  /** Six Right anchor — which dimension of the buyer's job this verdict
+   *  is optimizing (Kincade & Gibson). Optional during transition — when
+   *  absent, derive from VERDICT_SIX_RIGHT[action] at the output layer.
+   *  Spec source: product-spec §4. */
+  six_right?: SixRight;
+  /** Owner role(s) responsible for acting on this verdict (Jackson &
+   *  Shaw discipline boundary). Optional during transition — when absent,
+   *  derive from VERDICT_OWNER[action] at the output layer. */
+  owner?: VerdictOwner;
+}
+
+/**
+ * Enrich a SkuVerdictItem with six_right + owner if they're not already
+ * set. Pure derivation from the action via the spec maps — call this at
+ * the output boundary so the UI always sees the fields populated, even
+ * for items created by appenders that haven't been updated yet.
+ *
+ * Spec source: memory/product-spec_aimily-in-season-2026-05-17.md §4.
+ */
+export function enrichVerdictItem(item: SkuVerdictItem): SkuVerdictItem {
+  if (item.six_right != null && item.owner != null) return item;
+  return {
+    ...item,
+    six_right: item.six_right ?? VERDICT_SIX_RIGHT[item.action],
+    owner: item.owner ?? VERDICT_OWNER[item.action],
+  };
+}
+
+/** Apply enrichVerdictItem to every item in a verdict's action stack.
+ *  Generic over the verdict shape so callers that pass a
+ *  ModulatedSkuVerdict (which extends SkuVerdict with modulator_notes)
+ *  keep their extension intact. */
+export function enrichVerdict<V extends SkuVerdict>(verdict: V): V {
+  return {
+    ...verdict,
+    actions: verdict.actions.map(enrichVerdictItem),
+  };
 }
 
 export interface SkuVerdict {

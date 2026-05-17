@@ -28,6 +28,7 @@ import {
   appendExtendColorsAction,
   appendDropColorAction,
   appendAmplifyWinnerAction,
+  enrichVerdict,
   DEFAULT_TARGET_ROTATION_DAYS,
   type SkuVerdictInput,
   type SkuVerdictAction,
@@ -636,7 +637,14 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // what `products` is sorted by — created_at ASC). We iterate over the
   // products array (not modulated) so the output preserves that order and
   // each row gets a stable `rank` = position in the PDF.
-  const modulatedByPid = new Map(modulated.map((m) => [m.product_fact_id, m]));
+  //
+  // 2026-05-17 (spec v1) — enrich each verdict with six_right + owner
+  // derived from the action via VERDICT_SIX_RIGHT and VERDICT_OWNER maps
+  // in sku-verdict-resolver.ts. The UI surfaces these fields as the
+  // "Six Right anchor" + "Owner" pills on each action card. Spec source:
+  // memory/product-spec_aimily-in-season-2026-05-17.md §4.
+  const enriched = modulated.map(enrichVerdict);
+  const modulatedByPid = new Map(enriched.map((m) => [m.product_fact_id, m]));
   const skus = products.map((p, idx) => {
     const v = modulatedByPid.get(p.id);
     const baseInput = inputs.get(p.id);
