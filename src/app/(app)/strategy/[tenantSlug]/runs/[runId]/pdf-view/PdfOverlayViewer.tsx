@@ -130,10 +130,12 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
       try {
         // Dynamic import keeps PDF.js out of the server bundle.
         const pdfjs = await import('pdfjs-dist');
-        // Use the CDN-hosted worker that matches the installed package.
-        // Avoids having to bundle the .mjs worker through Next.js (which
-        // has no TS types) — the worker URL is resolved at runtime.
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
+        // Self-host the worker from /public so the CSP doesn't block it.
+        // cdnjs is not in `worker-src` of our CSP, and adding it would
+        // need a security review for every new host. Copying the worker
+        // to /public/pdf.worker.min.mjs sidesteps the issue entirely.
+        // The file is mirrored at build time from node_modules/pdfjs-dist.
+        pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
         const loadingTask = pdfjs.getDocument(data.pdf_signed_url!);
         const pdf = await loadingTask.promise;
         for (let i = 1; i <= pdf.numPages; i++) {

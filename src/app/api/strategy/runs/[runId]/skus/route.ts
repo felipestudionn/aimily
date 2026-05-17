@@ -60,14 +60,15 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const access = await requireStrategyAccess({ tenantId: run.tenant_id, minRole: 'analyst' });
   if (!access.ok) return access.response;
 
-  // Parallel-load everything we need.
-  const [productFactsRes, candidatesRes, constraintRes, briefRes, sourcesRes] = await Promise.all([
+  // Parallel-load run-scoped data. We deliberately do NOT pull all
+  // product_facts for the tenant — that returns rows from other runs.
+  // Instead we get the product_fact_ids that THIS run actually scored
+  // (via strategy_sku_scores) and look up their facts in step 2.
+  const [skuScoresRes, candidatesRes, constraintRes, briefRes, sourcesRes] = await Promise.all([
     supabaseAdmin
-      .from('strategy_product_facts')
-      .select(
-        'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, velocity_d1, velocity_7d, stores_active, stores_with_stock, stock_total, pipeline_total, unit_cost'
-      )
-      .eq('tenant_id', run.tenant_id),
+      .from('strategy_sku_scores')
+      .select('product_fact_id')
+      .eq('run_id', runId),
     supabaseAdmin
       .from('strategy_recommendation_candidates')
       .select(
@@ -96,6 +97,32 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           .in('id', run.source_set_ids as string[])
       : Promise.resolve({ data: [] as any[] }),
   ]);
+
+  // Resolve the product_fact_ids from the run's sku_scores and pull
+  // their full row. Falls back to the candidate scope_refs when
+  // sku_scores is empty (older runs).
+  const skuScoreRows = (skuScoresRes.data || []) as Array<{ product_fact_id: string }>;
+  const pidsFromScores = Array.from(
+    new Set(skuScoreRows.map((s) => s.product_fact_id).filter(Boolean))
+  );
+  const pidsFromCandidates = Array.from(
+    new Set(
+      ((candidatesRes.data || []) as any[])
+        .filter((c) => c.scope === 'sku')
+        .map((c) => c.scope_ref as string)
+    )
+  );
+  const targetPids = pidsFromScores.length > 0 ? pidsFromScores : pidsFromCandidates;
+
+  const productFactsRes =
+    targetPids.length > 0
+      ? await supabaseAdmin
+          .from('strategy_product_facts')
+          .select(
+            'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, velocity_d1, velocity_7d, stores_active, stores_with_stock, stock_total, pipeline_total, unit_cost'
+          )
+          .in('id', targetPids)
+      : { data: [] as any[] };
 
   const products = (productFactsRes.data || []) as any[];
   const candidates = (candidatesRes.data || []) as any[];
