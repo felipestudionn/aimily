@@ -28,6 +28,7 @@ import {
   appendExtendColorsAction,
   appendDropColorAction,
   appendAmplifyWinnerAction,
+  appendAmplifyNextSeasonAction,
   enrichVerdict,
   DEFAULT_TARGET_ROTATION_DAYS,
   type SkuVerdictInput,
@@ -591,32 +592,60 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       .map((sp) => modelRefByPid.get(sp))
       .filter((m): m is string => !!m);
     const productPvp = product?.pvp ?? null;
+    // Compute days_in_store for the next-season gate (Spec v1 §4 Gate 10
+    // requires >= 28 days = 4 weeks of validation data, per Fisher-Raman
+    // 1996 + BoF/IESE Mango case studies). Falls back to observation_date
+    // when activation_date isn't set.
+    const activationDate =
+      ((product as { activation_date?: string | null } | undefined)?.activation_date) ?? null;
+    const observationDate =
+      ((product as { observation_date?: string | null } | undefined)?.observation_date) ?? null;
+    const anchorDate = activationDate ?? observationDate;
+    const daysInStore = anchorDate
+      ? Math.max(
+          0,
+          Math.floor(
+            (Date.now() - new Date(anchorDate).getTime()) / (1000 * 60 * 60 * 24)
+          )
+        )
+      : null;
+    const amplifySignals = {
+      demand_score:
+        score?.demand_score ??
+        (typeof anyEvidence.demand_score === 'number'
+          ? (anyEvidence.demand_score as number)
+          : null),
+      sell_through_bought_pct:
+        score?.sell_through_bought_pct ??
+        (typeof anyEvidence.sell_through_bought_pct === 'number'
+          ? (anyEvidence.sell_through_bought_pct as number)
+          : null),
+      returns_pct:
+        score?.returns_pct ??
+        (typeof anyEvidence.returns_pct === 'number'
+          ? (anyEvidence.returns_pct as number)
+          : null),
+      velocity_7d: vel,
+      family_code: identity.family_code,
+      pdf_rank: pdfRankByPid.get(v.product_fact_id) ?? null,
+      velocity_rank: velocityRankByPid.get(v.product_fact_id) ?? null,
+      family_velocity_ratio: famRatio,
+      brief_colors: briefCtx.color_story ?? [],
+      current_color: currentColorName,
+      pvp: productPvp != null ? Number(productPvp) : null,
+      sibling_hero_model_refs: siblingHeroModelRefs,
+    };
+    // First emit the in-season verdict (always, when triggers fire).
     next = {
-      ...appendAmplifyWinnerAction(next, {
-        demand_score:
-          score?.demand_score ??
-          (typeof anyEvidence.demand_score === 'number'
-            ? (anyEvidence.demand_score as number)
-            : null),
-        sell_through_bought_pct:
-          score?.sell_through_bought_pct ??
-          (typeof anyEvidence.sell_through_bought_pct === 'number'
-            ? (anyEvidence.sell_through_bought_pct as number)
-            : null),
-        returns_pct:
-          score?.returns_pct ??
-          (typeof anyEvidence.returns_pct === 'number'
-            ? (anyEvidence.returns_pct as number)
-            : null),
-        velocity_7d: vel,
-        family_code: identity.family_code,
-        pdf_rank: pdfRankByPid.get(v.product_fact_id) ?? null,
-        velocity_rank: velocityRankByPid.get(v.product_fact_id) ?? null,
-        family_velocity_ratio: famRatio,
-        brief_colors: briefCtx.color_story ?? [],
-        current_color: currentColorName,
-        pvp: productPvp != null ? Number(productPvp) : null,
-        sibling_hero_model_refs: siblingHeroModelRefs,
+      ...appendAmplifyWinnerAction(next, amplifySignals),
+      modulator_notes: next.modulator_notes,
+    };
+    // Then conditionally emit the next-season sequel brief — gated by
+    // days_in_store >= 28 (the 4-week validation window).
+    next = {
+      ...appendAmplifyNextSeasonAction(next, {
+        ...amplifySignals,
+        days_in_store: daysInStore,
       }),
       modulator_notes: next.modulator_notes,
     };

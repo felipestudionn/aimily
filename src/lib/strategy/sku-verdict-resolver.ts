@@ -720,8 +720,14 @@ export function appendAmplifyWinnerAction(
     (signals.family_velocity_ratio ?? 0) >= 2.0;
 
   if (!pdfTopN && !scoreBased && !rankBased && !familyBased) return verdict;
-  // Skip if already present.
-  if (verdict.actions.some((a) => a.action === 'amplify_winner')) return verdict;
+  // Skip if either the split-version or legacy alias is already present.
+  if (
+    verdict.actions.some(
+      (a) => a.action === 'amplify_in_season' || a.action === 'amplify_winner'
+    )
+  ) {
+    return verdict;
+  }
 
   // A.2 · Bifurcate the rationale based on trigger composition.
   // CONFIRMED HERO: pdfTopN + at least one of {vel/score/family} also fires.
@@ -794,9 +800,15 @@ export function appendAmplifyWinnerAction(
     ? ` Co-validado por el lineage: ${siblingHeroes.slice(0, 3).join(', ')} también dispara amplify.`
     : '';
 
+  // 2026-05-17 spec v1 — amplify split into in_season + next_season.
+  // The IN-SEASON rationale focuses on Reorder + Distort NOW (this is
+  // what the buyer does THIS week, before any next-season brief). The
+  // NEXT-SEASON rationale (in appendAmplifyNextSeasonAction below) keeps
+  // the original "diseñar 2-3 secuelas" prose and only fires when there
+  // are 4+ weeks of validation data (days_in_store >= 28).
   const rationale = isZaraFlagOnly
     ? `${headZaraFlag} Antes de pedir secuelas, investigar contexto: ¿lanzamiento de cápsula, prioridad merchandiser, newness reciente? Si las métricas mejoran al cabo de 2 semanas, re-evaluar; si se mantienen planas, no replicar.${pvpAnchor}${siblingAnchor}`
-    : `${headConfirmed} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.${briefColorSentence}${pvpAnchor}${siblingAnchor}`;
+    : `${headConfirmed} Reorder ahora + distort hacia las tiendas/tallas/colores donde acelera — no esperar a próxima temporada para captar la demanda.${pvpAnchor}${siblingAnchor}`;
 
   // Confidence: highest of the four signals (capped at 0.95, no floor).
   // A.6 · Floor 0.70 was inflating weak single-trigger fires — a SKU
@@ -832,7 +844,7 @@ export function appendAmplifyWinnerAction(
   const confidence = isZaraFlagOnly ? Math.min(0.60, rawConfidence) : rawConfidence;
 
   const newItem: SkuVerdictItem = {
-    action: 'amplify_winner',
+    action: 'amplify_in_season',
     confidence,
     rationale,
     recommended_units: null,
@@ -853,10 +865,11 @@ export function appendAmplifyWinnerAction(
       velocity_rank: signals.velocity_rank,
       family_velocity_ratio: signals.family_velocity_ratio,
       proposed_brief_colors: candidateColors.slice(0, 4),
+      is_zara_flag_only: isZaraFlagOnly,
     },
     counter_evidence: {},
     assumptions: [
-      'Recomendación estratégica al equipo de diseño/merch, no operacional.',
+      'Recomendación operacional: Reorder ahora con distort hacia tiendas/tallas/colores donde acelera.',
     ],
     data_sufficiency_warning: null,
   };
@@ -864,7 +877,139 @@ export function appendAmplifyWinnerAction(
   // Reinsert with stable display order.
   const map = new Map<SkuVerdictAction, SkuVerdictItem>();
   for (const a of verdict.actions) map.set(a.action, a);
-  map.set('amplify_winner', newItem);
+  map.set('amplify_in_season', newItem);
+  const reordered: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = map.get(a);
+    if (item) reordered.push(item);
+  }
+  return { ...verdict, actions: reordered };
+}
+
+/**
+ * Append an `amplify_next_season` action — the SEQUEL BRIEF to the
+ * design team. Mirrors appendAmplifyWinnerAction's trigger logic but
+ * with one additional gate: `days_in_store >= 28` (the canonical "4
+ * weeks of validation data" threshold from BoF/IESE Mango case studies
+ * and Fisher-Raman 1996 "accurate response" Bayesian-posterior framing).
+ *
+ * Without enough validation data, in-season amplify can fire (the
+ * present-moment Reorder + Distort decision) but next-season amplify
+ * should not — committing the design team's next-season cycle to a
+ * 14-day-old SKU is premature.
+ *
+ * The rationale focuses on the design brief itself: silhouette + material
+ * + paleta + 2-3 sequels. Suggested colors (brief_colors) become the
+ * concrete shortlist.
+ *
+ * Spec source: memory/product-spec_aimily-in-season-2026-05-17.md §4 Gate 10.
+ */
+export function appendAmplifyNextSeasonAction(
+  verdict: SkuVerdict,
+  signals: {
+    demand_score: number | null;
+    sell_through_bought_pct: number | null;
+    returns_pct: number | null;
+    velocity_7d: number | null;
+    family_code: string | null;
+    pdf_rank: number | null;
+    velocity_rank: number | null;
+    family_velocity_ratio: number | null;
+    brief_colors: string[];
+    current_color: string | null;
+    pvp?: number | null;
+    sibling_hero_model_refs?: string[];
+    /** Days the SKU has been in store. Gate: must be >= 28 (4 weeks of
+     *  validation data) before committing design team next-season. */
+    days_in_store: number | null;
+  }
+): SkuVerdict {
+  // Gate: returns block + 4-week validation window.
+  if ((signals.returns_pct ?? 0) > 0.35) return verdict;
+  if ((signals.days_in_store ?? 0) < 28) return verdict;
+
+  // Same hero triggers as in_season; if none fire, no next-season brief.
+  const pdfTopN = signals.pdf_rank != null && signals.pdf_rank <= 10;
+  const scoreBased =
+    (signals.demand_score ?? 0) >= 0.7 && (signals.sell_through_bought_pct ?? 0) >= 0.5;
+  const rankBased = signals.velocity_rank != null && signals.velocity_rank <= 10;
+  const familyBased = (signals.family_velocity_ratio ?? 0) >= 2.0;
+  if (!pdfTopN && !scoreBased && !rankBased && !familyBased) return verdict;
+  if (verdict.actions.some((a) => a.action === 'amplify_next_season')) return verdict;
+
+  // Brief-color shortlist (skip the SKU's own color).
+  const currentColorLc = (signals.current_color ?? '').trim().toLowerCase();
+  const candidateColors = (signals.brief_colors ?? [])
+    .map((c) => (c ?? '').trim())
+    .filter(Boolean)
+    .filter((c) => c.toLowerCase() !== currentColorLc);
+  const colorClause =
+    candidateColors.length > 0
+      ? ` Probar la misma silueta en colores del moodboard: ${candidateColors.slice(0, 4).join(', ')}.`
+      : '';
+  const pvpAnchor =
+    signals.pvp != null && signals.pvp > 0
+      ? ` Mantener el slot de precio €${Number(signals.pvp).toFixed(2)} como ancla.`
+      : '';
+  const validationDays = signals.days_in_store ?? 28;
+  const siblings = (signals.sibling_hero_model_refs ?? []).filter(Boolean);
+  const siblingAnchor =
+    siblings.length > 0
+      ? ` Co-validado por el estilo: ${siblings.slice(0, 3).join(', ')} también dispara amplify.`
+      : '';
+
+  const rationale =
+    `Hero validado con ${validationDays} días de datos en tienda. ` +
+    `Briefar al equipo de diseño 2-3 secuelas siguiendo este patrón (silueta + material + paleta).` +
+    colorClause + pvpAnchor + siblingAnchor;
+
+  // Confidence: slightly lower than in_season (next-season commitments
+  // require more conviction; the 4-week gate already filters but we cap
+  // at 0.90 to leave room for design judgement).
+  const baseConf =
+    Math.max(
+      pdfTopN ? 0.85 : 0,
+      scoreBased ? 0.85 : 0,
+      rankBased ? 0.85 : 0,
+      familyBased ? 0.85 : 0
+    );
+  const confidence = Math.min(0.90, baseConf);
+
+  const newItem: SkuVerdictItem = {
+    action: 'amplify_next_season',
+    confidence,
+    rationale,
+    recommended_units: null,
+    confidence_breakdown: {
+      data_completeness: null,
+      identity: null,
+      demand: signals.demand_score ?? null,
+      margin: null,
+      creative_fit: null,
+    },
+    evidence: {
+      demand_score: signals.demand_score,
+      sell_through_bought_pct: signals.sell_through_bought_pct,
+      returns_pct: signals.returns_pct,
+      velocity_7d: signals.velocity_7d,
+      family_code: signals.family_code,
+      pdf_rank: signals.pdf_rank,
+      velocity_rank: signals.velocity_rank,
+      family_velocity_ratio: signals.family_velocity_ratio,
+      days_in_store: signals.days_in_store,
+      proposed_brief_colors: candidateColors.slice(0, 4),
+    },
+    counter_evidence: {},
+    assumptions: [
+      'Recomendación estratégica al equipo de diseño: 2-3 secuelas próxima temporada.',
+      'Gate: días en tienda >= 28 (4 semanas de validación, Fisher-Raman 1996).',
+    ],
+    data_sufficiency_warning: null,
+  };
+
+  const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const a of verdict.actions) map.set(a.action, a);
+  map.set('amplify_next_season', newItem);
   const reordered: SkuVerdictItem[] = [];
   for (const a of ACTION_DISPLAY_ORDER) {
     const item = map.get(a);
