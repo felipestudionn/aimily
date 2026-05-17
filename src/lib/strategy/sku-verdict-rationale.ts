@@ -166,10 +166,65 @@ export function generateRationale(
     }
 
     case 'amplify_winner': {
-      // The hero-detection helper in sku-verdict-resolver.ts already
-      // generates a contextual rationale with the family + demand_score.
-      // This branch is a fallback only.
+      // Legacy alias for the pre-split amplify verb. The split version
+      // (amplify_in_season + amplify_next_season) gets contextual
+      // rationale via dedicated appenders in route.ts; this branch is a
+      // fallback only.
       return 'Hero confirmado: vende muy por encima de su familia. Diseñar secuelas para próxima temporada.';
+    }
+
+    case 'amplify_in_season': {
+      // The in-season amplify appender generates the contextual rationale
+      // with Reorder + Distort breakdown. This is a fallback only.
+      return 'Hero confirmado en temporada: reorder + distort hacia las tiendas/tallas/colores donde acelera. No esperar a próxima temporada.';
+    }
+
+    case 'amplify_next_season': {
+      // Next-season sequel brief — fired only after days_in_store ≥ 28.
+      // The dedicated appender generates the contextual brief with
+      // proposed silhouettes + materials + colors.
+      return 'Hero validado con 4+ semanas de datos: briefar al equipo de diseño 2-3 secuelas para próxima temporada.';
+    }
+
+    case 'amplify_distribution': {
+      // High STR in stocked stores + low distribution breadth + warehouse
+      // stock available. Push to more archetype-matched stores.
+      return 'Vende bien donde está pero está en pocas tiendas. Empujar warehouse stock a más tiendas archetype-matched para captar la demanda no servida.';
+    }
+
+    case 'pull_forward_intake': {
+      // Hero ramping faster than plan + pending PO arrival too late.
+      // Supplier flex required.
+      return 'Ramping más rápido que el plan: adelantar la entrada del PO para evitar rotura antes de que llegue el stock pendiente.';
+    }
+
+    case 'promote_push': {
+      // Velocity below plan BUT cause is known (campaign / weather / drop).
+      // Marketing lever instead of kill/investigate.
+      return 'Velocidad por debajo del plan pero la causa es conocida (campaña / lanzamiento / estacional). Aplicar marketing lever en vez de matar el SKU.';
+    }
+
+    case 'investigate_root_cause': {
+      // The new name for investigate when cause is unknown. The
+      // marketing-cause variant becomes promote_push.
+      const reasons: string[] = [];
+      if ((ctx.returns_pct ?? 0) >= 0.18) {
+        reasons.push(`devoluciones altas (${pct(ctx.returns_pct, 1)})`);
+      }
+      if ((ctx.velocity_7d ?? 0) > 0 && ctx.velocity_ratio != null && ctx.velocity_ratio >= 1) {
+        reasons.push(`venta sostenida (${num(ctx.velocity_7d)} uds/7d)`);
+      }
+      if ((ctx.effective_margin ?? 0) < 0.1 && (ctx.effective_margin ?? 0) >= 0) {
+        reasons.push(`margen efectivo muy fino (${pct(ctx.effective_margin, 1)})`);
+      }
+      const head =
+        reasons.length > 0
+          ? reasons.join(' + ')
+          : 'señales contradictorias en los datos';
+      const ask = (ctx.returns_pct ?? 0) >= 0.2
+        ? 'Revisar fit / tech-pack / calidad antes de reponer o escalar a más colores.'
+        : 'Validar con el equipo merch antes de tomar acción.';
+      return `Vuela pero también vuela de vuelta: ${head}. ${ask}`;
     }
 
     case 'hold': {

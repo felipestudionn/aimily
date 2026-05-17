@@ -16,16 +16,30 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
 
 interface VerdictAction {
+  // 13-verb spec taxonomy (2026-05-17). The legacy aliases (investigate,
+  // amplify_winner) are retained so verdicts persisted with prior schema
+  // still render. Source of truth: SkuVerdictAction in sku-verdict-resolver.ts.
   action:
+    // THIS WEEK / TODAY
     | 'kill'
     | 'markdown_accelerate'
+    | 'amplify_distribution'
+    | 'pull_forward_intake'
+    // THIS MONTH
     | 'replenish'
+    | 'amplify_in_season'
+    | 'promote_push'
     | 'resize_down'
-    | 'investigate'
-    | 'amplify_winner'
+    | 'investigate_root_cause'
+    // NEXT SEASON
+    | 'amplify_next_season'
     | 'extend_colors'
     | 'carryover'
-    | 'hold';
+    // FALLBACK
+    | 'hold'
+    // LEGACY ALIASES (deprecated)
+    | 'investigate'
+    | 'amplify_winner';
   confidence: number;
   rationale: string;
   recommended_units: number | null;
@@ -75,15 +89,28 @@ interface ApiResponse {
 }
 
 const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
-  kill: 'Kill',
-  markdown_accelerate: 'Markdown',
+  // THIS WEEK
+  kill: 'Matar',
+  markdown_accelerate: 'Rebajar',
+  amplify_distribution: 'Ampliar distribución',
+  pull_forward_intake: 'Acelerar entrada',
+  // THIS MONTH
   replenish: 'Reponer',
+  amplify_in_season: 'Replicar ahora',
+  promote_push: 'Promocionar',
   resize_down: 'Reducir compra',
-  investigate: 'Investigar',
-  amplify_winner: 'Replicar estilo',
+  investigate_root_cause: 'Marcar para revisión',
+  // NEXT SEASON
+  amplify_next_season: 'Briefar diseño',
   extend_colors: 'Extender colores',
   carryover: 'Mantener',
+  // FALLBACK
   hold: 'Esperar',
+  // LEGACY ALIASES — surface with same labels as the split versions
+  // so persisted rows render coherently. Will be removed after the
+  // resolver is migrated entirely off them.
+  investigate: 'Marcar para revisión',
+  amplify_winner: 'Replicar estilo',
 };
 
 // Aimily accent palette. Each action keys to a different brand colour so
@@ -91,15 +118,26 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
 // Tokens (tailwind.config.js): error / warning / success / sea-foam / moss
 // / clay / citronella / midnight / linen / carbon.
 const ACTION_TONE: Record<VerdictAction['action'], string> = {
+  // THIS WEEK — urgent (warning / error palette)
   kill: 'bg-error/15 text-error',
   markdown_accelerate: 'bg-warning/15 text-warning',
+  amplify_distribution: 'bg-success/30 text-success',
+  pull_forward_intake: 'bg-warning/30 text-warning',
+  // THIS MONTH — tactical (mixed warm tones)
   replenish: 'bg-success/20 text-success',
+  amplify_in_season: 'bg-midnight text-white',
+  promote_push: 'bg-citronella text-carbon',
   resize_down: 'bg-clay text-carbon',
-  investigate: 'bg-sea-foam text-carbon',
-  amplify_winner: 'bg-midnight text-white',
+  investigate_root_cause: 'bg-sea-foam text-carbon',
+  // NEXT SEASON — strategic (cooler/quieter tones)
+  amplify_next_season: 'bg-midnight/70 text-white',
   extend_colors: 'bg-moss text-carbon',
   carryover: 'bg-linen text-carbon/70',
+  // FALLBACK
   hold: 'bg-carbon/[0.04] text-carbon/45',
+  // LEGACY ALIASES — same tone as split equivalents
+  investigate: 'bg-sea-foam text-carbon',
+  amplify_winner: 'bg-midnight text-white',
 };
 
 // Approximate hex for typical Spanish/RNK colour names. Used to render
@@ -183,7 +221,11 @@ function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
     if (!loser) return [];
     return [{ name: loser, hex: resolveHex(ev, loser) }];
   }
-  if (a.action === 'amplify_winner') {
+  if (
+    a.action === 'amplify_winner' ||
+    a.action === 'amplify_in_season' ||
+    a.action === 'amplify_next_season'
+  ) {
     const ev = a.evidence as Record<string, unknown>;
     const proposed = Array.isArray(ev.proposed_brief_colors)
       ? (ev.proposed_brief_colors as string[])

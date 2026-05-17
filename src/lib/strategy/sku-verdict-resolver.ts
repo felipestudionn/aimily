@@ -22,32 +22,76 @@
 import type { RecommendationCandidate } from './recommend';
 import { generateRationale, shouldCarryUnits, type RationaleContext } from './sku-verdict-rationale';
 
-/** The nine action types a per-SKU verdict can surface. */
+/**
+ * The 13 action types a per-SKU verdict can surface (product spec v1, 2026-05-17).
+ *
+ * Spec source of truth: memory/product-spec_aimily-in-season-2026-05-17.md §4.
+ *
+ * Three time horizons:
+ *  - THIS WEEK / TODAY (urgent operational decision for the Daily/Monday Trading Meeting)
+ *  - THIS MONTH (tactical re-balance, planning-level)
+ *  - NEXT SEASON (creative direction feed)
+ *
+ * Two legacy aliases retained for backward compatibility with existing DB rows
+ * and prior commits: `investigate` is the pre-split version of
+ * `investigate_root_cause` + `promote_push`; `amplify_winner` is the pre-split
+ * version of `amplify_in_season` + `amplify_next_season`. New code should not
+ * emit these aliases — they'll be removed after the legacy resolver path is
+ * deprecated. See feedback_aimily-* memories for context.
+ *
+ * Explicitly OUT of scope per Felipe (2026-05-17):
+ *  - inter-store TRANSFER (allocator/operations layer, not buyer-merch)
+ *  - PUSH_ALLOCATION between stores (same — operations layer)
+ *  See feedback_aimily-scope-no-inter-store-transfer.md.
+ */
 export type SkuVerdictAction =
+  // ── THIS WEEK / TODAY ──────────────────────────────────────────────────
   | 'kill'
   | 'markdown_accelerate'
+  | 'amplify_distribution'
+  | 'pull_forward_intake'
+  // ── THIS MONTH ─────────────────────────────────────────────────────────
   | 'replenish'
+  | 'amplify_in_season'
+  | 'promote_push'
   | 'resize_down'
-  | 'investigate'
-  | 'amplify_winner'
+  | 'investigate_root_cause'
+  // ── NEXT SEASON (creative direction feed) ──────────────────────────────
+  | 'amplify_next_season'
   | 'extend_colors'
   | 'carryover'
-  | 'hold';
+  // ── FALLBACK ───────────────────────────────────────────────────────────
+  | 'hold'
+  // ── LEGACY ALIASES (deprecated, retained for back-compat) ──────────────
+  | 'investigate'
+  | 'amplify_winner';
 
 /**
- * Stable display order when a SKU stacks multiple actions. Most
- * consequential / urgent at the top so the buyer scans the right thing
- * first. Kill leads; hold is the fallback when nothing else fits.
+ * Stable display order = the Daily/Monday Trading Meeting agenda (spec §6).
+ * Most consequential / urgent at the top so the buyer scans the right thing
+ * first. THIS-WEEK actions lead; CARRYOVER/HOLD trail. Legacy aliases
+ * (`investigate`, `amplify_winner`) collapse to their split equivalents'
+ * positions so any persisted DB rows still render in the correct slot.
  */
 const ACTION_DISPLAY_ORDER: SkuVerdictAction[] = [
+  // THIS WEEK
   'kill',
   'markdown_accelerate',
+  'amplify_distribution',
+  'pull_forward_intake',
+  // THIS MONTH
   'replenish',
+  'amplify_in_season',
+  'amplify_winner',         // legacy alias — same horizon as amplify_in_season
+  'promote_push',
   'resize_down',
-  'investigate',
-  'amplify_winner',
+  'investigate_root_cause',
+  'investigate',            // legacy alias — same horizon as investigate_root_cause
+  // NEXT SEASON
+  'amplify_next_season',
   'extend_colors',
   'carryover',
+  // FALLBACK
   'hold',
 ];
 
@@ -152,10 +196,20 @@ export function resolveTargetRotationDays(
   return best ? best.days : fallback;
 }
 
-/** Map a recommend.ts action_type to our 7-verb verdict vocabulary.
- *  Returns null for engine actions that don't fit at SKU scope
- *  (new_sku_proposal, family_extension, tension_flag, recolor at lineage
- *  scope, substitute, geographic_redistribute). */
+/** Map a recommend.ts ActionType (candidate-level enum) to our 13-verb verdict
+ *  vocabulary (resolver-level enum). Returns null for engine actions that
+ *  don't fit at SKU scope (new_sku_proposal, family_extension, tension_flag,
+ *  recolor at lineage scope, substitute, geographic_redistribute).
+ *
+ *  The candidate-level enum (strategy_action_type) is intentionally kept
+ *  narrower than the resolver enum — the 13 spec verbs are emitted at the
+ *  resolver via dedicated appender functions (appendAmplifyInSeasonAction,
+ *  appendAmplifyDistributionAction, appendPromotePushAction, etc.) rather
+ *  than as raw candidates. This keeps the DB enum stable and lets resolver
+ *  logic combine multiple signals into a single verdict.
+ *
+ *  Spec source: memory/product-spec_aimily-in-season-2026-05-17.md §4.
+ */
 function mapActionType(action: string): SkuVerdictAction | null {
   switch (action) {
     case 'kill':
@@ -170,9 +224,20 @@ function mapActionType(action: string): SkuVerdictAction | null {
     case 'resize_down':
       return 'resize_down';
     case 'investigate':
-      return 'investigate';
+      // Default candidate-level 'investigate' to the new spec verb
+      // 'investigate_root_cause'. The split into investigate_root_cause vs
+      // promote_push happens at the resolver level via dedicated appenders
+      // when the marketing_calendar_flag is set (cause known).
+      return 'investigate_root_cause';
     case 'carryover':
       return 'carryover';
+    case 'geographic_redistribute':
+      // Maps to the in-scope distribution verb. Note: the spec excludes
+      // inter-store transfer; this resolver verb only covers warehouse →
+      // more stores (per feedback_aimily-scope-no-inter-store-transfer.md).
+      // The appender that materializes amplify_distribution enforces the
+      // scope guard.
+      return 'amplify_distribution';
     default:
       return null;
   }
