@@ -381,6 +381,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   };
   let modulated = modulateSkuVerdicts(verdicts, archetype, budget, briefCtx, financialsByPid);
 
+  // PDF rank = position in the source RNK report. products is ordered by
+  // created_at ASC, which matches the ingest order (= PDF row order).
+  const pdfRankByPid = new Map<string, number>();
+  products.forEach((p, idx) => pdfRankByPid.set(p.id, idx + 1));
+
   // Layer in lineage-level + hero-level actions after modulation.
   // extend_colors comes from the color-scope candidates of this run;
   // amplify_winner is computed from each SKU's evidence + sell-through.
@@ -432,6 +437,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
             : null),
         velocity_7d: vel,
         family_code: identity.family_code,
+        pdf_rank: pdfRankByPid.get(v.product_fact_id) ?? null,
         velocity_rank: velocityRankByPid.get(v.product_fact_id) ?? null,
         family_velocity_ratio: famRatio,
         brief_colors: briefCtx.color_story ?? [],

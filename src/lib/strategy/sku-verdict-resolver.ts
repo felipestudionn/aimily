@@ -140,8 +140,13 @@ function mapActionType(action: string): SkuVerdictAction | null {
  *
  * Math:
  *   velocity_per_day = velocity_d1 (preferred) || velocity_7d / 7
- *   target_units     = velocity_per_day × target_rotation_days × stores_with_stock
+ *   target_units     = velocity_per_day × target_rotation_days
  *   gap              = max(0, target_units − (stock_total + pipeline_total))
+ *
+ * IMPORTANT: velocity_7d from Zara RNK is the AGGREGATE units across all
+ * stores over the 7-day window — it is NOT a per-store rate. Do NOT
+ * multiply by stores_with_stock; that produces absurd 7-million-unit
+ * recommendations on top SKUs.
  *
  * Returns null for units when no velocity data is available.
  */
@@ -162,8 +167,7 @@ export function computeReplenishUnits(
     return { recommended_units: null, current_stock_days: null };
   }
   const currentStock = (input.stock_total ?? 0) + (input.pipeline_total ?? 0);
-  const stores = Math.max(1, input.stores_with_stock ?? 1);
-  const targetUnits = velocityPerDay * targetRotationDays * stores;
+  const targetUnits = velocityPerDay * targetRotationDays;
   const gap = Math.max(0, Math.round(targetUnits - currentStock));
   const currentStockDays = velocityPerDay > 0 ? currentStock / velocityPerDay : null;
   return {
@@ -346,7 +350,10 @@ export function appendAmplifyWinnerAction(
     returns_pct: number | null;
     velocity_7d: number | null;
     family_code: string | null;
-    /** 1-based rank by velocity across the run (1 = top seller). */
+    /** 1-based PDF rank — the order the buyer sees in the RNK report. This
+     *  is the SOURCE ranking from Zara, generally by revenue. */
+    pdf_rank: number | null;
+    /** 1-based rank by velocity_7d across the run (1 = highest units). */
     velocity_rank: number | null;
     /** velocity_7d divided by family average velocity. */
     family_velocity_ratio: number | null;
@@ -358,11 +365,15 @@ export function appendAmplifyWinnerAction(
     current_color: string | null;
   }
 ): SkuVerdict {
-  // Block if returns are too high — winners with bad fit are not "amplify",
-  // they're "investigate".
-  if ((signals.returns_pct ?? 0) > 0.22) return verdict;
+  // Block ONLY when returns are catastrophic — Zara winners can hover at
+  // 25-30% returns and still be heroes. Below 0.35 we still propose
+  // amplification (the buyer can downgrade via override). The rationale
+  // surfaces the returns_pct so they see the risk.
+  if ((signals.returns_pct ?? 0) > 0.35) return verdict;
 
-  // Three independent triggers for hero detection. Any one fires.
+  // Four independent triggers for hero detection. Any one fires.
+  const pdfTopN =
+    signals.pdf_rank != null && signals.pdf_rank <= 10;
   const scoreBased =
     (signals.demand_score ?? 0) >= 0.7 &&
     (signals.sell_through_bought_pct ?? 0) >= 0.5;
@@ -371,13 +382,15 @@ export function appendAmplifyWinnerAction(
   const familyBased =
     (signals.family_velocity_ratio ?? 0) >= 2.0;
 
-  if (!scoreBased && !rankBased && !familyBased) return verdict;
+  if (!pdfTopN && !scoreBased && !rankBased && !familyBased) return verdict;
   // Skip if already present.
   if (verdict.actions.some((a) => a.action === 'amplify_winner')) return verdict;
 
   // Rationale composition: lead with the strongest visible signal.
   const parts: string[] = [];
-  if (signals.velocity_rank != null && signals.velocity_rank <= 10) {
+  if (signals.pdf_rank != null && signals.pdf_rank <= 10) {
+    parts.push(`top ${signals.pdf_rank} del RNK Zara`);
+  } else if (signals.velocity_rank != null && signals.velocity_rank <= 10) {
     parts.push(`top ${signals.velocity_rank} en velocidad del run`);
   }
   if ((signals.family_velocity_ratio ?? 0) >= 2.0) {
@@ -418,17 +431,24 @@ export function appendAmplifyWinnerAction(
 
   const rationale = `${head} Más allá de mantenerlo, diseñar 2-3 secuelas siguiendo este patrón (silueta + material + paleta) captura esa demanda en próxima temporada.${briefColorSentence}`;
 
-  // Confidence: highest of the three signals (capped at 0.95).
+  // Confidence: highest of the four signals (capped at 0.95).
   const confScore = (signals.demand_score ?? 0) >= 0.7 ? 0.85 : 0;
-  const confRank =
+  const confVelRank =
     signals.velocity_rank != null && signals.velocity_rank <= 10
       ? 0.92 - signals.velocity_rank * 0.02
+      : 0;
+  const confPdfRank =
+    signals.pdf_rank != null && signals.pdf_rank <= 10
+      ? 0.95 - signals.pdf_rank * 0.02
       : 0;
   const confFamily =
     (signals.family_velocity_ratio ?? 0) >= 2.0
       ? Math.min(0.95, 0.7 + (signals.family_velocity_ratio! - 2) * 0.1)
       : 0;
-  const confidence = Math.min(0.95, Math.max(confScore, confRank, confFamily, 0.7));
+  const confidence = Math.min(
+    0.95,
+    Math.max(confScore, confVelRank, confPdfRank, confFamily, 0.7)
+  );
 
   const newItem: SkuVerdictItem = {
     action: 'amplify_winner',
@@ -448,6 +468,7 @@ export function appendAmplifyWinnerAction(
       returns_pct: signals.returns_pct,
       velocity_7d: signals.velocity_7d,
       family_code: signals.family_code,
+      pdf_rank: signals.pdf_rank,
       velocity_rank: signals.velocity_rank,
       family_velocity_ratio: signals.family_velocity_ratio,
       proposed_brief_colors: candidateColors.slice(0, 4),
