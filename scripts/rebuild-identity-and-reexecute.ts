@@ -35,7 +35,7 @@ const DEFAULT_RUN_ID = '0c2ed3e9-cef4-4107-abea-c01535d885e3';
 interface RunRow {
   id: string;
   tenant_id: string;
-  source_id: string;
+  source_set_ids: string[];
   run_status: string;
 }
 
@@ -55,7 +55,7 @@ async function main() {
   // 1) Look up the tenant_id.
   const { data: run, error: runErr } = await supabaseAdmin
     .from('strategy_analysis_runs')
-    .select('id, tenant_id, source_id, run_status')
+    .select('id, tenant_id, source_set_ids, run_status')
     .eq('id', runId)
     .single();
   if (runErr || !run) {
@@ -64,7 +64,7 @@ async function main() {
   }
   const runRow = run as RunRow;
   console.log(`Tenant: ${runRow.tenant_id}`);
-  console.log(`Source: ${runRow.source_id}`);
+  console.log(`Source sets: ${runRow.source_set_ids?.join(', ') || '(none)'}`);
   console.log(`Current status: ${runRow.run_status}\n`);
 
   // 2) Snapshot the identity graph BEFORE rebuild for visibility.
