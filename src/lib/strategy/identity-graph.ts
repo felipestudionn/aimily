@@ -312,14 +312,24 @@ async function fetchAllProductFacts(tenantId: string): Promise<FactRow[]> {
 
 function canonicalPrefix(modelRef: string): string {
   if (!modelRef) return '';
-  // The model code is the FIRST space-separated token. Subsequent tokens
-  // are fabric/sub-line/color codes that vary within a single silhouette.
-  //   "4786 166 401" + "4786 166 250" + "4786 30 620" all collapse to "4786"
-  //   (the GRANDAD COLLAR SHIRT lineage with different fabrics + colors).
-  // Codex contrapropuesta §1 fix: previous version used first TWO tokens,
-  // which double-counted lineages per fabric and broke color-winner
-  // detection across fabrics.
+  // D.1 (2026-05-17 audit) · First TWO space-separated tokens.
+  //
+  // Empirical evidence from the Zara RNK V26 dogfood: the first token is
+  // Zara's family/category code; the second token distinguishes silhouettes
+  // within the family. The previous 1-token grouping over-collapsed 9 SKUs
+  // (Grandad Collar / Linen Shirt / Knotted Collar / Balloon Sleeve / Fluid
+  // Polo) into a single "FLUID POLO" lineage because they all share prefix
+  // "4786", contaminating extend_colors, kill-color-scope, and carryover_survivor.
+  //
+  // With 2 tokens:
+  //   "4786 166 401" + "4786 166 250"  → "4786 166" (Grandad Collar, 2 colors) ✓
+  //   "4786 30  620" + "4786 30  250"  → "4786 30"  (Linen Shirt, 2 colors) ✓
+  //   "4786 34  251"                    → "4786 34" (Knotted Collar orphan) ✓
+  //   "4786 96 *"                       → "4786 96" (Fluid Polo, 3 colors) ✓
+  //
+  // If the model_ref has fewer than 2 tokens, fall back to whatever exists.
   const parts = modelRef.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0]} ${parts[1]}`;
   return parts[0] || modelRef.trim();
 }
 

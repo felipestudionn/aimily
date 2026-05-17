@@ -53,6 +53,50 @@ export interface ClassifierContext {
   thresholds: ClassifierThresholds;
   reverse_logistics_cost_per_unit: number;
   observation_date: string;
+  /** F.2 · Brief context for creative_fit computation. When the run has
+   *  a creative brief attached, the orchestrator passes its family_pivot
+   *  and color_story; classifier 11 uses them to compute how aligned a
+   *  SKU is with the buyer's stated creative direction. Null means no
+   *  brief was attached — confidence_creative_fit stays null in that case. */
+  brief_family_pivot?: Record<string, number>;
+  brief_color_story?: string[];
+}
+
+/** F.2 · Compute creative_fit for a SKU given the run's brief.
+ *  Returns null when no brief context exists. Otherwise: a 0-1 score
+ *  blending family alignment (brief pivot direction for this SKU's family)
+ *  + color alignment (does this SKU's color appear in the brief's
+ *  color_story?). */
+function computeCreativeFit(
+  input: SkuScoreInput,
+  ctx: ClassifierContext
+): number | null {
+  const familyPivot = ctx.brief_family_pivot ?? null;
+  const colorStory = ctx.brief_color_story ?? null;
+  if (!familyPivot && !colorStory) return null;
+
+  let familyScore = 0.5;  // neutral
+  if (familyPivot && input.family_code) {
+    const pivot = familyPivot[input.family_code];
+    if (typeof pivot === 'number') {
+      // pivot ∈ [-0.5, +0.5]; map to creative_fit familyScore [0.2, 0.95].
+      familyScore = Math.max(0.2, Math.min(0.95, 0.5 + pivot));
+    }
+  }
+
+  let colorScore = 0.5;
+  if (colorStory && colorStory.length > 0) {
+    const skuColor = (input.color_ref ?? '').toLowerCase();
+    if (skuColor) {
+      const inStory = colorStory.some((c) => {
+        const k = (c ?? '').toLowerCase().replace(/_/g, ' ');
+        return k.length > 0 && (k === skuColor || skuColor.includes(k) || k.includes(skuColor));
+      });
+      colorScore = inStory ? 0.85 : 0.35;
+    }
+  }
+
+  return Math.round((familyScore * 0.6 + colorScore * 0.4) * 100) / 100;
 }
 
 export type LifecycleStage =
@@ -383,11 +427,25 @@ export function scoreSku(
   const stockout_risk_score = stockoutSuppressed
     ? Math.min(1, Math.max(emptyingRate ?? 0, activationRatio != null ? 1 - activationRatio : 0))
     : 0;
+  // B.6 · Back out the velocity-IF-stocked from observed velocity. When
+  // stockout-suppression is high, the displayed 7-day velocity understates
+  // true demand because units couldn't sell when stores ran out. The
+  // replenish formula needs this corrected number so heroes that ran out
+  // get bought enough next time. Adjustment cap at ~2.5× to avoid wild
+  // inflation when the suppression signal is noisy.
+  const adjustmentDivisor = stockoutSuppressed
+    ? Math.max(0.4, 1 - stockout_risk_score * 0.6)
+    : 1;
+  const velocity_stockout_adjusted_7d =
+    velocityRaw7d > 0 ? Math.round(velocityRaw7d / adjustmentDivisor) : 0;
   traces.stockout_aware_velocity = {
     activation_ratio: activationRatio,
     emptying_rate: emptyingRate,
     stockout_suppressed: stockoutSuppressed,
-    note: 'High emptying_rate OR (low activation_ratio AND near-zero in-store stock) flags stockout suppression',
+    observed_velocity_7d: velocityRaw7d,
+    adjusted_velocity_7d: velocity_stockout_adjusted_7d,
+    adjustment_factor: Math.round((1 / adjustmentDivisor) * 100) / 100,
+    note: 'High emptying_rate OR (low activation_ratio AND near-zero in-store stock) flags stockout suppression. adjusted_velocity_7d backs out the velocity-if-stocked using stockout_risk_score × 0.6 as severity, capped at 2.5× observed.',
   };
 
   // ── Classifier 5: cannibalization detector ───────────────────────────────
@@ -417,13 +475,28 @@ export function scoreSku(
   };
 
   // ── Classifier 6: lifecycle stage classifier ─────────────────────────────
+  //
+  // C.1 (2026-05-17 audit) · Priority chain reordered so `exit` is reachable
+  // even on aged SKUs. Previously `mature` (≥60 days_in_store) preempted
+  // `exit`, hiding late-season dogs. Now: insufficient_evidence → new →
+  // exit (catastrophic ST) → ramp → decay → mature → peak → exit (declining).
   let lifecycle: LifecycleStage = 'insufficient_evidence';
   const velocityRatio =
     input.velocity_8_14d > 0 ? input.velocity_7d / input.velocity_8_14d : null;
+  const stPct = input.sell_through_bought_pct ?? null;
+  const dogSt = ctx.thresholds.dog_sell_through_bought_p_max;
   if (daysInStore == null) {
     lifecycle = 'insufficient_evidence';
   } else if (daysInStore < ctx.thresholds.new_days_in_store_max) {
     lifecycle = 'new';
+  } else if (
+    // Catastrophic-ST exit: ST < half the dog threshold (e.g. <0.10) and any
+    // signal of decline (or stale enough to be in the system 30+ days).
+    stPct != null &&
+    stPct < dogSt * 0.5 &&
+    daysInStore >= 30
+  ) {
+    lifecycle = 'exit';
   } else if (
     velocityRatio != null &&
     velocityRatio >= ctx.thresholds.climber_velocity_ratio_min
@@ -449,7 +522,8 @@ export function scoreSku(
   ) {
     lifecycle = 'peak';
   } else if (
-    (input.sell_through_bought_pct ?? 0) < ctx.thresholds.dog_sell_through_bought_p_max &&
+    stPct != null &&
+    stPct < dogSt &&
     velocityRatio != null &&
     velocityRatio < 1
   ) {
@@ -497,16 +571,42 @@ export function scoreSku(
   }
 
   // ── Classifier 8: markdown risk score ────────────────────────────────────
+  //
+  // C.4 (2026-05-17 audit) · Decoupled from lifecycle. Previously only
+  // SKUs in `decay` or `exit` got a non-zero score, hiding the
+  // mature/ramp/peak SKUs sitting on 60+ days of stock that a senior buyer
+  // would mark down. New logic fires markdown_risk for ANY SKU (except
+  // `new`) when stockDays ≥ 60 OR (effective_margin ≤ 0.10 AND stockDays
+  // ≥ 30) OR original decay/exit. Score = min(1, stockDays / 90) regardless.
   let markdown_risk_score: number | null = null;
-  if (lifecycle === 'decay' || lifecycle === 'exit') {
-    const stockDays =
-      input.pipeline_total != null && velocityRaw7d > 0
-        ? input.pipeline_total / Math.max(velocityRaw7d / 7, 0.01)
-        : 0;
+  const stockDays =
+    input.pipeline_total != null && velocityRaw7d > 0
+      ? input.pipeline_total / Math.max(velocityRaw7d / 7, 0.01)
+      : 0;
+  const marginThinAndOversupplied =
+    effective_margin != null &&
+    input.pvp != null &&
+    input.pvp > 0 &&
+    effective_margin / input.pvp <= 0.10 &&
+    stockDays >= 30;
+  const decayOrExit = lifecycle === 'decay' || lifecycle === 'exit';
+  const oversupplied = stockDays >= 60;
+  if (lifecycle === 'new') {
+    markdown_risk_score = 0;
+  } else if (decayOrExit || oversupplied || marginThinAndOversupplied) {
     markdown_risk_score = Math.min(1, stockDays / 90);
   } else {
     markdown_risk_score = 0;
   }
+  traces.markdown_risk = {
+    stock_days: Math.round(stockDays * 10) / 10,
+    fired_by:
+      decayOrExit ? 'lifecycle_decay_or_exit'
+        : oversupplied ? 'oversupplied_60d'
+        : marginThinAndOversupplied ? 'thin_margin_oversupplied'
+        : 'no_trigger',
+    markdown_risk_score,
+  };
 
   // ── Classifier 9: return risk score (per SKU) ────────────────────────────
   const return_risk_score = Math.min(1, returnsPct * 2);
@@ -529,19 +629,32 @@ export function scoreSku(
 
   const confidence_identity = input.identity_node_id ? 0.95 : 0.5;
 
+  // F.1 · confidence_demand: continuous over stockout severity instead
+  // of the 2-state {0.4, 0.9} flag. Lower stockout_risk → more trust in
+  // observed velocity → higher confidence. The data_completeness term
+  // captures missing inputs separately.
   const confidence_demand =
-    velocityPerStorePerDay != null && !stockoutSuppressed
-      ? Math.min(1, confidence_data_completeness + 0.1)
-      : 0.4;
-
-  const confidence_margin =
-    effective_margin != null
-      ? input.returns_pct != null
-        ? 0.9
-        : 0.6
+    velocityPerStorePerDay != null
+      ? Math.max(0.2, Math.min(1, confidence_data_completeness + 0.1 - (stockout_risk_score * 0.5)))
       : 0.3;
 
-  const confidence_creative_fit: number | null = null; // computed in Bucket B modulation step
+  // F.1 · confidence_margin: continuous over the effective_margin signal
+  // strength. A SKU with returns_pct + a healthy effective_margin reads
+  // higher than one missing returns; very thin or negative margins de-rate.
+  const confidence_margin =
+    effective_margin != null && input.pvp != null && input.pvp > 0
+      ? input.returns_pct != null
+        ? Math.max(0.3, Math.min(0.95, 0.6 + (effective_margin / input.pvp) * 0.7))
+        : Math.max(0.3, Math.min(0.7, 0.5 + (effective_margin / input.pvp) * 0.4))
+      : 0.3;
+
+  // F.2 · confidence_creative_fit: wired from brief alignment when the
+  // SkuScoreInput has brief context attached. Stays null when no brief is
+  // available — that's a signal the buyer hasn't fed a brief yet, not a bug.
+  // Brief alignment = weighted overlap of (family pivot direction × color
+  // story membership). Implemented in classifier context, see
+  // `computeCreativeFit` in this file.
+  const confidence_creative_fit: number | null = computeCreativeFit(input, ctx);
 
   const confidence_action = Math.min(
     1,

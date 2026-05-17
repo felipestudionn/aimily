@@ -24,12 +24,15 @@ import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   resolveSkuVerdict,
+  resolveTargetRotationDays,
   appendExtendColorsAction,
+  appendDropColorAction,
   appendAmplifyWinnerAction,
   DEFAULT_TARGET_ROTATION_DAYS,
   type SkuVerdictInput,
   type SkuVerdictAction,
   type LineageColorWinner,
+  type LineageColorLoser,
 } from '@/lib/strategy/sku-verdict-resolver';
 import {
   modulateSkuVerdicts,
@@ -55,10 +58,17 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // Load run + tenant; auth via tenant membership.
   const { data: run } = await supabaseAdmin
     .from('strategy_analysis_runs')
-    .select('id, tenant_id, source_set_ids, constraint_id, creative_brief_id')
+    .select('id, tenant_id, source_set_ids, constraint_id, creative_brief_id, default_lead_time_days')
     .eq('id', runId)
     .single();
   if (!run) return NextResponse.json({ error: 'Run not found' }, { status: 404 });
+  // B.5 · Lead-time gate. Replenish coverage = rotation + lead_time so
+  // heroes with tight stock days but long supplier lead-time don't get a
+  // silent "no replenish" verdict.
+  const leadTimeDays =
+    typeof (run as any).default_lead_time_days === 'number'
+      ? (run as any).default_lead_time_days
+      : 0;
 
   const access = await requireStrategyAccess({ tenantId: run.tenant_id, minRole: 'analyst' });
   if (!access.ok) return access.response;
@@ -118,6 +128,28 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const colorCodeMap = (
     ((colorTaxRes as any)?.data?.mapping?.code_to_name) || {}
   ) as Record<string, string>;
+  // D.4 · Single source of truth for color name → hex. The frontend used
+  // to hold its own COLOR_NAME_HEX dict with space-separated keys, while
+  // the taxonomy stored snake_case names — silent grey fallback whenever
+  // the names diverged. Now the backend resolves both and ships the hex
+  // alongside the name in each action's evidence.
+  const colorCodeHexMap = (
+    ((colorTaxRes as any)?.data?.mapping?.code_to_hex) || {}
+  ) as Record<string, string>;
+  const resolveColorHex = (codeOrName: string | null | undefined): string | null => {
+    if (!codeOrName) return null;
+    const raw = String(codeOrName).trim();
+    if (!raw) return null;
+    if (colorCodeHexMap[raw]) return colorCodeHexMap[raw];
+    // Fallback: name → hex via inverse map (lowercased, space-separated).
+    const lower = raw.toLowerCase().replace(/_/g, ' ');
+    const inv: Record<string, string> = {};
+    for (const [code, name] of Object.entries(colorCodeMap)) {
+      const k = (name as string).toLowerCase().replace(/_/g, ' ');
+      inv[k] = colorCodeHexMap[code] ?? '';
+    }
+    return inv[lower] || null;
+  };
 
   // Resolve product_fact_ids: union of the run's sku_scores +
   // the candidate scope_refs. Some runs only persist one or the other.
@@ -168,7 +200,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
             .select('product_fact_id, stores_active, stores_with_stock, stock_store, stock_warehouse, pipeline_total'),
           supabaseAdmin
             .from('strategy_sku_scores')
-            .select('product_fact_id, demand_score, sell_through_bought_pct, returns_pct')
+            .select('product_fact_id, demand_score, sell_through_bought_pct, returns_pct, classifier_traces')
             .eq('run_id', runId)
             .in('product_fact_id', targetPids),
         ])
@@ -205,14 +237,43 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       demand_score: number | null;
       sell_through_bought_pct: number | null;
       returns_pct: number | null;
+      velocity_stockout_adjusted_7d: number | null;
     }
   >();
   for (const row of ((scoresRes as any).data || []) as any[]) {
+    // B.6 · Extract the stockout-adjusted velocity from classifier_traces
+    // so replenish math can target the velocity-if-stocked.
+    const traces = (row.classifier_traces ?? {}) as Record<string, any>;
+    const adj = traces.stockout_aware_velocity?.adjusted_velocity_7d;
     scoresByPid.set(row.product_fact_id, {
       demand_score: row.demand_score ?? null,
       sell_through_bought_pct: row.sell_through_bought_pct ?? null,
       returns_pct: row.returns_pct ?? null,
+      velocity_stockout_adjusted_7d:
+        typeof adj === 'number' && adj > 0 ? adj : null,
     });
+  }
+
+  // A.5 · Pull full lineage memberships for ALL run products, then compute
+  // which SKUs ALSO fire amplify_winner so we can surface "el 250 también
+  // está en top 10" type sibling refs in the rationale.
+  const { data: allLineagesRows } = targetPids.length > 0
+    ? await supabaseAdmin
+        .from('strategy_sku_identity_graph')
+        .select('id, member_product_fact_ids')
+        .overlaps('member_product_fact_ids', targetPids)
+    : { data: [] as any[] };
+  const lineagePidsByPid = new Map<string, string[]>();
+  for (const row of (allLineagesRows || []) as any[]) {
+    const members = (row.member_product_fact_ids as string[]) || [];
+    for (const pid of members) {
+      const sibs = members.filter((m: string) => m !== pid);
+      if (sibs.length > 0) {
+        const existing = lineagePidsByPid.get(pid) ?? [];
+        existing.push(...sibs);
+        lineagePidsByPid.set(pid, Array.from(new Set(existing)));
+      }
+    }
   }
 
   // Velocity rank across the run (1 = top seller by 7d units).
@@ -270,33 +331,63 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     candidatesByPid.set(c.scope_ref, arr);
   }
 
-  // Aggregate color winners per lineage. color candidates carry
-  // scope_ref = `<lineage_id>#<color_code>` and evidence.rank/demand_score
-  // describing the lineage's top color performer.
+  // Aggregate color winners + losers per lineage. Color candidates carry
+  // scope_ref = `<lineage_id>#<color_code>`. action_type === 'recolor' is
+  // the winner (rank='top'); action_type === 'kill' is the loser
+  // (rank='bottom'). The winner becomes `extend_colors`; the loser becomes
+  // a color-scope `kill` (C.5 — was previously orphaned in the DB).
   const colorWinnersByLineage = new Map<string, LineageColorWinner>();
+  const colorLosersByLineage = new Map<string, LineageColorLoser>();
   for (const c of colorCandidates) {
     const [lineageId, colorCode] = String(c.scope_ref).split('#');
     if (!lineageId || !colorCode) continue;
     const conf = Number(c.confidence_action) || 0;
-    const existing = colorWinnersByLineage.get(lineageId);
-    if (existing && existing.confidence >= conf) continue;
     const evidence = (c.evidence || {}) as Record<string, unknown>;
     const colorName = colorCodeMap[colorCode]
       ? colorCodeMap[colorCode].replace(/_/g, ' ')
       : colorCode;
-    colorWinnersByLineage.set(lineageId, {
-      color_name: colorName,
-      color_code: colorCode,
-      confidence: conf,
-      rank: typeof evidence.rank === 'string' ? (evidence.rank as string) : 'top',
-      demand_score:
-        typeof evidence.demand_score === 'number' ? (evidence.demand_score as number) : null,
-    });
+    const isLoser =
+      c.action_type === 'kill' ||
+      (typeof evidence.rank === 'string' && evidence.rank === 'bottom');
+    const colorHex = colorCodeHexMap[colorCode] ?? null;
+    if (isLoser) {
+      const existing = colorLosersByLineage.get(lineageId);
+      if (existing && existing.confidence >= conf) continue;
+      colorLosersByLineage.set(lineageId, {
+        color_name: colorName,
+        color_code: colorCode,
+        color_hex: colorHex,
+        confidence: conf,
+        return_risk:
+          typeof evidence.return_risk === 'number' ? (evidence.return_risk as number) : null,
+        demand_score:
+          typeof evidence.demand_score === 'number' ? (evidence.demand_score as number) : null,
+        margin_score:
+          typeof evidence.margin_score === 'number' ? (evidence.margin_score as number) : null,
+      });
+    } else {
+      const existing = colorWinnersByLineage.get(lineageId);
+      if (existing && existing.confidence >= conf) continue;
+      colorWinnersByLineage.set(lineageId, {
+        color_name: colorName,
+        color_code: colorCode,
+        color_hex: colorHex,
+        confidence: conf,
+        rank: typeof evidence.rank === 'string' ? (evidence.rank as string) : 'top',
+        demand_score:
+          typeof evidence.demand_score === 'number' ? (evidence.demand_score as number) : null,
+      });
+    }
   }
 
   // Look up lineage → member_product_fact_ids so we can attach the
-  // extend_colors action to every SKU in the lineage.
-  const lineageIdsForColors = Array.from(colorWinnersByLineage.keys());
+  // extend_colors / color-kill actions to every SKU in the lineage.
+  const lineageIdsForColors = Array.from(
+    new Set([
+      ...Array.from(colorWinnersByLineage.keys()),
+      ...Array.from(colorLosersByLineage.keys()),
+    ])
+  );
   const { data: lineageRowsForColors } =
     lineageIdsForColors.length > 0
       ? await supabaseAdmin
@@ -305,15 +396,24 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           .in('id', lineageIdsForColors)
       : { data: [] as any[] };
   const winnerByMemberPid = new Map<string, LineageColorWinner>();
+  const loserByMemberPid = new Map<string, LineageColorLoser>();
   for (const row of (lineageRowsForColors || []) as any[]) {
-    const winner = colorWinnersByLineage.get(row.id);
-    if (!winner) continue;
     const members = (row.member_product_fact_ids as string[]) || [];
+    const winner = colorWinnersByLineage.get(row.id);
+    const loser = colorLosersByLineage.get(row.id);
     for (const pid of members) {
-      // Higher-confidence winner wins when a SKU sits in multiple lineages.
-      const existing = winnerByMemberPid.get(pid);
-      if (!existing || winner.confidence > existing.confidence) {
-        winnerByMemberPid.set(pid, winner);
+      // Higher-confidence wins when a SKU sits in multiple lineages.
+      if (winner) {
+        const existing = winnerByMemberPid.get(pid);
+        if (!existing || winner.confidence > existing.confidence) {
+          winnerByMemberPid.set(pid, winner);
+        }
+      }
+      if (loser) {
+        const existing = loserByMemberPid.get(pid);
+        if (!existing || loser.confidence > existing.confidence) {
+          loserByMemberPid.set(pid, loser);
+        }
       }
     }
   }
@@ -327,10 +427,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     const inv = inventoryByPid.get(p.id) ?? {};
     const stockTotal =
       (Number(inv.stock_store) || 0) + (Number(inv.stock_warehouse) || 0);
+    const skuScore = scoresByPid.get(p.id);
     inputs.set(p.id, {
       product_fact_id: p.id,
       velocity_7d: vel['7d'],
       velocity_d1: vel.d1,
+      velocity_stockout_adjusted_7d: skuScore?.velocity_stockout_adjusted_7d ?? null,
       stores_active: inv.stores_active ?? null,
       stores_with_stock: inv.stores_with_stock ?? null,
       stock_total: stockTotal > 0 ? stockTotal : null,
@@ -357,13 +459,19 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       },
     ])
   );
-  const verdicts = Array.from(inputs.entries()).map(([pid, base]) =>
-    resolveSkuVerdict(
+  const verdicts = Array.from(inputs.entries()).map(([pid, base]) => {
+    const ident = identityByPid.get(pid);
+    // B.3 · Per-family rotation override. Fluidos = 4d (fast-fashion),
+    // Sastrería = 10d, Capsule families = 14d, Denim = 7d. Falls back to
+    // 4d when no override matches.
+    const rotation = resolveTargetRotationDays(ident?.family_code ?? null);
+    return resolveSkuVerdict(
       { ...base, product_fact_id: pid, candidates: candidatesByPid.get(pid) ?? [] },
-      undefined,
-      identityByPid.get(pid)
-    )
-  );
+      rotation,
+      ident,
+      leadTimeDays
+    );
+  });
 
   // Modulate by archetype + budget + brief.
   const archetype: ArchetypeContext = {
@@ -386,6 +494,33 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const pdfRankByPid = new Map<string, number>();
   products.forEach((p, idx) => pdfRankByPid.set(p.id, idx + 1));
 
+  // A.5 · Pre-compute which SKUs would fire amplify_winner so we can
+  // surface "X also fires" for sibling SKUs in the rationale.
+  const heroPids = new Set<string>();
+  for (const p of products) {
+    const pid = p.id;
+    const sc = scoresByPid.get(pid);
+    if (!sc) continue;
+    if ((sc.returns_pct ?? 0) > 0.35) continue;
+    const pdfR = pdfRankByPid.get(pid);
+    const velR = velocityRankByPid.get(pid);
+    const fam = p.family_code;
+    const v7d = velocityByPid.get(pid)?.['7d'] ?? null;
+    const famAvg = fam ? familyVelocityAvg.get(fam) ?? null : null;
+    const famRatio = v7d != null && famAvg != null && famAvg > 0 ? v7d / famAvg : 0;
+    const triggers =
+      (pdfR != null && pdfR <= 10) ||
+      ((sc.demand_score ?? 0) >= 0.7 && (sc.sell_through_bought_pct ?? 0) >= 0.5) ||
+      (velR != null && velR <= 10) ||
+      famRatio >= 2.0;
+    if (triggers) heroPids.add(pid);
+  }
+  // Map pid → model_ref for sibling ref rendering.
+  const modelRefByPid = new Map<string, string>();
+  for (const p of products) {
+    if (p.model_ref) modelRefByPid.set(p.id, p.model_ref);
+  }
+
   // Layer in lineage-level + hero-level actions after modulation.
   // extend_colors comes from the color-scope candidates of this run;
   // amplify_winner is computed from each SKU's evidence + sell-through.
@@ -398,7 +533,19 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     };
     const winner = winnerByMemberPid.get(v.product_fact_id);
     if (winner) {
-      next = { ...appendExtendColorsAction(next, winner, identity), modulator_notes: next.modulator_notes };
+      // D.5 · Pass brief color_story so the appender can propose concrete
+      // adjacent tones instead of just "extend toward adjacent tones".
+      next = {
+        ...appendExtendColorsAction(next, winner, identity, briefCtx.color_story ?? []),
+        modulator_notes: next.modulator_notes,
+      };
+    }
+    // C.5 · Surface color-scope losers as a color-flavoured kill action.
+    // Mirrors extend_colors. The appender no-ops if a SKU-scope kill is
+    // already on the stack (that's a stronger signal).
+    const loser = loserByMemberPid.get(v.product_fact_id);
+    if (loser) {
+      next = { ...appendDropColorAction(next, loser, identity), modulator_notes: next.modulator_notes };
     }
     // Amplify-winner signals: prefer the scored values from sku_scores,
     // fall back to any evidence already in the verdict stack. Add rank and
@@ -418,6 +565,15 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     const currentColorName = currentColorRaw
       ? (colorCodeMap[currentColorRaw] ?? currentColorRaw).replace(/_/g, ' ')
       : null;
+    // A.5 · Sibling-hero references — lineage members of THIS SKU that
+    // also fire amplify_winner. Surfaced in the rationale so the buyer
+    // sees the colourways are co-validated.
+    const siblingPids = lineagePidsByPid.get(v.product_fact_id) ?? [];
+    const siblingHeroModelRefs = siblingPids
+      .filter((sp) => heroPids.has(sp))
+      .map((sp) => modelRefByPid.get(sp))
+      .filter((m): m is string => !!m);
+    const productPvp = product?.pvp ?? null;
     next = {
       ...appendAmplifyWinnerAction(next, {
         demand_score:
@@ -442,6 +598,8 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         family_velocity_ratio: famRatio,
         brief_colors: briefCtx.color_story ?? [],
         current_color: currentColorName,
+        pvp: productPvp != null ? Number(productPvp) : null,
+        sibling_hero_model_refs: siblingHeroModelRefs,
       }),
       modulator_notes: next.modulator_notes,
     };
