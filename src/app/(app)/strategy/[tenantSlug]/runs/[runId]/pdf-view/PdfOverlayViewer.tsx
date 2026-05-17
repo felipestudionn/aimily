@@ -138,20 +138,31 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
         const loadingTask = pdfjs.getDocument(data.pdf_signed_url!);
         const pdf = await loadingTask.promise;
+        // Crisp render on retina screens: combine a generous base scale
+        // (2.0) with devicePixelRatio so the canvas is high-resolution
+        // internally while the visual size matches the base viewport.
+        const baseScale = 2.0;
+        const dpr = window.devicePixelRatio || 1;
         for (let i = 1; i <= pdf.numPages; i++) {
           if (cancelled) return;
           const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 1.4 });
+          const viewport = page.getViewport({ scale: baseScale });
           const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
           canvas.className = 'block mx-auto mb-4 shadow-sm bg-white';
           container.appendChild(canvas);
           const renderCtx = canvas.getContext('2d');
           if (!renderCtx) continue;
+          // The transform compensates for the canvas-pixel inflation so the
+          // PDF content fills the canvas at the requested DPR.
+          const transform = dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined;
           await page.render({
             canvasContext: renderCtx,
             viewport,
+            transform,
           } as Parameters<typeof page.render>[0]).promise;
         }
       } catch (err) {

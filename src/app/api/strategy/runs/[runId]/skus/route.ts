@@ -98,21 +98,25 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
-  // Resolve the product_fact_ids from the run's sku_scores and pull
-  // their full row. Falls back to the candidate scope_refs when
-  // sku_scores is empty (older runs).
+  // Resolve product_fact_ids: union of the run's sku_scores +
+  // the candidate scope_refs. Some runs only persist one or the other.
   const skuScoreRows = (skuScoresRes.data || []) as Array<{ product_fact_id: string }>;
-  const pidsFromScores = Array.from(
-    new Set(skuScoreRows.map((s) => s.product_fact_id).filter(Boolean))
-  );
-  const pidsFromCandidates = Array.from(
-    new Set(
-      ((candidatesRes.data || []) as any[])
-        .filter((c) => c.scope === 'sku')
-        .map((c) => c.scope_ref as string)
-    )
-  );
-  const targetPids = pidsFromScores.length > 0 ? pidsFromScores : pidsFromCandidates;
+  const allCandidates = (candidatesRes.data || []) as any[];
+  const pidsFromScores = skuScoreRows.map((s) => s.product_fact_id).filter(Boolean);
+  const pidsFromCandidates = allCandidates
+    .filter((c) => c.scope === 'sku')
+    .map((c) => c.scope_ref as string);
+  const targetPids = Array.from(new Set([...pidsFromScores, ...pidsFromCandidates]));
+
+  console.log('[runs/skus] diagnostics', {
+    runId,
+    tenantId: run.tenant_id,
+    skuScoreRows: skuScoreRows.length,
+    candidatesTotal: allCandidates.length,
+    candidatesSku: pidsFromCandidates.length,
+    targetPids: targetPids.length,
+    sourcesCount: ((sourcesRes as any).data || []).length,
+  });
 
   const productFactsRes =
     targetPids.length > 0
@@ -125,7 +129,14 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       : { data: [] as any[] };
 
   const products = (productFactsRes.data || []) as any[];
-  const candidates = (candidatesRes.data || []) as any[];
+  const candidates = allCandidates;
+
+  console.log('[runs/skus] products fetched', {
+    runId,
+    productsFound: products.length,
+    targetPidsRequested: targetPids.length,
+    productsError: (productFactsRes as any).error?.message,
+  });
   const constraint = (constraintRes as any).data;
   const brief = (briefRes as any).data;
   const sources = ((sourcesRes as any).data || []) as Array<{
