@@ -40,6 +40,10 @@ interface VerdictAction {
 }
 
 interface SkuRow {
+  /** 1-based position matching the SKU's row order in the original PDF.
+   *  Renders as a small numbered square so the buyer can map a verdict
+   *  card 1:1 to the corresponding line on the Zara RNK page. */
+  rank: number;
   product_fact_id: string;
   model_ref: string | null;
   color_ref: string | null;
@@ -252,7 +256,11 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
                   activeSkuId === sku.product_fact_id ? 'bg-carbon/[0.04]' : ''
                 }`}
               >
-                <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="flex items-start gap-2.5 mb-1.5">
+                  {/* Ranking square · matches Zara RNK row position 1:1. */}
+                  <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 bg-carbon text-white text-[11px] font-semibold tabular-nums rounded-[6px]">
+                    {sku.rank}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] truncate">
                       {sku.family_code || 'sku'}
@@ -266,7 +274,7 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
                   </div>
                   <ChevronRight className="h-3.5 w-3.5 text-carbon/30 mt-1 shrink-0" />
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 pl-[42px]">
                   {sku.actions.map((a) => (
                     <span
                       key={a.action}
@@ -322,8 +330,11 @@ function FilterChip({
 function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
   return (
     <div className="fixed inset-y-0 right-0 z-20 w-[520px] bg-white border-l border-carbon/[0.06] shadow-2xl overflow-y-auto">
-      <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-4 flex items-center justify-between">
-        <div className="min-w-0">
+      <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-4 flex items-start gap-3">
+        <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 bg-carbon text-white text-[14px] font-semibold tabular-nums rounded-[8px]">
+          {sku.rank}
+        </span>
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] text-carbon/40 uppercase tracking-[0.08em] truncate">
             {sku.family_code || 'sku'} · {sku.model_ref || ''}
           </p>
@@ -331,7 +342,7 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
             {sku.product_name || sku.model_ref || sku.product_fact_id.slice(0, 8)}
           </h2>
         </div>
-        <button type="button" onClick={onClose} className="text-carbon/40 hover:text-carbon">
+        <button type="button" onClick={onClose} className="text-carbon/40 hover:text-carbon shrink-0 mt-1">
           <X className="h-4 w-4" />
         </button>
       </div>

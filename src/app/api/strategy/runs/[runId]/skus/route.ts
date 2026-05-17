@@ -128,9 +128,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           supabaseAdmin
             .from('strategy_product_facts')
             .select(
-              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate'
+              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, created_at'
             )
-            .in('id', targetPids),
+            .in('id', targetPids)
+            // Order by insertion → matches the PDF row order so the panel
+            // ranking maps 1:1 with the Zara RNK position of each SKU.
+            .order('created_at', { ascending: true }),
           supabaseAdmin
             .from('strategy_sales_windows')
             .select('product_fact_id, window_type, units')
@@ -246,27 +249,31 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     pdfSignedUrl = signed?.signedUrl ?? null;
   }
 
-  // Build SkuRow output. Joins verdict + identity (product fields) + the
-  // operational metrics we resolved from sales_windows + inventory_facts.
-  const skus = modulated.map((v) => {
-    const p = products.find((x) => x.id === v.product_fact_id);
-    const baseInput = inputs.get(v.product_fact_id);
+  // Build SkuRow output ordered the same way as the PDF rows (which is
+  // what `products` is sorted by — created_at ASC). We iterate over the
+  // products array (not modulated) so the output preserves that order and
+  // each row gets a stable `rank` = position in the PDF.
+  const modulatedByPid = new Map(modulated.map((m) => [m.product_fact_id, m]));
+  const skus = products.map((p, idx) => {
+    const v = modulatedByPid.get(p.id);
+    const baseInput = inputs.get(p.id);
     return {
-      product_fact_id: v.product_fact_id,
-      model_ref: p?.model_ref ?? null,
-      color_ref: p?.color_ref ?? null,
-      product_name: p?.product_name ?? null,
-      family_code: p?.family_code ?? null,
-      pvp: p?.pvp ?? null,
+      rank: idx + 1,
+      product_fact_id: p.id,
+      model_ref: p.model_ref ?? null,
+      color_ref: p.color_ref ?? null,
+      product_name: p.product_name ?? null,
+      family_code: p.family_code ?? null,
+      pvp: p.pvp ?? null,
       velocity_7d: baseInput?.velocity_7d ?? null,
       velocity_d1: baseInput?.velocity_d1 ?? null,
       stores_active: baseInput?.stores_active ?? null,
       stores_with_stock: baseInput?.stores_with_stock ?? null,
       stock_total: baseInput?.stock_total ?? null,
-      target_rotation_days: v.target_rotation_days,
-      current_stock_days: v.current_stock_days,
-      actions: v.actions,
-      modulator_notes: v.modulator_notes,
+      target_rotation_days: v?.target_rotation_days ?? 4,
+      current_stock_days: v?.current_stock_days ?? null,
+      actions: v?.actions ?? [],
+      modulator_notes: v?.modulator_notes ?? [],
     };
   });
 
