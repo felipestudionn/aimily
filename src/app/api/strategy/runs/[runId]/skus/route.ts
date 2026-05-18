@@ -314,8 +314,17 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
             .from('strategy_inventory_facts')
             .select('product_fact_id, stores_active, stores_with_stock, stock_store, stock_warehouse, pipeline_total, stock_available, stock_in_transit, stock_pending, cd2_available'),
           supabaseAdmin
+            // CRITICAL BUG FIX 2026-05-18 (Felipe caso Bomber):
+            // sell_through_bought_pct y returns_pct NO viven en
+            // strategy_sku_scores — viven en strategy_efficiency_facts.
+            // Pedirlos aquí provocaba que Supabase fallara silenciosamente
+            // y scoresByPid quedaba VACÍO. Resultado: v2 = null para
+            // todos los SKUs → appenders v2 (shippedBased, rotura
+            // logística) NO disparaban → Bomber solo tenía 'hold' →
+            // desaparecía del UI por el filtro. Solo seleccionamos las
+            // columnas que SÍ existen.
             .from('strategy_sku_scores')
-            .select('product_fact_id, demand_score, sell_through_bought_pct, returns_pct, classifier_traces')
+            .select('product_fact_id, demand_score, classifier_traces')
             .eq('run_id', runId)
             .in('product_fact_id', targetPids),
         ])
@@ -365,10 +374,23 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     const traces = (row.classifier_traces ?? {}) as Record<string, any>;
     const adj = traces.stockout_aware_velocity?.adjusted_velocity_7d;
     const v2 = (traces.v2_signals ?? null) as Record<string, any> | null;
+    // sell_through_bought_pct y returns_pct se leen de v2_signals
+    // (efficiency_bought_pct / returns_vs_baseline_score absoluto).
+    // Ya no se piden a strategy_sku_scores donde no existen.
+    const v2BoughtPct =
+      v2 && typeof v2.efficiency_bought_pct === 'number'
+        ? (v2.efficiency_bought_pct as number)
+        : null;
+    // returns_pct absoluto se persiste también en v2_signals si el
+    // classifier lo metió. Si no, leemos de un fallback (return_risk
+    // score = returns_pct × 2 cap 1, así que returns_pct ≈ score/2).
+    const returnRiskRaw = traces.returns_penalized_margin?.returns_pct;
+    const v2ReturnsPct =
+      typeof returnRiskRaw === 'number' ? returnRiskRaw : null;
     scoresByPid.set(row.product_fact_id, {
       demand_score: row.demand_score ?? null,
-      sell_through_bought_pct: row.sell_through_bought_pct ?? null,
-      returns_pct: row.returns_pct ?? null,
+      sell_through_bought_pct: v2BoughtPct,
+      returns_pct: v2ReturnsPct,
       velocity_stockout_adjusted_7d:
         typeof adj === 'number' && adj > 0 ? adj : null,
       v2,
