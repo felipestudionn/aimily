@@ -435,24 +435,32 @@ Tres decisiones NUEVAS tienen gate de cobertura para no recomendar acciones ofen
 
 ## §5 · Construcción del stack final por SKU
 
-Para cada SKU se ejecuta este pipeline:
+Pipeline completo, multi-escenario:
 
 ```
-1. Cargar inputs (los 43 campos del RNK)
+1. Cargar inputs (43 campos RNK) + brief creativo + observación
 2. Computar señales derivadas (~55)
-3. Evaluar las 10 decisiones accionables (D1-D10) → producir candidatos
-4. Aplicar matriz de exclusión (§4)
-5. Si quedan ≥1 candidatos → ese es el stack
-   Si quedan 0 candidatos →
-     5a. Si is_survivor → emit D11 (carryover) en background (no UI)
-     5b. Si new/insufficient → emit D12 (hold) en background (no UI)
-6. Ordenar el stack por nivel de prioridad (1 → 5)
-7. Devolver al frontend
+3. Para cada SKU:
+   a. Evaluar D1-D10 con thresholds permisivos (Maximizar venta — los más bajos)
+      → obtener el universo completo de decisiones posibles
+   b. Aplicar matriz de exclusión (§4)
+   c. Aplicar modulación creativa (§8.1) — degradar MATAR a INVESTIGAR si aligned
+4. Para cada uno de los 4 escenarios (§8.2):
+   d. Aplicar los 3 diales del escenario (threshold/magnitude/confidence)
+      → filtrar decisiones que no pasan el threshold ajustado
+      → escalar magnitudes
+      → escalar confianzas
+   e. Construir el stack del SKU bajo ese escenario
+5. Cargar locks del usuario (§8.3) — preferencias por SKU
+6. Devolver al frontend:
+   - 4 stacks por SKU (uno por escenario)
+   - Locks del usuario
+   - Plan agregado (totales, contadores)
 ```
 
 ### Reglas de ordenación dentro del stack
 
-Cuando hay múltiples decisiones, se muestran en este orden visual:
+Cuando hay múltiples decisiones para un SKU, se muestran en este orden visual:
 1. Emergencias (D1)
 2. Supply urgente (D3, D4)
 3. Crecimiento (D5, D6, D7, D10)
@@ -483,11 +491,204 @@ Auditoría: cada input debe ser consumido al menos por una señal derivada, y ca
 
 ## §7 · Estado del documento
 
-**Aprobado por Felipe**: pendiente (creado 2026-05-18 PM).
+**Aprobado por Felipe**: 2026-05-18 (con instrucción "asegúrate de la ejecución del plan, sin inventar").
 
-**Próximos pasos cuando esté aprobado**:
-1. Refactor del código contra esta matriz — un módulo por nivel (level1.ts, level2.ts, etc.) para que cada cambio sea trazable a una fila de §3.
-2. Tests por celda: para cada (decisión, condición) un test que verifique que dispara cuando debe y se bloquea cuando debe.
-3. UI: el filtro lista las 10 decisiones accionables. La leyenda de prioridad se muestra como tooltip en cada pill.
+**Próximos pasos**:
+1. Refactor del código contra esta matriz — un módulo por nivel.
+2. Tests por celda: para cada (decisión, condición) un test que verifique disparo + bloqueo correctos.
+3. UI: top toggle 4 escenarios + selector per-SKU + footer plan + rueda de carga.
 
 **Cualquier cambio a una decisión se hace AQUÍ primero, luego en código. Esta matriz es la fuente de verdad.**
+
+---
+
+## §8 · Las 3 capas del sistema · Brief creativo + Escenarios + Locks
+
+Las decisiones del §3 son la CAPA 1 (motor raw por SKU). Encima hay dos capas más que las modulan antes de llegar al comprador.
+
+### §8.1 · Modulación creativa (Brief — Bucket B)
+
+Cuando hay brief creativo cargado, modula las decisiones DEL §3 antes de aplicar los escenarios. Las reglas:
+
+| Decisión | Cómo modula el brief |
+|---|---|
+| **D1 MATAR** | Si SKU aligned (`family_pivot ↑` O color ∈ `color_story`) → **degrada a D9 MARCAR PARA REVISIÓN**. Nunca matamos algo que el creative team está apostando |
+| **D2 REBAJAR** | Aligned ↑ → confianza baja. Misaligned ↑ → confianza alta |
+| **D5 AMPLIAR DIST** | `family_pivot ↑` → boost confianza. `family_pivot ↓` → bloqueo |
+| **D6 REPONER MAX VENTA** | Mismo modulator que D5 |
+| **D7 EXTENDER COLORES** | `color_story` ES la paleta propuesta. Sin brief = no dispara |
+| **D8 REDUCIR COMPRA** | `family_pivot ↓` → boost. `↑` → suprimir |
+| **D10 REPLICAR CONCEPTO** | Aligned → boost. La rationale cita el creative_narrative |
+
+D3, D4, D9 son independientes del brief (supply + diagnóstico = invariantes a postura).
+
+### §8.2 · Los 4 ESCENARIOS comerciales · gradualización 3-dial
+
+Los escenarios NO eliminan decisiones — las **gradualizan**. Cada decisión tiene 3 diales que el escenario ajusta:
+
+| Dial | Qué hace |
+|---|---|
+| **Umbral de disparo** | Más fácil / más difícil que la decisión dispare (más SKUs o menos, nunca 0) |
+| **Magnitud** | Si dispara, la cantidad escala arriba o abajo |
+| **Confianza** | Cuánta convicción muestra el sistema |
+
+#### Matriz de diales por escenario × decisión
+
+Símbolos: ▲ más fácil disparar · ▼ más difícil disparar · ─ igual al baseline · ↑ magnitud mayor · ↓ menor · = igual
+
+| Decisión | Conservar margen | Balanceada (default) | Maximizar venta | Tu mezcla |
+|---|---|---|---|---|
+| **D1 MATAR** | ▲ umbral más bajo (mata SKUs marginales) · confianza ↑ | baseline | ▼ umbral más alto (solo casos extremos) · confianza ↓ | según action_mix |
+| **D2 REBAJAR** | ▲ umbral más bajo (limpia stock antes) · magnitud ↑ | baseline | ▼ umbral más alto · magnitud ↓ | según action_mix |
+| **D3 REPOSICIÓN URGENTE** | ─ INVARIANTE (supply, no postura) | ─ | ─ | ─ |
+| **D4 ADELANTAR PEDIDO** | ─ INVARIANTE (supply) | ─ | ─ | ─ |
+| **D5 AMPLIAR DIST** | ▼ umbral más alto · magnitud ↓ | baseline | ▲ umbral más bajo · magnitud ↑ | según action_mix |
+| **D6 REPONER MAX VENTA** | ▼ aportación ≥ 0.30 · magnitud × 0.7 | aportación ≥ 0.20 · × 1.0 | ▲ aportación ≥ 0.10 · magnitud × 1.4 | según action_mix |
+| **D7 EXTENDER COLORES** | ▼ color_winner ≥ 2.5 · propone máx 2 colores | color_winner ≥ 2.0 · propone hasta 4 | ▲ color_winner ≥ 1.5 · propone hasta 5 | según action_mix |
+| **D8 REDUCIR COMPRA** | ▲ umbral más bajo (reduce más SKUs) | baseline | ▼ umbral más alto | según action_mix |
+| **D9 MARCAR REVISIÓN** | ─ INVARIANTE (diagnóstico) | ─ | ─ | ─ |
+| **D10 REPLICAR CONCEPTO** | ▼ umbral más alto (sólo héroes muy claros) | baseline | ▲ umbral más bajo (más sequels) | según action_mix |
+
+**Cardinal**: ningún escenario elimina una decisión. En "Conservar margen" sigue habiendo REPONER MAX VENTA (solo en los heroes muy claros). En "Maximizar venta" sigue habiendo REBAJAR (solo en stock muerto evidente). La gradualización es orgánica.
+
+#### Tabla numérica detallada (los thresholds reales)
+
+```
+Escenario:           Conservar   Balanceada   Maximizar   Tu mezcla
+                     margen                   venta
+
+D1 MATAR
+  combo aportación ≤ 0.08        0.05         0.02         custom
+  magnitud bloqueo               ─            ─            ─
+
+D2 REBAJAR
+  markdown_risk ≥    0.30        0.40         0.55         custom
+  magnitud step      siguiente   siguiente    siguiente    custom
+  multiplier         × 1.0       × 1.0        × 0.7        × custom
+
+D5 AMPLIAR DIST
+  fleet_coverage <   0.55        0.70         0.85         custom
+  magnitud stores    × 0.7       × 1.0        × 1.4        custom
+
+D6 REPONER MAX VENTA
+  aportación ≥       0.30        0.20         0.10         custom
+  family_ratio ≥     2.5×        2.0×         1.5×         custom
+  magnitud units     × 0.7       × 1.0        × 1.4        custom
+
+D7 EXTENDER COLORES
+  color_winner ≥     2.5         2.0          1.5          custom
+  aportación ≥       0.20        0.15         0.10         custom
+  max colors prop.   2           4            5            custom
+
+D8 REDUCIR COMPRA
+  bought_pct <       0.30        0.20         0.10         custom
+  shipped_pct <      0.40        0.30         0.20         custom
+  multiplier         × 0.5       × 0.6        × 0.8        custom
+
+D10 REPLICAR CONCEPTO
+  aportación ≥       0.30        0.20         0.10         custom
+  days_in_store ≥    14          7            1            custom
+```
+
+#### Lo que NUNCA hace el escenario
+
+- No elimina decisiones (sigue habiendo de TODAS las acciones, solo más o menos)
+- No anula los gates de supply (D3, D4 disparan según rotura, no según postura)
+- No anula los flags de diagnóstico (D9 dispara según anomalías, no según postura)
+- No anula la matriz de exclusión cruzada (§4 sigue rigiendo, e.g., MATAR sigue bloqueando AMPLIFY)
+
+### §8.3 · Locks del usuario (cherry-pick per SKU)
+
+El comprador construye su **plan final** mezclando escenarios SKU a SKU. Mecánica:
+
+| Estado del SKU | Comportamiento |
+|---|---|
+| **Sin lock** | Sigue el toggle global de escenarios. Al cambiar el toggle, el stack se re-renderiza |
+| **Con lock = X** | Fijado al escenario X. El toggle global no le afecta. Muestra badge "🔒 [Nombre escenario]" |
+
+La granularidad del lock es **a nivel SKU** (no a nivel acción individual). Cuando un SKU está locked en "Maximizar venta", muestra todas las acciones del SKU bajo ese escenario.
+
+**Persistencia**: DB. Tabla `strategy_user_sku_selections`:
+```
+run_id           uuid
+product_fact_id  uuid
+chosen_scenario  enum (conservar_margen | balanceada | maximizar_venta | tu_mezcla)
+locked_by        uuid  (user_id)
+locked_at        timestamp
+unlocked_at      timestamp nullable (historial cuando se libera)
+```
+
+**Auto-save**: cada lock se persiste inmediatamente. Sin botón "guardar". Estilo Google Docs.
+
+**Plan final agregado** (footer): cuenta vivo de:
+- N SKUs decididos (lockeados) · M pendientes (siguen al toggle global)
+- Inversión total estimada en €
+- % del budget consumido
+- Distribución de decisiones del plan final (X kills · Y rebajas · Z amplifies...)
+
+---
+
+## §9 · Rueda de carga · análisis visible
+
+Cuando el comprador abre un run nuevo, los primeros segundos son lentos (cargar 43 KPIs × 48 SKUs + computar 55 señales + 4 escenarios). Aprovechamos esos segundos para **mostrar el análisis ocurriendo en fases visibles**, estilo aimily Studio.
+
+### Fases que se muestran (200-400ms cada una)
+
+```
+[●○○○○○○○○○] Analizando datos del RNK Zara V26 · 48 SKUs detectados
+[●●○○○○○○○○] Cargando inventario, stock, ventas, devoluciones, pipeline...
+[●●●○○○○○○○] Computando rotación canónica, aportación a familia,
+              cobertura efectiva, gap de pipeline...
+[●●●●○○○○○○] Detectando anomalías y stockout suppression...
+[●●●●●○○○○○] Evaluando las 12 decisiones de comprador por cada SKU...
+[●●●●●●○○○○] Aplicando dirección creativa SS27 · paleta moodboard ·
+              family pivot · narrativa...
+[●●●●●●●○○○] Generando 4 escenarios comerciales · Conservar margen ·
+              Balanceada · Maximizar venta · Tu mezcla...
+[●●●●●●●●○○] Resolviendo exclusiones cruzadas y prioridades...
+[●●●●●●●●●○] Construyendo plan final con cobertura por SKU...
+[●●●●●●●●●●] Listo · 48 SKUs en 4 escenarios · plan vivo
+```
+
+### Por qué importa
+
+El comprador SIENTE la profundidad del análisis. La animación tangibiliza lo que el sistema realmente hace en 2 segundos. No es "loading spinner indefinido" — es "teatro de la complejidad", validando ante el comprador que detrás hay rigor metodológico.
+
+### Implementación
+
+- Componente `LoadingWheel` con 10 fases hardcoded.
+- Cada fase tiene texto + barra de progreso animada.
+- La rueda se muestra desde que la página carga hasta que el API devuelve la respuesta (~1.5-2.5s).
+- Si el API responde más rápido que la animación, esperamos a que la animación termine (mínimo 2s — la percepción de "trabajo serio").
+- Si el API tarda más (raro), continuamos en la última fase con shimmer hasta que llegue la data.
+
+---
+
+## §10 · Resumen ejecutivo de la arquitectura final
+
+```
+USER LANDS ON /strategy/[tenant]/runs/[runId]/pdf-view
+    ↓
+[Rueda de carga §9 · 2s teatro del análisis]
+    ↓
+API: /api/strategy/runs/[runId]/skus
+    Returns:
+    - per_sku × 4 stacks (uno por escenario, §8.2)
+    - user_locks (§8.3)
+    - aggregate plan stats
+    ↓
+UI renders:
+    - Top: toggle global de 4 escenarios + estado
+    - Center: lista de SKUs (cada uno muestra stack del escenario activo o
+              su lock si tiene)
+    - Per-row: selector de escenario propio + badge si locked
+    - Bottom: footer con contador del plan + budget + export
+    ↓
+User flow:
+    1. Mueve toggle global → ve cómo cambian los SKUs
+    2. Para cada SKU que decide: click selector → escoge escenario → lock
+    3. Auto-save inmediato a DB
+    4. Footer actualiza en vivo
+    5. Cuando todos lockeados → export plan final
+```
+
