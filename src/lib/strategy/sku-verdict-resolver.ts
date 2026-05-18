@@ -954,17 +954,11 @@ export function appendAmplifyNextSeasonAction(
   if (!pdfTopN && !scoreBased && !rankBased && !familyBased && !contributionBased) return verdict;
   if (verdict.actions.some((a) => a.action === 'amplify_next_season')) return verdict;
 
-  // Brief-color shortlist (skip the SKU's own color).
-  const currentColorLc = (signals.current_color ?? '').trim().toLowerCase();
-  const candidatePairs = (signals.brief_colors ?? [])
-    .filter((c) => !!c?.name && c.name.trim() !== '')
-    .filter((c) => c.name.trim().toLowerCase() !== currentColorLc)
-    .slice(0, 4);
-  const candidateColors = candidatePairs.map((c) => c.name);
-  const colorClause =
-    candidateColors.length > 0
-      ? ` Probar la misma silueta en colores del moodboard: ${candidateColors.slice(0, 4).join(', ')}.`
-      : '';
+  // 2026-05-18 — Felipe: este verbo es REPLICAR EL CONCEPTO en un modelo
+  // nuevo. NO menciona colores (eso es EXTENDER COLORES, otro verbo).
+  // NO presume "próxima temporada" — no sabemos cuándo entra el nuevo
+  // desarrollo en pipeline (depende de lead times de fabricación y
+  // cuándo el equipo de diseño abre el siguiente brief).
   const pvpAnchor =
     signals.pvp != null && signals.pvp > 0
       ? ` Mantener el slot de precio €${Number(signals.pvp).toFixed(2)} como ancla.`
@@ -973,26 +967,25 @@ export function appendAmplifyNextSeasonAction(
   const siblings = (signals.sibling_hero_model_refs ?? []).filter(Boolean);
   const siblingAnchor =
     siblings.length > 0
-      ? ` Co-validado por el estilo: ${siblings.slice(0, 3).join(', ')} también dispara amplify.`
+      ? ` Otros colorways del mismo estilo (${siblings.slice(0, 3).join(', ')}) también validados como heroes.`
       : '';
 
   // Rationale frasea según madurez del dato. Día 1 = "señal muy temprana
   // pero ya muy clara". 7-13 días = "primera semana". 14-27 = "ramp
-  // confirmado". 28+ = "validado con 4 semanas". El comprador ve
-  // inmediatamente cuánto dato hay detrás.
+  // confirmado". 28+ = "validado con 4 semanas".
   const maturityLabel =
     validationDays >= 28
       ? `Validado con ${validationDays} días de datos en tienda`
       : validationDays >= 14
         ? `Ramp confirmado a ${validationDays} días (filosofía Zara: con el RNK ya marcando top, no esperamos a las 4 semanas)`
         : validationDays >= 7
-          ? `Primera semana en tienda (${validationDays} días) — señal muy clara, recomendamos arrancar el sequel ya para ganar lead time`
-          : `Señal muy temprana (${validationDays} días) pero el RNK ya lo marca como hero — Zara mete colores nuevos al pipeline desde el día 1 cuando los datos validan`;
+          ? `Primera semana en tienda (${validationDays} días) — señal muy clara, replicar el concepto ya para ganar lead time`
+          : `Señal muy temprana (${validationDays} días) pero el RNK ya lo marca como hero — Zara abre nuevos modelos desde el día 1 cuando los datos validan`;
 
   const rationale =
     `${maturityLabel}. ` +
-    `Briefar al equipo de diseño 2-3 secuelas siguiendo este patrón (silueta + material + paleta).` +
-    colorClause + pvpAnchor + siblingAnchor;
+    `Replicar el concepto en un modelo nuevo: misma silueta y material como base de un desarrollo independiente.` +
+    pvpAnchor + siblingAnchor;
 
   // Confianza base por fuerza del trigger.
   const baseConf =
@@ -1040,13 +1033,9 @@ export function appendAmplifyNextSeasonAction(
       velocity_rank: signals.velocity_rank,
       family_velocity_ratio: signals.family_velocity_ratio,
       days_in_store: signals.days_in_store,
-      // 2026-05-18 — Structured palette with resolved hex for UI chips.
-      // Mirrors the shape used by extend_colors so the renderer can
-      // share the same chip code path. The legacy name-only list is
-      // kept under proposed_brief_colors for any downstream consumer
-      // that hasn't migrated.
-      proposed_colors: candidatePairs,
-      proposed_brief_colors: candidateColors,
+      // Felipe 2026-05-18: este verbo NO carga colores. Los colores son
+      // output del verbo EXTENDER COLORES. Replicar concepto = silueta +
+      // material + concepto base de un nuevo desarrollo. Sin paleta.
     },
     counter_evidence: {},
     assumptions: [

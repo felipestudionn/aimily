@@ -172,7 +172,7 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   resize_down: 'Reducir compra',
   investigate_root_cause: 'Marcar para revisión',
   // NEXT SEASON
-  amplify_next_season: 'Briefar diseño',
+  amplify_next_season: 'Replicar concepto en nuevo modelo',
   extend_colors: 'Extender colores',
   carryover: 'Mantener',
   // FALLBACK
@@ -323,32 +323,19 @@ function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
   //   • amplify_winner (legacy alias) = treat as in-season for chip
   //     purposes — defensive in case any persisted candidate still
   //     references the pre-split action_type.
-  if (a.action === 'amplify_in_season' || a.action === 'amplify_winner') {
+  // Felipe 2026-05-18 — REPONER (amplify_in_season), REPLICAR CONCEPTO
+  // (amplify_next_season) y legacy amplify_winner NO renderizan chips
+  // de colores. Los colores son output exclusivo del verbo EXTENDER
+  // COLORES (Spec Gate 11). Antes mostrábamos paleta moodboard en
+  // amplify_next_season pero confundía: el verbo es "replicar concepto
+  // = silueta + material en modelo nuevo", no "lanzar este modelo en
+  // otros colores".
+  if (
+    a.action === 'amplify_in_season' ||
+    a.action === 'amplify_winner' ||
+    a.action === 'amplify_next_season'
+  ) {
     return [];
-  }
-  if (a.action === 'amplify_next_season') {
-    const ev = a.evidence as Record<string, unknown>;
-    // Prefer the structured [{name, hex}] resolved by the backend (same
-    // module as extend_colors); fall back to the legacy name-only list
-    // resolved client-side for any candidate persisted before the upgrade.
-    const structured = Array.isArray(ev.proposed_colors)
-      ? (ev.proposed_colors as Array<{ name: string; hex: string | null }>)
-      : null;
-    if (structured && structured.length > 0) {
-      return structured
-        .filter((p) => !!p?.name)
-        .map((p) => ({
-          name: p.name,
-          hex:
-            (typeof p.hex === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(p.hex))
-              ? p.hex
-              : (colorToHex(p.name) ?? '#cfcfcf'),
-        }));
-    }
-    const proposed = Array.isArray(ev.proposed_brief_colors)
-      ? (ev.proposed_brief_colors as string[])
-      : [];
-    return proposed.filter(Boolean).map((n) => ({ name: n, hex: resolveHex(null, n) }));
   }
   return [];
 }
