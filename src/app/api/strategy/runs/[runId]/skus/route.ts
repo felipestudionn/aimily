@@ -80,8 +80,12 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
  * REPLICAR CONCEPTO + EXTENDER COLORES + ADELANTAR PEDIDO + AMPLIAR
  * DIST entre sí son compatibles (todos refuerzan al hero).
  */
-function applyExclusionRules<V extends { actions: Array<{ action: string }> }>(
-  verdict: V
+function applyExclusionRules<V extends {
+  actions: Array<{ action: string; evidence?: Record<string, unknown> }>;
+  product_fact_id: string;
+}>(
+  verdict: V,
+  v2SignalsByPid?: Map<string, Record<string, unknown> | null>
 ): V {
   const actions = verdict.actions;
   const hasAction = (a: string) => actions.some((x) => x.action === a);
@@ -111,6 +115,22 @@ function applyExclusionRules<V extends { actions: Array<{ action: string }> }>(
   }
   if (hasResizeDown) {
     blocked.add('amplify_next_season');
+  }
+
+  // Felipe 2026-05-18 caso Bomber 5247/600 · BLOQUEOS CARDINALES.
+  // Si el éxito del enviado es ≥ 50% el SKU es hero — NUNCA rebajar
+  // ni reducir compra, da igual lo que digan el resto de señales.
+  // Si hay rotura logística (pipeline vencido) la rotación baja es
+  // por logística — tampoco rebajar ni reducir.
+  const v2 = v2SignalsByPid?.get(verdict.product_fact_id) ?? null;
+  const shippedPct = v2 && typeof v2.efficiency_shipped_pct === 'number'
+    ? (v2.efficiency_shipped_pct as number)
+    : null;
+  const isLogisticRupture = v2 && v2.is_logistic_rupture === true;
+  if ((shippedPct != null && shippedPct >= 0.50) || isLogisticRupture) {
+    blocked.add('markdown_accelerate');
+    blocked.add('resize_down');
+    blocked.add('kill');
   }
 
   if (blocked.size === 0) return verdict;
@@ -767,6 +787,14 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       current_color: currentColorName,
       pvp: productPvp != null ? Number(productPvp) : null,
       sibling_hero_model_refs: siblingHeroModelRefs,
+      // Felipe 2026-05-18 caso Bomber 5247/600: el éxito del enviado
+      // es señal PRIMARIA de hero. Lo leemos del v2_signals
+      // (efficiency_shipped_pct) — fuente de verdad post-classifier.
+      sell_through_shipped_pct: v2
+        ? typeof v2.efficiency_shipped_pct === 'number'
+          ? (v2.efficiency_shipped_pct as number)
+          : null
+        : null,
     };
     // First emit the in-season verdict (always, when triggers fire).
     next = {
@@ -852,6 +880,18 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
             pipeline_arrival_runway_days:
               (v2.pipeline_arrival_runway_days as number | null) ?? null,
             velocity_7d: vel,
+            // Felipe 2026-05-18 caso Bomber 5247/600 — rotura logística
+            // bypassa todos los thresholds normales. Detecta cuando el
+            // pipeline pendiente tiene fecha de entrada vencida.
+            is_logistic_rupture: Boolean(v2.is_logistic_rupture),
+            logistic_rupture_days_overdue:
+              typeof v2.logistic_rupture_days_overdue === 'number'
+                ? (v2.logistic_rupture_days_overdue as number)
+                : null,
+            sell_through_shipped_pct:
+              typeof v2.efficiency_shipped_pct === 'number'
+                ? (v2.efficiency_shipped_pct as number)
+                : null,
           },
           identity
         ),
@@ -923,7 +963,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // Garantiza que verbos lógicamente incompatibles no coexistan en el
   // mismo SKU (e.g., MATAR + AMPLIAR DIST, REPOSICIÓN URGENTE +
   // REPONER MAX VENTA). Ver applyExclusionRules() arriba para reglas.
-  const afterExclusions = modulated.map(applyExclusionRules);
+  // v2_signals map para pasarle a applyExclusionRules (Felipe caso Bomber).
+  const v2SignalsByPid = new Map<string, Record<string, unknown> | null>();
+  for (const [pid, sc] of Array.from(scoresByPid.entries())) {
+    v2SignalsByPid.set(pid, sc.v2 ?? null);
+  }
+  const afterExclusions = modulated.map((v) => applyExclusionRules(v, v2SignalsByPid));
   const enriched = afterExclusions.map(enrichVerdict);
   const modulatedByPid = new Map(enriched.map((m) => [m.product_fact_id, m]));
 

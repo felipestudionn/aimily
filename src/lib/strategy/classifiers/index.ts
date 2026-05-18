@@ -151,6 +151,11 @@ export interface SkuScoreInput {
   stock_warehouse: number | null;
   stock_in_transit: number | null;
   stock_pending: number | null;
+  /** Fecha estimada de entrada del stock pendiente. Cuando es < hoy y
+   *  stock_pending > 0 → rotura logística (debería haber entrado ya).
+   *  Felipe 2026-05-18 caso Bomber 5247/600: pipeline vencido es señal
+   *  CRÍTICA para ADELANTAR PEDIDO y para bloquear REBAJAR/REDUCIR. */
+  stock_pending_date: string | null;
   pipeline_total: number | null;
   total_bought: number | null;
   total_sold: number | null;
@@ -285,6 +290,18 @@ export interface SkuScore {
   /** Sub-grado dentro de urgente: cobertura ratio <0.1 = rotura
    *  inminente, prioridad máxima. */
   is_critical_replenish: boolean;
+  /** Felipe 2026-05-18 caso Bomber 5247/600 — ROTURA LOGÍSTICA:
+   *  stock_pending > 0 AND stock_pending_date < hoy. Significa que el
+   *  pedido pendiente debería haber entrado ya pero no se ha actualizado.
+   *  Implicaciones cardinales:
+   *  - Bloquea REBAJAR (la rotación baja es por logística, no demanda)
+   *  - Bloquea REDUCIR COMPRA (la compra es buena, falta entrega)
+   *  - Boost ADELANTAR PEDIDO PENDIENTE (urgencia máxima)
+   *  - Flag MARCAR PARA REVISIÓN (entrada retrasada). */
+  is_logistic_rupture: boolean;
+  /** Días que el pipeline lleva vencido (today - stock_pending_date).
+   *  Solo poblado si is_logistic_rupture = true. */
+  logistic_rupture_days_overdue: number | null;
 
   // v2 — Ángulo 5 · Canibalización (cannibalization_risk_score ya existe)
   /** Fuerza del color ganador dentro del estilo:
@@ -414,7 +431,8 @@ export async function loadScoringInputs(
       strategy_inventory_facts (
         days_in_store, stores_with_stock, stores_active, stores_total,
         stock_store, stock_warehouse, stock_available,
-        stock_in_transit, stock_pending, pipeline_total, cd2_available
+        stock_in_transit, stock_pending, stock_pending_date,
+        pipeline_total, cd2_available
       ),
       strategy_sales_windows (
         window_type, units, max_sale_no_promo, max_sale_promo,
@@ -513,6 +531,7 @@ export async function loadScoringInputs(
       stock_warehouse: numOrNull(inv.stock_warehouse),
       stock_in_transit: numOrNull(inv.stock_in_transit),
       stock_pending: numOrNull(inv.stock_pending),
+      stock_pending_date: (inv.stock_pending_date as string | null) ?? null,
       pipeline_total: numOrNull(inv.pipeline_total),
       total_bought: numOrNull(eff.total_bought),
       total_sold: numOrNull(eff.total_sold),
@@ -1086,6 +1105,21 @@ export function scoreSku(
     cobertura_ratio_lead_time != null && cobertura_ratio_lead_time < 0.5;
   const is_critical_replenish =
     cobertura_ratio_lead_time != null && cobertura_ratio_lead_time < 0.1;
+  // Felipe 2026-05-18 caso Bomber 5247/600 — ROTURA LOGÍSTICA.
+  // El pipeline pendiente tiene fecha VENCIDA → debería haber entrado
+  // ya pero no se ha actualizado. La rotación baja en tienda es por
+  // falta de stock que NO LLEGÓ, no por falta de demanda. Bloquea
+  // REBAJAR + REDUCIR COMPRA y prioriza ADELANTAR PEDIDO.
+  let is_logistic_rupture = false;
+  let logistic_rupture_days_overdue: number | null = null;
+  if ((input.stock_pending ?? 0) > 0 && input.stock_pending_date) {
+    const eta = new Date(input.stock_pending_date).getTime();
+    const now = new Date(ctx.observation_date).getTime();
+    if (Number.isFinite(eta) && eta < now) {
+      is_logistic_rupture = true;
+      logistic_rupture_days_overdue = Math.floor((now - eta) / (1000 * 60 * 60 * 24));
+    }
+  }
 
   // ── Ángulo 5 · Canibalización — señales adicionales ────────────────────
   let color_winner_strength: number | null = null;
@@ -1300,6 +1334,8 @@ export function scoreSku(
     cobertura_ratio_lead_time,
     is_urgent_replenish,
     is_critical_replenish,
+    is_logistic_rupture,
+    logistic_rupture_days_overdue,
     // Ángulo 5
     color_winner_strength,
     share_concentration_gini,
@@ -1365,6 +1401,8 @@ export function scoreSku(
     cobertura_ratio_lead_time,
     is_urgent_replenish,
     is_critical_replenish,
+    is_logistic_rupture,
+    logistic_rupture_days_overdue,
     // v2 — Ángulo 5 Canibalización
     color_winner_strength,
     share_concentration_gini,

@@ -228,7 +228,18 @@ export function generateSkuCandidates(
     // (markdown_risk_score is computed regardless of lifecycle).
     // Baseline permisivo (Conservar margen — más fácil rebajar). Modulator
     // filtra para Balanceada/Maximizar.
-    if ((score.markdown_risk_score ?? 0) > 0.3) {
+    //
+    // Felipe 2026-05-18 caso Bomber 5247/600 · BLOQUEO CARDINAL:
+    // NUNCA rebajar un SKU con éxito del enviado ≥ 50%. El éxito del
+    // enviado al 63% significa que de cada unidad que llega a tienda
+    // se vende el 63% — eso es hero, no candidato a rebaja. El
+    // éxito del comprado puede ser bajo (compra inflada mid-season)
+    // pero NO refleja la realidad del piso. NUNCA rebajar un hero.
+    const shippedPct = score.classifier_traces && typeof (score.classifier_traces as any).margen_v2?.shipped_margin_eur === 'number'
+      ? input.sell_through_shipped_pct ?? 0
+      : input.sell_through_shipped_pct ?? 0;
+    const isHeroByShipped = shippedPct >= 0.50;
+    if ((score.markdown_risk_score ?? 0) > 0.3 && !isHeroByShipped) {
       // C.3 · Price-tier-aware discount cap. Fast-fashion (pvp <€40) can
       // absorb 60% to move stuck stock; mid-market (€40-80) caps at 50%;
       // premium (≥€80) caps at 40% to preserve brand price perception.
@@ -290,11 +301,20 @@ export function generateSkuCandidates(
 
     // Resize down candidate (oversupplied hero).
     // Baseline permisivo (Conservar margen — más fácil reducir).
+    //
+    // Felipe 2026-05-18 caso Bomber 5247/600 · BLOQUEO CARDINAL:
+    // NUNCA reducir compra si el éxito del enviado ≥ 50%. Si el suelo
+    // está vendiendo bien (63% en el caso Bomber), la compra ya hecha
+    // es buena — no se toca. El éxito del comprado puede estar bajo
+    // porque la compra final se infló mid-season, pero eso NO
+    // significa que el SKU sea un dog.
+    const isHeroByShippedRD = (input.sell_through_shipped_pct ?? 0) >= 0.50;
     if (
       (input.sell_through_bought_pct ?? 0) < 0.3 &&
       input.total_bought != null &&
       input.total_bought > 1000 &&
-      score.lifecycle_stage !== 'new'
+      score.lifecycle_stage !== 'new' &&
+      !isHeroByShippedRD
     ) {
       out.push({
         scope: 'sku',

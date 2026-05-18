@@ -648,6 +648,11 @@ export function appendAmplifyWinnerAction(
      *  Surfaces "el 250 también está en top 10" type context so the buyer
      *  understands which colourways are co-validated. */
     sibling_hero_model_refs?: string[];
+    /** Felipe 2026-05-18 caso Bomber 5247/600 — éxito del enviado es la
+     *  señal de hero PRIMARIA (no el del comprado, que se distorsiona
+     *  cuando la compra se infla mid-season). Si shipped_pct ≥ 0.50
+     *  dispara hero independientemente de los demás triggers. */
+    sell_through_shipped_pct?: number | null;
   }
 ): SkuVerdict {
   // A.4.b · Returns hard block (>35%). Used to silently skip — now we
@@ -708,7 +713,7 @@ export function appendAmplifyWinnerAction(
     return verdict;
   }
 
-  // Four independent triggers for hero detection. Any one fires.
+  // Five independent triggers for hero detection. Any one fires.
   const pdfTopN =
     signals.pdf_rank != null && signals.pdf_rank <= 10;
   const scoreBased =
@@ -718,8 +723,15 @@ export function appendAmplifyWinnerAction(
     signals.velocity_rank != null && signals.velocity_rank <= 10;
   const familyBased =
     (signals.family_velocity_ratio ?? 0) >= 2.0;
+  // Felipe 2026-05-18 caso Bomber 5247/600: el éxito del enviado es la
+  // señal PRIMARIA de hero. Si el suelo está vendiendo el 63% de lo que
+  // llega, es hero punto. El éxito del comprado puede ser bajo (la
+  // compra final infla el denominador) pero NO refleja la realidad
+  // del piso.
+  const shippedBased =
+    (signals.sell_through_shipped_pct ?? 0) >= 0.50;
 
-  if (!pdfTopN && !scoreBased && !rankBased && !familyBased) return verdict;
+  if (!pdfTopN && !scoreBased && !rankBased && !familyBased && !shippedBased) return verdict;
   // Skip if either the split-version or legacy alias is already present.
   if (
     verdict.actions.some(
@@ -730,9 +742,9 @@ export function appendAmplifyWinnerAction(
   }
 
   // A.2 · Bifurcate the rationale based on trigger composition.
-  // CONFIRMED HERO: pdfTopN + at least one of {vel/score/family} also fires.
+  // CONFIRMED HERO: pdfTopN + at least one of {vel/score/family/shipped} also fires.
   // ZARA-FLAG ONLY: pdfTopN alone (no corroborating signal from this run).
-  const corroboratingFired = scoreBased || rankBased || familyBased;
+  const corroboratingFired = scoreBased || rankBased || familyBased || shippedBased;
   const isZaraFlagOnly = pdfTopN && !corroboratingFired;
 
   // Rationale composition: lead with the strongest visible signal.
@@ -1503,6 +1515,13 @@ export function appendPullForwardIntakeAction(
     family_contribution_score: number | null;
     pipeline_arrival_runway_days: number | null;
     velocity_7d: number | null;
+    /** Felipe 2026-05-18 caso Bomber 5247/600 · si el pipeline pendiente
+     *  tiene fecha vencida (stock_pending_date < hoy), es ROTURA
+     *  LOGÍSTICA — máxima prioridad de adelantar. Bypassa todos los
+     *  thresholds normales. */
+    is_logistic_rupture?: boolean;
+    logistic_rupture_days_overdue?: number | null;
+    sell_through_shipped_pct?: number | null;
   },
   identity: {
     product_name: string | null;
@@ -1517,14 +1536,19 @@ export function appendPullForwardIntakeAction(
   const demand = signals.demand_score ?? 0;
   const contribution = signals.family_contribution_score ?? 0;
   const runway = signals.pipeline_arrival_runway_days;
+  const isLogisticRupture = signals.is_logistic_rupture === true;
 
   // Gate conditions
   if (pending <= 0) return verdict;
-  if (demand < 0.6 && contribution < 0.10) return verdict;
-  if (runway == null || runway < 14) return verdict;
-  // Stockout signal OR (very long runway + strong demand even without stockout yet)
-  const longRunwayHero = runway > 30 && (demand >= 0.7 || contribution >= 0.20);
-  if (stockout < 0.4 && !longRunwayHero) return verdict;
+  // Rotura logística: bypassa todos los demás thresholds — máxima
+  // prioridad de adelantar. El stock pendiente debería haber entrado
+  // ya pero no se ha actualizado. Es la señal más fuerte de Adelantar.
+  if (!isLogisticRupture) {
+    if (demand < 0.6 && contribution < 0.10) return verdict;
+    if (runway == null || runway < 14) return verdict;
+    const longRunwayHero = runway > 30 && (demand >= 0.7 || contribution >= 0.20);
+    if (stockout < 0.4 && !longRunwayHero) return verdict;
+  }
 
   // Don't double-fire
   if (verdict.actions.some((a) => a.action === 'pull_forward_intake')) {
@@ -1540,21 +1564,32 @@ export function appendPullForwardIntakeAction(
 
   // Confidence: combinar stockout + magnitud de runway.
   const stockoutTerm = Math.min(0.4, stockout * 0.5);
-  const runwayTerm = Math.min(0.4, runway / 60 * 0.4);
+  const runwayTerm = runway != null ? Math.min(0.4, runway / 60 * 0.4) : 0;
   const demandTerm = Math.min(0.2, demand * 0.25);
-  const confidence =
-    Math.round(Math.min(0.92, 0.40 + stockoutTerm + runwayTerm + demandTerm) * 100) / 100;
+  // Rotura logística: confianza máxima (≥0.92). El pipeline debería
+  // haber entrado ya — no hay duda de que adelantar es lo correcto.
+  const confidence = isLogisticRupture
+    ? 0.95
+    : Math.round(Math.min(0.92, 0.40 + stockoutTerm + runwayTerm + demandTerm) * 100) / 100;
 
   const styleName =
     (identity.product_name || '').trim() || identity.model_ref || 'este SKU';
-  const runwayWeeks = Math.round((runway / 7) * 10) / 10;
+  const runwayWeeks = runway != null ? Math.round((runway / 7) * 10) / 10 : null;
   const stockoutPct = Math.round(stockout * 100);
-  const rationale =
-    `${styleName} tiene ${pending.toLocaleString('es-ES')} uds pendientes de fabricar/enviar ` +
-    `que tardarían ~${runwayWeeks} semanas en llegar al ritmo actual de venta` +
-    (stockoutPct > 0 ? ` (riesgo de rotura ${stockoutPct}%).` : '.') +
-    ` Pedir al proveedor que adelante ~${(unitsToPull ?? 0).toLocaleString('es-ES')} uds ` +
-    `para colchón de 4 semanas y evitar quedarnos sin stock antes de que llegue lo pedido.`;
+  const overdue = signals.logistic_rupture_days_overdue ?? null;
+  const shippedPct = Math.round((signals.sell_through_shipped_pct ?? 0) * 100);
+  const rationale = isLogisticRupture
+    ? `${styleName}: ROTURA LOGÍSTICA · ${pending.toLocaleString('es-ES')} uds pendientes ` +
+      `con fecha de entrada vencida hace ${overdue ?? '?'} día(s). ` +
+      (shippedPct >= 50
+        ? `El éxito del enviado es ${shippedPct}% — está vendiendo bien lo que llega a tienda; el problema es que no llega. `
+        : '') +
+      `Llamar al proveedor / supply chain para acelerar la entrada. ` +
+      `La rotación baja en tienda NO refleja falta de demanda — refleja que el stock pendiente no se ha actualizado.`
+    : `${styleName} tiene ${pending.toLocaleString('es-ES')} uds pendientes ` +
+      `que tardarían ~${runwayWeeks ?? '?'} semanas en llegar al ritmo actual` +
+      (stockoutPct > 0 ? ` (riesgo de rotura ${stockoutPct}%).` : '.') +
+      ` Pedir al proveedor que adelante ~${(unitsToPull ?? 0).toLocaleString('es-ES')} uds.`;
 
   const newItem: SkuVerdictItem = {
     action: 'pull_forward_intake',
@@ -1574,6 +1609,9 @@ export function appendPullForwardIntakeAction(
       pipeline_arrival_runway_days: runway,
       velocity_7d: signals.velocity_7d,
       family_contribution_score: contribution,
+      is_logistic_rupture: isLogisticRupture,
+      logistic_rupture_days_overdue: signals.logistic_rupture_days_overdue ?? null,
+      sell_through_shipped_pct: signals.sell_through_shipped_pct ?? null,
     },
     counter_evidence: {},
     assumptions: [],
