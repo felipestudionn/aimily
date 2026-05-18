@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Loader2, ChevronRight } from 'lucide-react';
 
 interface VerdictAction {
   // 13-verb spec taxonomy (2026-05-17). The legacy aliases (investigate,
@@ -338,7 +338,11 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [activeSkuId, setActiveSkuId] = useState<string | null>(null);
+  // 2026-05-18 — accordion pattern (Felipe directive): replaced single
+  // `activeSkuId` state with `expandedSkuIds` Set so multiple SKUs can be
+  // open simultaneously. User stays in the panel, never loses the list
+  // overview, can compare two SKUs side-by-side by opening both.
+  const [expandedSkuIds, setExpandedSkuIds] = useState<Set<string>>(new Set());
   const [actionFilter, setActionFilter] = useState<VerdictAction['action'] | 'all'>('all');
   const pdfCanvasRef = useRef<HTMLDivElement>(null);
 
@@ -426,7 +430,15 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
     };
   }, [data?.pdf_signed_url]);
 
-  const activeSku = data?.skus.find((s) => s.product_fact_id === activeSkuId) ?? null;
+  // Toggle handler shared by every accordion chevron + clickable row header.
+  const toggleSkuExpansion = (id: string) => {
+    setExpandedSkuIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const filteredSkus = data?.skus.filter((sku) =>
     actionFilter === 'all'
       ? true
@@ -463,21 +475,19 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         )}
       </div>
 
-      {/* Right side: drawer when a SKU is selected, otherwise the SKU panel.
-       *  They share the column slot so the drawer expands into the panel
-       *  width instead of stacking on top of it. */}
-      {activeSku ? (
-        <SkuDrawer sku={activeSku} onClose={() => setActiveSkuId(null)} />
-      ) : (
-        <SkuPanel
-          data={data}
-          actionFilter={actionFilter}
-          setActionFilter={setActionFilter}
-          filteredSkus={filteredSkus}
-          activeSkuId={activeSkuId}
-          setActiveSkuId={setActiveSkuId}
-        />
-      )}
+      {/* Right side: SKU panel with accordion expand/collapse per row.
+       *  Felipe directive 2026-05-18: the buyer never loses the full list
+       *  view — clicking a chevron expands detail inline in place of
+       *  pushing the user into a separate drawer. Multiple SKUs can be
+       *  expanded at once for side-by-side comparison. */}
+      <SkuPanel
+        data={data}
+        actionFilter={actionFilter}
+        setActionFilter={setActionFilter}
+        filteredSkus={filteredSkus}
+        expandedSkuIds={expandedSkuIds}
+        onToggleExpand={toggleSkuExpansion}
+      />
     </div>
   );
 }
@@ -487,18 +497,18 @@ function SkuPanel({
   actionFilter,
   setActionFilter,
   filteredSkus,
-  activeSkuId,
-  setActiveSkuId,
+  expandedSkuIds,
+  onToggleExpand,
 }: {
   data: ApiResponse;
   actionFilter: VerdictAction['action'] | 'all';
   setActionFilter: (a: VerdictAction['action'] | 'all') => void;
   filteredSkus: SkuRow[];
-  activeSkuId: string | null;
-  setActiveSkuId: (id: string | null) => void;
+  expandedSkuIds: Set<string>;
+  onToggleExpand: (id: string) => void;
 }) {
   return (
-    <aside className="w-[460px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
+    <aside className="w-[520px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
         {/* Filter bar */}
         <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-3">
           <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40 mb-2">
@@ -522,66 +532,82 @@ function SkuPanel({
             })}
           </div>
         </div>
-        {/* SKU list */}
+        {/* SKU list — accordion pattern. Each row is a clickable header
+         *  that toggles inline expansion. Multiple SKUs can be open at
+         *  once so the buyer can compare side-by-side without losing the
+         *  full list overview. */}
         <ul>
-          {filteredSkus.map((sku) => (
-            <li key={sku.product_fact_id}>
-              <button
-                type="button"
-                onClick={() => setActiveSkuId(sku.product_fact_id)}
-                className={`w-full text-left p-3 border-b border-carbon/[0.04] hover:bg-carbon/[0.02] transition-colors ${
-                  activeSkuId === sku.product_fact_id ? 'bg-carbon/[0.04]' : ''
-                }`}
-              >
-                <div className="flex items-start gap-2.5 mb-1.5">
-                  {/* Ranking square · matches Zara RNK row position 1:1. */}
-                  <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 bg-carbon text-white text-[11px] font-semibold tabular-nums rounded-[6px]">
-                    {sku.rank}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] truncate">
-                      {sku.family_code || 'sku'}
-                    </p>
-                    <p className="text-[13px] font-medium text-carbon truncate" title={sku.product_name || sku.model_ref || ''}>
-                      {sku.product_name || sku.model_ref || sku.product_fact_id.slice(0, 8)}
-                    </p>
-                    {sku.model_ref && sku.product_name && (
-                      <p className="text-[10px] text-carbon/45 font-mono truncate">{sku.model_ref}</p>
+          {filteredSkus.map((sku) => {
+            const isExpanded = expandedSkuIds.has(sku.product_fact_id);
+            return (
+              <li key={sku.product_fact_id} className="border-b border-carbon/[0.04]">
+                <button
+                  type="button"
+                  onClick={() => onToggleExpand(sku.product_fact_id)}
+                  aria-expanded={isExpanded}
+                  className={`w-full text-left p-3 hover:bg-carbon/[0.02] transition-colors ${
+                    isExpanded ? 'bg-carbon/[0.03]' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5 mb-1.5">
+                    {/* Ranking square · matches Zara RNK row position 1:1. */}
+                    <span className="shrink-0 inline-flex items-center justify-center w-8 h-8 bg-carbon text-white text-[11px] font-semibold tabular-nums rounded-[6px]">
+                      {sku.rank}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] text-carbon/40 uppercase tracking-[0.08em] truncate">
+                        {sku.family_code || 'sku'}
+                      </p>
+                      <p className="text-[13px] font-medium text-carbon truncate" title={sku.product_name || sku.model_ref || ''}>
+                        {sku.product_name || sku.model_ref || sku.product_fact_id.slice(0, 8)}
+                      </p>
+                      {sku.model_ref && sku.product_name && (
+                        <p className="text-[10px] text-carbon/45 font-mono truncate">{sku.model_ref}</p>
+                      )}
+                    </div>
+                    {/* Accordion chevron — rotates 90° to point down when
+                     *  the row is expanded. Mirrors disclosure-arrow
+                     *  pattern from Apple Finder / iOS Settings.
+                     */}
+                    <ChevronRight
+                      className={`h-4 w-4 text-carbon/40 mt-1 shrink-0 transition-transform duration-150 ${
+                        isExpanded ? 'rotate-90 text-carbon/70' : ''
+                      }`}
+                    />
+                  </div>
+                  <div className="pl-[42px] space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {visibleActions(sku.actions).map((a) => {
+                        const colors = actionColors(a);
+                        return (
+                          <span
+                            key={a.action}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                            >
+                              {ACTION_LABEL_ES[a.action]}
+                              {a.recommended_units != null && a.recommended_units > 0
+                                ? ` · ${a.recommended_units.toLocaleString()} uds`
+                                : ''}
+                            </span>
+                            {colors.length > 0 && <ColorSwatches swatches={colors} />}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {!isExpanded && visibleActions(sku.actions)[0]?.rationale && (
+                      <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
+                        {visibleActions(sku.actions)[0].rationale}
+                      </p>
                     )}
                   </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-carbon/30 mt-1 shrink-0" />
-                </div>
-                <div className="pl-[42px] space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {visibleActions(sku.actions).map((a) => {
-                      const colors = actionColors(a);
-                      return (
-                        <span
-                          key={a.action}
-                          className="inline-flex items-center gap-1.5"
-                        >
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
-                          >
-                            {ACTION_LABEL_ES[a.action]}
-                            {a.recommended_units != null && a.recommended_units > 0
-                              ? ` · ${a.recommended_units.toLocaleString()} uds`
-                              : ''}
-                          </span>
-                          {colors.length > 0 && <ColorSwatches swatches={colors} />}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  {visibleActions(sku.actions)[0]?.rationale && (
-                    <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
-                      {visibleActions(sku.actions)[0].rationale}
-                    </p>
-                  )}
-                </div>
-              </button>
-            </li>
-          ))}
+                </button>
+                {isExpanded && <SkuDetailInline sku={sku} />}
+              </li>
+            );
+          })}
         </ul>
       </aside>
   );
@@ -615,40 +641,29 @@ function FilterChip({
   );
 }
 
-function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
+/**
+ * Inline-expansion detail block for an accordion SKU row.
+ *
+ * 2026-05-18 — Felipe directive: replaced the drawer takeover pattern
+ * (where opening one SKU hid the full list) with this inline expander.
+ * The SKU's row header stays visible above (already shows rank +
+ * family_code + product_name), so we don't repeat them here. The buyer
+ * keeps the full list overview while expanding 1-N SKUs simultaneously
+ * for side-by-side comparison.
+ *
+ * Content mirrors the prior SkuDrawer minus the sticky header + back
+ * button. Same headline KPIs, operational stats, modulator notes,
+ * action stack with full detail.
+ */
+function SkuDetailInline({ sku }: { sku: SkuRow }) {
   return (
-    <aside className="w-[560px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
-      <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-carbon/60 hover:text-carbon mb-3 transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Volver al panel
-        </button>
-        <div className="flex items-start gap-3">
-          <span className="shrink-0 inline-flex items-center justify-center w-10 h-10 bg-carbon text-white text-[14px] font-semibold tabular-nums rounded-[8px]">
-            {sku.rank}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-carbon/40 uppercase tracking-[0.08em] truncate">
-              {sku.family_code || 'sku'} · {sku.model_ref || ''}
-            </p>
-            <h2 className="text-[16px] font-semibold text-carbon truncate" title={sku.product_name || ''}>
-              {sku.product_name || sku.model_ref || sku.product_fact_id.slice(0, 8)}
-            </h2>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
+    <div className="border-t border-carbon/[0.04] bg-shade/40 p-4 space-y-4">
         {/* Headline KPIs — the 5 numbers a buyer expects to see first.
          *  Spec v1 §3.1. Sources cited per KPI in the source code; the
          *  small 'estimate' badge surfaces when a value derives from
          *  retailer-profile defaults rather than tenant input. */}
         {sku.headline_kpis && (
-          <section className="grid grid-cols-5 gap-2 text-[10px]">
+          <section className="grid grid-cols-5 gap-1.5 text-[10px]">
             <HeadlineKpi
               title="GMROI"
               hint="target 3.0–3.5"
@@ -767,8 +782,7 @@ function SkuDrawer({ sku, onClose }: { sku: SkuRow; onClose: () => void }) {
             </div>
           ))}
         </section>
-      </div>
-    </aside>
+    </div>
   );
 }
 
