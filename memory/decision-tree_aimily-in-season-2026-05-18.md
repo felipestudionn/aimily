@@ -223,9 +223,9 @@ Cada decisión es una FILA. Las columnas:
 | Campo | Valor |
 |---|---|
 | **Pregunta** | ¿Hay que rebajar para liberar stock antes de que muera la temporada? |
-| **Señales que mira** | `markdown_risk_score`, `markdown_already_applied`, `markdown_stage`, `rotation_health`, `markdown_margin_safety_eur`, `lifecycle_stage`, `is_oversupplied` |
+| **Señales que mira** | `markdown_risk_score`, `markdown_already_applied`, `markdown_stage`, `rotation_health`, `markdown_margin_safety_eur`, `lifecycle_stage`, `is_oversupplied`, `sell_through_shipped_pct` |
 | **TRIGGERS** | `markdown_risk_score ≥ 0.4` (FWOC supera las semanas que quedan de temporada) **OR** `markdown_already_applied = true AND rotation_health caída última semana` (rebaja vigente que no está empujando) **OR** `is_oversupplied = true AND lifecycle_stage ∈ {decay, mature_late}` |
-| **BLOQUEOS** | `markdown_margin_safety_eur < 0` (rebaja destruye economía — mejor mata) **·** `lifecycle_stage = new` (<14 días — too early) |
+| **BLOQUEOS** | `markdown_margin_safety_eur < 0` (rebaja destruye economía — mejor mata) **·** `lifecycle_stage = new` (<14 días — too early) **·** **`sell_through_shipped_pct ≥ 0.50`** **(invariante de escenario · caso #1 Bomber 5247/600)** — rotación baja con éxito enviado alto NO es señal de muerte, es artefacto logístico |
 | **Prioridad** | **Nivel 4 · Corrección precio** — actúa sobre lo que ya no funciona |
 | **Output** | Siguiente escalón canónico moda (`markdown_ladder_next_step`). **Ratchet duro — nunca atrás**. + estimación de unidades adicionales liberadas. |
 
@@ -236,11 +236,12 @@ Cada decisión es una FILA. Las columnas:
 | Campo | Valor |
 |---|---|
 | **Pregunta** | ¿Vamos a romper stock pronto? |
-| **Señales que mira** | `is_urgent_replenish`, `is_critical_replenish`, `cobertura_ratio_lead_time`, `cobertura_gap_days`, `can_replenish_now`, `pipeline_arrival_runway_days`, `returns_vs_baseline_score`, `lifecycle_stage` |
+| **Señales que mira** | `is_urgent_replenish`, `is_critical_replenish`, `cobertura_ratio_lead_time`, `cobertura_gap_days`, `can_replenish_now`, `pipeline_arrival_runway_days`, `returns_vs_baseline_score`, `lifecycle_stage`, `_raw_velocity_per_day`, `_raw_pipeline_total`, `_raw_lead_time_days` |
 | **TRIGGERS** | `is_urgent_replenish = true` (ratio < 0.5 **OR** cobertura_gap_days > 0) |
 | **BLOQUEOS** | D1 (MATAR), D2 (REBAJAR), D8 (REDUCIR COMPRA) — los tres significan "no más unidades" **·** `returns_vs_baseline_score > 2.0` (no rellenas algo defectuoso) **·** `lifecycle_stage = exit` |
+| **MAGNITUD por escenario · caso #2** | `target_units = velocity_per_day × (target_cover_days + lead_time_days)` con `target_cover_days = 14` (Conservar margen · mínimo viable) · `21` (Balanceada · baseline) · `30` (Maximizar venta · colchón amplio). `recommended_units = max(0, target_units − pipeline_total)`. |
 | **Prioridad** | **Nivel 2 · Supply urgente** — antes que cualquier movimiento ofensivo |
-| **Output** | N unidades para volver a ≥21 días de cobertura. Indica fuente (CD1 / CD2). Rationale explícita: "cobertura X días vs lead time Y → gap de Z días sin stock". |
+| **Output** | N unidades para volver a la cobertura objetivo del escenario. Indica fuente (CD1 / CD2). Rationale explícita: "cobertura X días vs lead time Y → gap de Z días sin stock". |
 
 ---
 
@@ -249,11 +250,12 @@ Cada decisión es una FILA. Las columnas:
 | Campo | Valor |
 |---|---|
 | **Pregunta** | ¿Merece la pena pedirle al proveedor que adelante lo pendiente? |
-| **Señales que mira** | `stock_pending` (input directo — single trigger), `cobertura_dias_now`, `pipeline_arrival_eta_days`, `cobertura_gap_days`, `demand_score`, `family_contribution`, `lead_time_days` |
-| **TRIGGERS** | `stock_pending > 0` AND `pipeline_arrival_eta_days > cobertura_dias_now` (= lo pendiente llega DESPUÉS de que el stock se acabe) AND (`demand_score ≥ 0.6` OR `family_contribution ≥ 0.10`) |
-| **BLOQUEOS** | D1 (MATAR), D2 (REBAJAR), D8 (REDUCIR COMPRA) **·** `stock_pending = 0` (nada que adelantar) **·** `pipeline_arrival_eta_days < cobertura_dias_now` (ya llega a tiempo) |
+| **Señales que mira** | `stock_pending`, `stock_pending_date`, `is_logistic_rupture`, `cobertura_dias_now`, `pipeline_arrival_eta_days`, `cobertura_gap_days`, `demand_score`, `family_contribution`, `lead_time_days`, `velocity_7d` |
+| **TRIGGERS** | **Trigger A (rotura logística · caso #1)**: `is_logistic_rupture = true` (= `stock_pending_date < hoy`) — bypassa todos los thresholds normales con confianza ≥0.95. **Trigger B (combo)**: `stock_pending > 0` AND `pipeline_arrival_eta_days > cobertura_dias_now` AND (`demand_score ≥ 0.6` OR `family_contribution ≥ 0.10`) |
+| **BLOQUEOS** | D1 (MATAR), D2 (REBAJAR), D8 (REDUCIR COMPRA) **·** `stock_pending = 0` (nada que adelantar) **·** `pipeline_arrival_eta_days < cobertura_dias_now` AND NOT `is_logistic_rupture` |
+| **MAGNITUD por escenario · caso #2** | `recommended_units = min(stock_pending, velocity_7d × weeks)` donde `weeks = 2` (Conservar margen) · `4` (Balanceada · baseline) · `Infinity` (Maximizar venta → adelantar TODO el pending). El DISPARO es invariante (rotura manda); CUÁNTO adelantar gradúa por postura comercial. |
 | **Prioridad** | **Nivel 2 · Supply urgente** — junto con D3 |
-| **Output** | Llamar al proveedor — adelantar ~4 semanas de demanda del pedido pendiente. |
+| **Output** | Llamar al proveedor — adelantar N unidades según escenario. Rationale incluye "ROTURA LOGÍSTICA · X uds pendientes con fecha vencida hace Y día(s)" si aplica. |
 
 ---
 
@@ -301,9 +303,9 @@ Cada decisión es una FILA. Las columnas:
 | Campo | Valor |
 |---|---|
 | **Pregunta** | ¿Compramos demasiado de este SKU? Bajar el pedido de próxima temporada. |
-| **Señales que mira** | `efficiency_bought`, `efficiency_shipped`, `total_bought`, `lifecycle_stage`, `is_survivor` |
+| **Señales que mira** | `efficiency_bought`, `efficiency_shipped`, `total_bought`, `lifecycle_stage`, `is_survivor`, `sell_through_shipped_pct` |
 | **TRIGGERS** | (`efficiency_bought < 0.20` **OR** `efficiency_shipped < 0.30`) AND `total_bought > 1000` AND `lifecycle_stage ≠ new` AND `is_survivor = false` |
-| **BLOQUEOS** | `is_survivor = true` (estructural — no reduces compra de un básico probado) **·** `lifecycle_stage = new` |
+| **BLOQUEOS** | `is_survivor = true` (estructural — no reduces compra de un básico probado) **·** `lifecycle_stage = new` **·** **`sell_through_shipped_pct ≥ 0.50`** **(invariante de escenario · caso #1 Bomber 5247/600)** — éxito_comprado bajo con éxito_enviado alto es artefacto de compra inflada, NO señal de error en la decisión de compra |
 | **Prioridad** | **Nivel 4 · Corrección compra** |
 | **Output** | Reducir 40% el pedido de próxima temporada. |
 
@@ -322,7 +324,7 @@ Cada decisión es una FILA. Las columnas:
 
 ---
 
-### **D10 · REPLICAR CONCEPTO EN NUEVO MODELO** (amplify_next_season)
+### **D10 · REPLICAR CONCEPTO EN NUEVO MODELO** (amplify_next_season) · **INVARIANTE DE ESCENARIO · caso #3 (2026-05-18)**
 
 | Campo | Valor |
 |---|---|
@@ -330,6 +332,7 @@ Cada decisión es una FILA. Las columnas:
 | **Señales que mira** | hero detection (mismas que D6) + `days_in_store` (modulador de confianza, NO gate) + `returns_vs_baseline_score` |
 | **TRIGGERS** | Cualquier trigger de hero (`pdf_rank`, `velocity_rank`, `demand+ST`, `family_ratio`, `family_contribution ≥ 0.20`). **Sin gate de días** (filosofía Zara día 1). |
 | **BLOQUEOS** | D1 (MATAR), D8 (REDUCIR COMPRA) **·** `returns_vs_baseline_score > 2.0` (no replicas un fallo de fit) |
+| **INVARIANCIA por escenario** | **Mismos SKUs · misma confianza · mismo brief en los 3 escenarios.** Replicar concepto es brief a diseño para futuras drops; NO compromete budget/caja de la temporada en curso. La postura comercial regula la inversión PRESENTE, no las decisiones de desarrollo SIGUIENTE. |
 | **Prioridad** | **Nivel 3 · Crecimiento estratégico** — informa próximo desarrollo |
 | **Output** | Brief a diseño: silueta + material + concepto base de un modelo NUEVO. **Sin colores** (eso es D7). Confianza modulada por `days_in_store` (cap 70% si <7d, 80% si 7-13d, 88% si 14-27d, 90% si 28+). |
 
@@ -547,9 +550,14 @@ Símbolos: ▲ más fácil disparar · ▼ más difícil disparar · ─ igual a
 | **D7 EXTENDER COLORES** | ▼ color_winner ≥ 2.5 · propone máx 2 colores | color_winner ≥ 2.0 · propone hasta 4 | ▲ color_winner ≥ 1.5 · propone hasta 5 | según action_mix |
 | **D8 REDUCIR COMPRA** | ▲ umbral más bajo (reduce más SKUs) | baseline | ▼ umbral más alto | según action_mix |
 | **D9 MARCAR REVISIÓN** | ─ INVARIANTE (diagnóstico) | ─ | ─ | ─ |
-| **D10 REPLICAR CONCEPTO** | ▼ umbral más alto (sólo héroes muy claros) | baseline | ▲ umbral más bajo (más sequels) | según action_mix |
+| **D10 REPLICAR CONCEPTO** | ─ INVARIANTE (brief a futuro, caso #3) | ─ | ─ | ─ |
 
 **Cardinal**: ningún escenario elimina una decisión. En "Conservar margen" sigue habiendo REPONER MAX VENTA (solo en los heroes muy claros). En "Maximizar venta" sigue habiendo REBAJAR (solo en stock muerto evidente). La gradualización es orgánica.
+
+**Excepciones invariantes (caso #1 + #3)**: además de D3/D4/D9 que ya eran invariantes en DISPARO, se añaden estos bloqueos cardinales que NO dependen del escenario:
+- **D2 REBAJAR** + **D8 REDUCIR COMPRA** bloqueadas si `sell_through_shipped_pct ≥ 0.50` (regla anti-Bomber).
+- **D4 ADELANTAR PEDIDO**: si `is_logistic_rupture = true`, bypassa thresholds normales con confianza ≥0.95 (rotura logística manda sobre cualquier postura).
+- **D10 REPLICAR CONCEPTO**: invariante completo (mismos SKUs, misma confianza, misma magnitud) — brief a futuro, no consume margen presente.
 
 #### Tabla numérica detallada (los thresholds reales)
 

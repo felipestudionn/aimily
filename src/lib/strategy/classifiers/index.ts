@@ -1303,10 +1303,68 @@ export function scoreSku(
   const lineage_consistency: 'stable' | 'fluctuating' | null = null;
   const staple_eligibility = is_survivor && (continuity_strength ?? 0) >= 0.50;
 
+  // is_solitary_winner — un SKU sin hermanos en su estilo que aporta
+  // ≥15% a su familia con rotación sana. Habilita el camino B de D7
+  // EXTENDER COLORES (solitario heroico). Spec §S7.
+  const is_solitary_winner =
+    siblings.length === 1 &&
+    (family_contribution_score ?? 0) >= 0.15 &&
+    (rotation_health_score ?? 0) >= 0.30;
+
+  // P0-D · data_sanity_violated — datos imposibles que rompen triggers.
+  // Casos detectados en auditoría Codex 2026-05-18:
+  //   - emptying_rate > 5.0 (rotación absurdamente alta — emptying>1 es
+  //     REAL en SKUs con rotación acelerada, pero >5 indica error de parser
+  //     o stockout suppression severo). Felipe verificó en V26 que muchos
+  //     SKUs vivos tienen emptying 1-3 sin ser bug.
+  //   - pipeline grande (>60d runway) co-existiendo con stockout reportado
+  //     (contradicción: si hay 60d de pipeline en camino, no hay rotura real)
+  // Cuando alguno se viola, bloqueamos buy verbs y forzamos D9 INVESTIGATE.
+  const pipelineRunwayDays = pipeline_arrival_runway_days;
+  const stockoutReported = (stockout_risk_score ?? 0) > 0.3;
+  const data_sanity_violated =
+    (emptyingRate != null && emptyingRate > 5.0) ||
+    (stockoutReported && pipelineRunwayDays != null && pipelineRunwayDays > 60);
+
+  // P0-G · Late-season-stuck: SKU en decay/exit/mature con markdown_risk
+  // alto y pipeline tardío. Cuando dispara, la regla anti-Bomber del
+  // step 1 de exclusion-rules NO debe bloquear markdown.
+  const is_late_season_stuck =
+    (lifecycle === 'decay' || lifecycle === 'exit' || lifecycle === 'mature') &&
+    (markdown_risk_score ?? 0) >= 0.4 &&
+    pipelineRunwayDays != null &&
+    pipelineRunwayDays > 45;
+
   // Persistir todas las señales v2 al trace para que la route las pueda
   // leer sin necesidad de recomputar. Mirror exacto de los campos
   // retornados — actualizar JUNTOS si cambia uno.
+  // Felipe 2026-05-18 sprint P0-A: añadidos campos que la API+modulator
+  // leen pero estaban ausentes del trace → silencio que rompía triggers
+  // de D1/D2/D5/D6/D9/D11 en TODOS los SKUs (auditoría Codex).
   traces.v2_signals = {
+    // v1 signals que la API consume (estaban en el return pero no en el trace)
+    velocity_7d: velocityRaw7d,
+    days_in_store: daysInStore,
+    demand_score,
+    margin_score,
+    effective_margin,
+    return_risk_score,
+    stockout_risk_score,
+    markdown_risk_score,
+    cannibalization_risk_score,
+    distribution_breadth_score,
+    lifecycle_stage: lifecycle,
+    seasonal_runway_days,
+    seasonal_runway_score,
+    // Solitario heroico (camino B de D7 EXTENDER COLORES)
+    is_solitary_winner,
+    // P0-D · Sanity de datos (emptying>1, pipeline+stockout contradiction)
+    data_sanity_violated,
+    emptying_rate: emptyingRate,
+    // P0-G · Late-season-stuck → permite markdown aunque ST_shipped ≥ 50%
+    is_late_season_stuck,
+    // P0-K · efficiency en evidence (ya estaba pero ahora explícito en trace)
+    returns_pct: input.returns_pct,
     // Ángulo 1
     velocity_trend_score,
     revenue_demand_score,

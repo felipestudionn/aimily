@@ -164,6 +164,53 @@ export function generateSkuCandidates(
       });
     }
 
+    // P0-F · Kill emergency rule (Felipe sprint 2026-05-18 · auditoría Codex)
+    // SKU muerto evidente: días en tienda >100 AND velocity en caída AND
+    // returns muy altos AND markdown ya saturado. Estado terminal —
+    // CARRYOVER es engaño, INVESTIGATE es procrastinación, MARKDOWN
+    // suplementario sí (escalón final). Caso real: SKU 8307 47 427
+    // (Ankle Relaxed) 127d + return-risk 86% + markdown_risk=1, sistema
+    // anterior decía CARRYOVER.
+    const daysInStore = input.days_in_store ?? 0;
+    const velocityRatio =
+      input.velocity_8_14d > 0 ? input.velocity_7d / input.velocity_8_14d : null;
+    const isKillEmergency =
+      daysInStore > 100 &&
+      velocityRatio != null &&
+      velocityRatio < 0.6 &&
+      (input.returns_pct ?? 0) >= 0.30 &&
+      (score.markdown_risk_score ?? 0) >= 0.85 &&
+      score.lifecycle_stage !== 'exit';
+    if (isKillEmergency) {
+      out.push({
+        scope: 'sku',
+        scope_ref: input.product_fact_id,
+        action_type: 'kill',
+        proposed_magnitude: { reason: 'mature_decay_return_trap' },
+        evidence: {
+          ...evidence,
+          kill_trigger: 'mature_decay_return_trap',
+          days_in_store: daysInStore,
+          velocity_ratio: velocityRatio,
+          returns_pct: input.returns_pct,
+          markdown_risk_score: score.markdown_risk_score,
+        },
+        counter_evidence: {},
+        assumptions: [
+          ...assumptions,
+          `${daysInStore}d en tienda, velocidad cayendo ${Math.round((1 - (velocityRatio ?? 1)) * 100)}% semana a semana, devoluciones ${Math.round((input.returns_pct ?? 0) * 100)}%, markdown ya saturado. Estado terminal — kill + markdown escalón final.`,
+        ],
+        confidence_data_completeness: score.confidence_data_completeness,
+        confidence_identity: score.confidence_identity,
+        confidence_demand: score.confidence_demand,
+        confidence_margin: score.confidence_margin,
+        confidence_creative_fit: score.confidence_creative_fit,
+        confidence_action: 0.90,
+        data_sufficiency_warning: null,
+        narrative: null,
+      });
+    }
+
     // Kill / Exit candidate (lifecycle-based)
     if (score.lifecycle_stage === 'exit') {
       out.push({
@@ -238,7 +285,28 @@ export function generateSkuCandidates(
     const shippedPct = score.classifier_traces && typeof (score.classifier_traces as any).margen_v2?.shipped_margin_eur === 'number'
       ? input.sell_through_shipped_pct ?? 0
       : input.sell_through_shipped_pct ?? 0;
-    const isHeroByShipped = shippedPct >= 0.50;
+    // P0-G · Markdown trigger en decay con pipeline grande (auditoría Codex 2026-05-18).
+    // Lifecycle decay/exit/mature + markdown_risk≥0.40 + pipeline_runway>45 =
+    // SKU acabándose temporada con stock que NO llegará a tiempo a la
+    // siguiente curva natural de venta. EN ESTE CASO la regla anti-Bomber
+    // NO aplica — el ST_shipped acumulado alto NO refuta que en decay
+    // terminal haya que rebajar el resto del stock. Caso real: SKU
+    // 2560 209 251 (Falda Combinada) decay + markdown_risk 0.665 + 88k
+    // pipeline + ST_shipped 80% → DEBE rebajar.
+    const pipelineRunway =
+      score.classifier_traces && typeof (score.classifier_traces as any).v2_signals?.pipeline_arrival_runway_days === 'number'
+        ? ((score.classifier_traces as any).v2_signals.pipeline_arrival_runway_days as number)
+        : null;
+    const isLateSeasonStuck =
+      (score.lifecycle_stage === 'decay' ||
+        score.lifecycle_stage === 'exit' ||
+        score.lifecycle_stage === 'mature') &&
+      (score.markdown_risk_score ?? 0) >= 0.4 &&
+      pipelineRunway != null &&
+      pipelineRunway > 45;
+    // isHeroByShipped: regla anti-Bomber (caso #1) PERO sólo aplica en SKUs
+    // que aún no han entrado en decay terminal con pipeline tardío.
+    const isHeroByShipped = shippedPct >= 0.50 && !isLateSeasonStuck;
     if ((score.markdown_risk_score ?? 0) > 0.3 && !isHeroByShipped) {
       // C.3 · Price-tier-aware discount cap. Fast-fashion (pvp <€40) can
       // absorb 60% to move stuck stock; mid-market (€40-80) caps at 50%;

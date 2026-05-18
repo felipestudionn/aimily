@@ -53,6 +53,56 @@ Felipe está exhausto. No apologices. No prometas. Solo (a) entiende el caso, (b
 
 Cada caso es un commit + un test en `scripts/test-sku-*.ts`. La siguiente ventana debe respetar las reglas que ya están vivas.
 
+### Sprint pre-pitch · cierre 11 P0 · 2026-05-18 · auditoría Codex + Claude
+
+**Pregunta de Felipe**: "Revisa los 20 primeros SKUs en los 3 escenarios contra el decision tree. Codex en paralelo. Diime si es defendible para Zara CTO. Si no, arregla TODO antes de seguir caso por caso."
+
+**Veredicto inicial (antes del sprint)**: NO defendible. Codex levantó 9 P0; Claude levantó 5 P0. 11 gaps cardinales consolidados.
+
+**Reglas codificadas (todas vivas + cubiertas por test canario `scripts/test-sprint-p0-cierre.ts` 17/17 + `scripts/test-sku-*.ts` 15/15)**:
+
+1. **P0-A · Clasificadores NULL reparados**. El objeto `traces.v2_signals` (classifiers/index.ts) ahora incluye `velocity_7d`, `demand_score`, `markdown_risk_score`, `lifecycle_stage`, `days_in_store`, `is_solitary_winner`, `cannibalization_risk_score`, `return_risk_score`, `stockout_risk_score`, `effective_margin`, `data_sanity_violated`, `is_late_season_stuck`, `emptying_rate`, `returns_pct`. Estos campos se calculan en classifiers pero antes no se persistían al trace — silencio que rompía triggers de D1/D2/D5/D6/D9/D11 en TODOS los SKUs.
+
+2. **P0-B · Exclusión post-modulación**. `applyExclusionRules` extraído a `src/lib/strategy/exclusion-rules.ts` y llamado DENTRO de `applyScenarioToVerdict` (después de filtrar threshold + modular). Antes, un escenario con threshold de markdown bajo podía destapar D2 sin que se bloqueara D3/D6. Ahora la matriz §4 del spec se aplica al stack FINAL de cada escenario.
+
+3. **P0-C · Hero fallback**. Nuevo appender `appendHeroFallback` (en `src/lib/strategy/d9-and-hero-appenders.ts`) que fuerza `amplify_in_season` + `amplify_next_season` cuando `pdf_rank ≤ 10` OR `velocity_rank ≤ 10` OR `units_7d top-decile`, con gates de returns ≤ 25%, ST_shipped ≥ 30%, no sanity violated, no kill/markdown. Caso real: Mandarin Blouse 2548 2 710 con 13k uds/7d que el sistema dejaba como carryover único.
+
+4. **P0-D · Stock sanity**. Flag `data_sanity_violated` computado en classifier cuando hay contradicción `stockout_reported AND pipeline_runway_days > 60`. Bloquea D3/D4/D5/D6 y fuerza D9. **Importante**: `emptying_rate > 1` NO es bug — es rotación acelerada real (Felipe verificó V26). Sólo `>5` indica error de parser.
+
+5. **P0-E · Return-trap**. Si `returns_pct ≥ 0.25` OR `returns_vs_baseline ≥ 2.0` → bloquea `replenish`, `pull_forward_intake`, `amplify_distribution`, `amplify_in_season`, `amplify_next_season`, `extend_colors`, `carryover`. Invariante de escenario. Forzamos D9 INVESTIGATE.
+
+6. **P0-F · Kill emergency**. Nuevo candidate emitter en `recommend.ts`: `days_in_store > 100 AND velocity_ratio < 0.6 AND returns_pct ≥ 0.30 AND markdown_risk_score ≥ 0.85`. Estado terminal — CARRYOVER es engaño. Caso real: SKU 8307 47 427 (Ankle Relaxed) 127d + 86% return-risk + markdown saturado.
+
+7. **P0-G · Late-season-stuck**. Excepción a la regla anti-Bomber (caso #1). Si `lifecycle ∈ {decay, exit, mature} AND markdown_risk ≥ 0.4 AND pipeline_runway > 45`, el ST_shipped ≥ 50% YA NO bloquea markdown (el éxito acumulado no refuta rebajar el stock que queda en decay terminal). Flag `is_late_season_stuck` computado en classifier, consultado en `recommend.ts` + `exclusion-rules.ts`. Caso real: SKU 2560 209 251 (Falda Combinada) decay + markdown_risk 0.665 + 88k pipeline + ST 80%.
+
+8. **P0-H · Cannibalization gate**. Si `cannibalization_risk_score > 0.5` → bloquea `replenish`, `pull_forward_intake`, `amplify_distribution`. Forzamos D9.
+
+9. **P0-I · D5/D6 gate ST_shipped<0.30**. Si `efficiency_shipped_pct < 0.30` → bloquea `amplify_distribution`, `amplify_in_season`, `extend_colors`. No amplificas a más tiendas un SKU que no vende donde ya está.
+
+10. **P0-J · D9 triggers absolutos**. Nuevo appender `appendInvestigateAbsoluteTriggers` que inyecta `investigate` con rationale específico cuando: returns ≥ 25%, returns_vs_baseline ≥ 2.0, cannibalization > 0.5, compra inflada (bought/shipped < 0.4 con shipped ≥ 30%), data_sanity_violated. No duplica si ya hay investigate.
+
+11. **P0-K · D8 gate compra inflada**. Si `bought_pct / shipped_pct < 0.4 AND shipped_pct ≥ 0.30` → bloquea `resize_down`. Compra inflada relativa al éxito en suelo es artefacto de mal escalonamiento, no error de decisión de compra; mejor INVESTIGATE.
+
+**Archivos tocados**:
+- `src/lib/strategy/classifiers/index.ts` — extensión de `v2_signals` + cómputo de `is_solitary_winner`, `data_sanity_violated`, `is_late_season_stuck`.
+- `src/lib/strategy/exclusion-rules.ts` — módulo nuevo con `applyExclusionRules` extendido (step 3 cardinal blockers P0-D/E/H/I/K).
+- `src/lib/strategy/scenario-modulator.ts` — `applyScenarioToVerdict` llama a `applyExclusionRules` post-modulación.
+- `src/lib/strategy/d9-and-hero-appenders.ts` — módulo nuevo con `appendInvestigateAbsoluteTriggers` (P0-J) + `appendHeroFallback` (P0-C).
+- `src/lib/strategy/recommend.ts` — Kill emergency rule (P0-F) + Late-season-stuck override anti-Bomber (P0-G).
+- `src/app/api/strategy/runs/[runId]/skus/route.ts` — cableado de los appenders nuevos + `unitsTopDecileThreshold` para P0-C.
+
+**Tests canarios vivos**:
+- `scripts/test-sprint-p0-cierre.ts` · 17/17 ✓ (sintéticos)
+- `scripts/test-sku-bomber-5247.ts` · 4/4 ✓ (caso #1)
+- `scripts/test-sku-bomber-5247-magnitudes.ts` · 4/4 ✓ (caso #2)
+- `scripts/test-sku-grandad-replicate-invariant.ts` · 7/7 ✓ (caso #3)
+
+**Verificación V26**: run re-ejecutado, 48 sku_scores + 88 candidates + 4 scenarios en 1.5s. Distribución sana: 15 sanity_violated (contradicción pipeline+stockout), 14 return-trap (29% del corpus), 5 late-season-stuck, 1 cannibalization, 33 solitary winners.
+
+**Próxima ventana**: reanudar método case-by-case sobre los 20 SKUs. Espera ver muchos menos gaps que en la auditoría — los P0 cardinales están cerrados.
+
+---
+
 ### Caso #3 · Grandad Collar 4786 166 401 — REPLICAR CONCEPTO invariante (2026-05-18)
 
 **Pregunta de Felipe**: "En Conservar margen el modelo 1 no propone replicar concepto. Replicar concepto NO tiene efecto sobre el margen — debería aparecer."

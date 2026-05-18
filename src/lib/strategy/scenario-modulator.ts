@@ -16,6 +16,7 @@
 
 import type { SkuVerdict, SkuVerdictItem, SkuVerdictAction } from './sku-verdict-resolver';
 import type { DecisionDiales } from './scenario-diales';
+import { applyExclusionRules } from './exclusion-rules';
 
 /** Mapeo: qué señales V2 evalúa cada decisión para su threshold, y bajo
  *  qué dial del escenario debería pasar. Si la decisión NO está en este
@@ -236,5 +237,11 @@ export function applyScenarioToVerdict<V extends SkuVerdict>(
       const newConf = modulateConfidence(a.action, withMag.confidence, diales);
       return { ...withMag, confidence: newConf };
     });
-  return { ...verdict, actions: survivors };
+  // P0-B · Aplicar exclusión post-modulación. Un escenario puede destapar
+  // D2/D8 con umbral más bajo (e.g., Conservar margen markdown_risk≥0.30),
+  // y debemos garantizar que el stack final NO mezcla markdown/kill con
+  // replenish/amplify. Caso real: SKUs 5107 96 712 + 2127 67 620 emitían
+  // MARKDOWN + REPLENISH + RESIZE_DOWN simultáneos pre-fix (auditoría Codex).
+  const cleaned = applyExclusionRules({ ...verdict, actions: survivors }, v2 ?? null);
+  return cleaned as V;
 }

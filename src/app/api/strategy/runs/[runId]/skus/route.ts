@@ -31,6 +31,8 @@ import {
   appendAmplifyNextSeasonAction,
   appendAmplifyDistributionAction,
   appendPullForwardIntakeAction,
+} from '@/lib/strategy/sku-verdict-resolver';
+import {
   enrichVerdict,
   DEFAULT_TARGET_ROTATION_DAYS,
   type SkuVerdict,
@@ -39,6 +41,10 @@ import {
   type LineageColorWinner,
   type LineageColorLoser,
 } from '@/lib/strategy/sku-verdict-resolver';
+import {
+  appendInvestigateAbsoluteTriggers,
+  appendHeroFallback,
+} from '@/lib/strategy/d9-and-hero-appenders';
 import { getDialesForScenario, type ScenarioId } from '@/lib/strategy/scenario-diales';
 import { applyScenarioToVerdict } from '@/lib/strategy/scenario-modulator';
 import {
@@ -80,6 +86,12 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
  * REPLICAR CONCEPTO + EXTENDER COLORES + ADELANTAR PEDIDO + AMPLIAR
  * DIST entre sí son compatibles (todos refuerzan al hero).
  */
+// applyExclusionRules vive ahora en src/lib/strategy/exclusion-rules.ts
+// (P0-B · 2026-05-18 · Felipe) — se aplica también dentro de
+// applyScenarioToVerdict para que los escenarios no destapen stacks
+// contradictorios. Esta función es un wrapper que adapta la firma con
+// Map (route) a la firma con v2 directa (módulo).
+import { applyExclusionRules as applyExclusionRulesCore } from '@/lib/strategy/exclusion-rules';
 function applyExclusionRules<V extends {
   actions: Array<{ action: string; evidence?: Record<string, unknown> }>;
   product_fact_id: string;
@@ -87,73 +99,8 @@ function applyExclusionRules<V extends {
   verdict: V,
   v2SignalsByPid?: Map<string, Record<string, unknown> | null>
 ): V {
-  // Felipe 2026-05-18 caso Bomber 5247/600 · STEP 1 · BLOQUEO CARDINAL
-  // PROTECTOR DEL HERO.
-  // Aplicado ANTES de evaluar exclusiones derivadas porque si el SKU
-  // es hero por éxito enviado, suprimimos kill/markdown/resize_down de
-  // raíz — para que no contaminen el cálculo de hasKill/hasMarkdown
-  // que dispararía bloqueos de amplify_* equivocados.
-  //
-  // Caso real: Bomber tenía éxito enviado 63% + rotura logística. Si
-  // dejamos pasar 'kill' (vino de un candidate persistido), hasKill=true
-  // bloquearía amplify_in_season, pull_forward_intake, etc. → stack
-  // vacío → SKU desaparece del UI.
   const v2 = v2SignalsByPid?.get(verdict.product_fact_id) ?? null;
-  const shippedPct = v2 && typeof v2.efficiency_shipped_pct === 'number'
-    ? (v2.efficiency_shipped_pct as number)
-    : null;
-  const isLogisticRupture = v2 && v2.is_logistic_rupture === true;
-  const heroProtection =
-    (shippedPct != null && shippedPct >= 0.50) || isLogisticRupture;
-  let workingActions = verdict.actions;
-  if (heroProtection) {
-    workingActions = workingActions.filter(
-      (a) =>
-        a.action !== 'kill' &&
-        a.action !== 'markdown_accelerate' &&
-        a.action !== 'resize_down'
-    );
-  }
-
-  // STEP 2 · Exclusiones cruzadas normales, evaluadas sobre las
-  // acciones SUPERVIVIENTES al step 1.
-  const hasAction = (a: string) =>
-    workingActions.some((x) => x.action === a);
-  const hasKill = hasAction('kill');
-  const hasMarkdown = hasAction('markdown_accelerate');
-  const hasUrgentReplenish = hasAction('replenish');
-  const hasResizeDown = hasAction('resize_down');
-
-  const blocked = new Set<string>();
-  if (hasKill) {
-    blocked.add('amplify_distribution');
-    blocked.add('replenish');
-    blocked.add('amplify_in_season');
-    blocked.add('pull_forward_intake');
-    blocked.add('amplify_next_season');
-    blocked.add('extend_colors');
-  }
-  if (hasMarkdown) {
-    blocked.add('amplify_distribution');
-    blocked.add('replenish');
-    blocked.add('amplify_in_season');
-    blocked.add('pull_forward_intake');
-  }
-  if (hasUrgentReplenish) {
-    // Regla cardinal Felipe: "Reposición urgente manda sobre Reponer".
-    blocked.add('amplify_in_season');
-  }
-  if (hasResizeDown) {
-    blocked.add('amplify_next_season');
-  }
-
-  if (blocked.size === 0) {
-    return { ...verdict, actions: workingActions };
-  }
-  return {
-    ...verdict,
-    actions: workingActions.filter((a) => !blocked.has(a.action)),
-  };
+  return applyExclusionRulesCore(verdict, v2);
 }
 
 interface RouteContext {
@@ -428,6 +375,18 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         ((b[1]['7d'] as number) ?? 0) - ((a[1]['7d'] as number) ?? 0)
     );
   pidsByVelocity.forEach(([pid], idx) => velocityRankByPid.set(pid, idx + 1));
+
+  // P0-C · Hero fallback usa "units_7d en top decil" como tercer trigger
+  // independiente de pdf_rank / velocity_rank. Calculamos el umbral una sola
+  // vez sobre el corpus del run.
+  const allVelocities = pidsByVelocity
+    .map(([, v]) => v['7d'] as number)
+    .filter((x) => x > 0);
+  const unitsTopDecileThreshold: number | null = (() => {
+    if (allVelocities.length === 0) return null;
+    const idx = Math.max(0, Math.floor(allVelocities.length * 0.1) - 1);
+    return allVelocities[idx] ?? null;
+  })();
 
   // Average velocity by family — anchor for "this SKU sells 2× its family".
   const familyVelocityAvg = new Map<string, number>();
@@ -934,6 +893,32 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
                 ? (v2.efficiency_shipped_pct as number)
                 : null,
           },
+          identity
+        ),
+        modulator_notes: next.modulator_notes,
+      };
+
+      // P0-J · D9 INVESTIGATE por triggers absolutos (returns≥25%,
+      // cannibalization>0.5, compra inflada, datos imposibles).
+      next = {
+        ...appendInvestigateAbsoluteTriggers(next, v2, identity),
+        modulator_notes: next.modulator_notes,
+      };
+
+      // P0-C · Hero fallback por ranking absoluto cuando demand_score
+      // normalizado salía bajo y el sistema dejaba de emitir hero stack.
+      const isUnitsTopDecile = (() => {
+        if (vel == null) return false;
+        const top10threshold = unitsTopDecileThreshold;
+        return top10threshold != null && vel >= top10threshold;
+      })();
+      next = {
+        ...appendHeroFallback(
+          next,
+          v2,
+          pdfRankByPid.get(v.product_fact_id) ?? null,
+          velocityRankByPid.get(v.product_fact_id) ?? null,
+          isUnitsTopDecile,
           identity
         ),
         modulator_notes: next.modulator_notes,
