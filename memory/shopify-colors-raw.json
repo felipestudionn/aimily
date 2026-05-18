@@ -1,0 +1,156 @@
+{
+  "source": "Shopify product-taxonomy",
+  "source_url": "https://raw.githubusercontent.com/Shopify/product-taxonomy/main/dist/en/attributes.json",
+  "stable_release_url": "https://raw.githubusercontent.com/Shopify/product-taxonomy/v2026-02/dist/en/attributes.json",
+  "taxonomy_version_main": "2026-05-unstable",
+  "taxonomy_version_stable": "v2026-02",
+  "fetched_at": "2026-05-18",
+  "attribute": {
+    "id": "gid://shopify/TaxonomyAttribute/1",
+    "name": "Color",
+    "handle": "color",
+    "description": "Defines the primary color or pattern, such as blue or striped"
+  },
+  "notes": [
+    "Shopify standard taxonomy uses 19 canonical color values for the generic Color attribute.",
+    "Identifiers are stable global IDs (gid://shopify/TaxonomyValue/<n>) plus URL-safe handles (color__<slug>).",
+    "Hex codes are NOT part of the standard taxonomy — they must be supplied per-merchant via metaobjects, theme settings, or category metafield swatch UI.",
+    "Hex codes below are aimily's editorial defaults (typical CSS named-color or visually-representative tone) for reference UI only — not authoritative.",
+    "Beauty industries get richer dedicated palettes (hair-color-shade: 34 values, makeup-color-shade: 30 values). Apparel/footwear inherits the 19 generic values."
+  ],
+  "values": [
+    {
+      "id": 6,
+      "gid": "gid://shopify/TaxonomyValue/6",
+      "handle": "color__beige",
+      "name": "Beige",
+      "hex_aimily_editorial": "#F5F5DC"
+    },
+    {
+      "id": 1,
+      "gid": "gid://shopify/TaxonomyValue/1",
+      "handle": "color__black",
+      "name": "Black",
+      "hex_aimily_editorial": "#000000"
+    },
+    {
+      "id": 2,
+      "gid": "gid://shopify/TaxonomyValue/2",
+      "handle": "color__blue",
+      "name": "Blue",
+      "hex_aimily_editorial": "#1F4FD8"
+    },
+    {
+      "id": 657,
+      "gid": "gid://shopify/TaxonomyValue/657",
+      "handle": "color__bronze",
+      "name": "Bronze",
+      "hex_aimily_editorial": "#CD7F32"
+    },
+    {
+      "id": 7,
+      "gid": "gid://shopify/TaxonomyValue/7",
+      "handle": "color__brown",
+      "name": "Brown",
+      "hex_aimily_editorial": "#6B4423"
+    },
+    {
+      "id": 17,
+      "gid": "gid://shopify/TaxonomyValue/17",
+      "handle": "color__clear",
+      "name": "Clear",
+      "hex_aimily_editorial": "#FFFFFF00"
+    },
+    {
+      "id": 4,
+      "gid": "gid://shopify/TaxonomyValue/4",
+      "handle": "color__gold",
+      "name": "Gold",
+      "hex_aimily_editorial": "#D4AF37"
+    },
+    {
+      "id": 8,
+      "gid": "gid://shopify/TaxonomyValue/8",
+      "handle": "color__gray",
+      "name": "Gray",
+      "hex_aimily_editorial": "#808080"
+    },
+    {
+      "id": 9,
+      "gid": "gid://shopify/TaxonomyValue/9",
+      "handle": "color__green",
+      "name": "Green",
+      "hex_aimily_editorial": "#2E7D32"
+    },
+    {
+      "id": 2865,
+      "gid": "gid://shopify/TaxonomyValue/2865",
+      "handle": "color__multicolor",
+      "name": "Multicolor",
+      "hex_aimily_editorial": null
+    },
+    {
+      "id": 15,
+      "gid": "gid://shopify/TaxonomyValue/15",
+      "handle": "color__navy",
+      "name": "Navy",
+      "hex_aimily_editorial": "#000080"
+    },
+    {
+      "id": 10,
+      "gid": "gid://shopify/TaxonomyValue/10",
+      "handle": "color__orange",
+      "name": "Orange",
+      "hex_aimily_editorial": "#E67E22"
+    },
+    {
+      "id": 11,
+      "gid": "gid://shopify/TaxonomyValue/11",
+      "handle": "color__pink",
+      "name": "Pink",
+      "hex_aimily_editorial": "#E91E63"
+    },
+    {
+      "id": 12,
+      "gid": "gid://shopify/TaxonomyValue/12",
+      "handle": "color__purple",
+      "name": "Purple",
+      "hex_aimily_editorial": "#7B1FA2"
+    },
+    {
+      "id": 13,
+      "gid": "gid://shopify/TaxonomyValue/13",
+      "handle": "color__red",
+      "name": "Red",
+      "hex_aimily_editorial": "#D32F2F"
+    },
+    {
+      "id": 16,
+      "gid": "gid://shopify/TaxonomyValue/16",
+      "handle": "color__rose-gold",
+      "name": "Rose gold",
+      "hex_aimily_editorial": "#B76E79"
+    },
+    {
+      "id": 5,
+      "gid": "gid://shopify/TaxonomyValue/5",
+      "handle": "color__silver",
+      "name": "Silver",
+      "hex_aimily_editorial": "#C0C0C0"
+    },
+    {
+      "id": 3,
+      "gid": "gid://shopify/TaxonomyValue/3",
+      "handle": "color__white",
+      "name": "White",
+      "hex_aimily_editorial": "#FFFFFF"
+    },
+    {
+      "id": 14,
+      "gid": "gid://shopify/TaxonomyValue/14",
+      "handle": "color__yellow",
+      "name": "Yellow",
+      "hex_aimily_editorial": "#FBC02D"
+    }
+  ]
+}
