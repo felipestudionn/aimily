@@ -257,11 +257,25 @@ function resolveHex(
  *  re-resolve. Backend ships anchor_color_hex directly. */
 function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
   if (a.action === 'extend_colors') {
+    // 2026-05-18 — Chips show the PROPOSED new colors from the moodboard
+    // color_story, NOT the winner. The winner is the anchor mentioned in
+    // the rationale text; the verb's OUTPUT is the new chromatic
+    // territory. Backend resolves hex (taxonomy → Spanish dict → null)
+    // so the UI just reads it. Falls back to local dict when hex is
+    // null (rare — only when both backend tiers miss).
     const ev = a.evidence as Record<string, unknown>;
-    const winner =
-      typeof ev.anchor_color_name === 'string' ? (ev.anchor_color_name as string) : null;
-    if (!winner) return [];
-    return [{ name: winner, hex: resolveHex(ev, winner) }];
+    const proposed = Array.isArray(ev.proposed_colors)
+      ? (ev.proposed_colors as Array<{ name: string; hex: string | null }>)
+      : [];
+    return proposed
+      .filter((p) => !!p?.name)
+      .map((p) => ({
+        name: p.name,
+        hex:
+          (typeof p.hex === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(p.hex))
+            ? p.hex
+            : (colorToHex(p.name) ?? '#cfcfcf'),
+      }));
   }
   if (a.action === 'kill') {
     // C.5 · Color-scope kill carries scope_hint='color' and anchor_color_*.

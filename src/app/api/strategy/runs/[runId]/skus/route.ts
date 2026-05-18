@@ -44,6 +44,10 @@ import {
   type PerSkuFinancials,
 } from '@/lib/strategy/sku-verdict-modulator';
 import { computeHeadlineKpis, type HeadlineKpis } from '@/lib/strategy/headline-kpis';
+import {
+  buildTaxonomyNameToHex,
+  resolveColorStory,
+} from '@/lib/strategy/color-name-hex-fallback';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -139,6 +143,13 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const colorCodeHexMap = (
     ((colorTaxRes as any)?.data?.mapping?.code_to_hex) || {}
   ) as Record<string, string>;
+  // 2026-05-18 — Name→hex index for brief color_story resolution. The
+  // taxonomy stores code→hex and code→name separately; we invert to a
+  // single name→hex lookup that color-name-hex-fallback.ts consults as
+  // its tier-1 source (tenant authoritative). Tier-2 (Spanish color
+  // dictionary) lives in that module and covers moodboard names not yet
+  // in the catalog.
+  const taxonomyNameToHex = buildTaxonomyNameToHex(colorCodeMap, colorCodeHexMap);
   const resolveColorHex = (codeOrName: string | null | undefined): string | null => {
     if (!codeOrName) return null;
     const raw = String(codeOrName).trim();
@@ -551,10 +562,19 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     };
     const winner = winnerByMemberPid.get(v.product_fact_id);
     if (winner) {
-      // D.5 · Pass brief color_story so the appender can propose concrete
-      // adjacent tones instead of just "extend toward adjacent tones".
+      // 2026-05-18 — Resolve color_story names into [{name, hex}] pairs
+      // so the UI renders proposal chips directly from evidence. Two-tier
+      // resolution: tenant taxonomy (authoritative for catalog colors)
+      // then Spanish color dictionary (covers moodboard colors not yet
+      // in the catalog — by design, the brief introduces new chromatic
+      // territory). Caller (this file) holds the only access to the
+      // tenant taxonomy, so resolution happens here, not in the appender.
+      const proposedColors = resolveColorStory(
+        briefCtx.color_story ?? [],
+        taxonomyNameToHex
+      );
       next = {
-        ...appendExtendColorsAction(next, winner, identity, briefCtx.color_story ?? []),
+        ...appendExtendColorsAction(next, winner, identity, proposedColors),
         modulator_notes: next.modulator_notes,
       };
     }

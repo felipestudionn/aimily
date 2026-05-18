@@ -1042,7 +1042,7 @@ export function appendExtendColorsAction(
   verdict: SkuVerdict,
   winner: LineageColorWinner,
   identity: { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null },
-  briefAdjacentColors: string[] = []
+  proposedColors: Array<{ name: string; hex: string | null }> = []
 ): SkuVerdict {
   // 8.1 (2026-05-17) — Output unit = SKU cardinal rule. Color-scope
   // propagation must FILTER by SKU color. extend_colors attaches ONLY
@@ -1050,11 +1050,6 @@ export function appendExtendColorsAction(
   // style may reference the winning colorway in the rationale of OTHER
   // actions (e.g., amplify_winner) as context, but the extend_colors
   // verb itself is SKU-specific.
-  //
-  // Pre-fix bug: extend_colors propagated to every SKU in the lineage,
-  // even those whose own color was unrelated to the winner. Less
-  // catastrophic than the kill propagation (no MATAR on a hero SKU) but
-  // still violated the cardinal rule and produced confusing rationales.
   if (identity.color_ref == null || identity.color_ref !== winner.color_code) {
     return verdict;
   }
@@ -1063,37 +1058,35 @@ export function appendExtendColorsAction(
   const existing = verdict.actions.find((a) => a.action === 'extend_colors');
   if (existing && existing.confidence >= winner.confidence) return verdict;
 
-  // D.5 · Propose CONCRETE adjacent colors from the brief's color_story
-  // (when present). The old rationale said "extend toward adjacent tones"
-  // without naming any; now we list 1-3 brief tones (skipping the winner's
-  // own name) so the design team gets an operational shortlist.
-  const winnerLc = winner.color_name.trim().toLowerCase();
-  const adjacents = briefAdjacentColors
-    .map((c) => (c ?? '').trim())
-    .filter(Boolean)
-    .filter((c) => c.toLowerCase() !== winnerLc)
-    .slice(0, 3);
-  const adjacentClause = adjacents.length > 0
-    ? ` Considera extender la paleta a tonos adyacentes del moodboard: ${adjacents.join(', ')}.`
-    : ' Considera extender la paleta con tonos adyacentes para amplificar el winner.';
+  // 2026-05-18 — The verb's OUTPUT is the proposed new colors (from the
+  // moodboard color_story, resolved to [{name, hex}] by the caller via
+  // tenant-taxonomy-first + Spanish-color-dict fallback). The winner is
+  // the ANCHOR mentioned in text only — not an output chip. Filter the
+  // winner's own name from proposals so we don't suggest extending into
+  // the color the style is already in.
+  const winnerLc = (winner.color_name ?? '').trim().toLowerCase();
+  const proposed = proposedColors
+    .filter((c) => !!c?.name && c.name.trim().toLowerCase() !== winnerLc)
+    .slice(0, 5);
 
-  // 2026-05-18 — surface the COLOR CODE as the canonical identifier and
-  // demote the taxonomy name to a parenthetical "listed as ..." hint. The
-  // initial color taxonomy seed (migration 059d) used guessed mappings
-  // that don't match the actual Zara catalog photos (Felipe verified:
-  // code 401 is azul noche, not blanco). Code-first rationale lets the
-  // buyer cross-check against the PDF photo without being misled by the
-  // wrong name. Future: vision-based color extraction from PDF photos
-  // will reconcile the taxonomy automatically.
-  const codeLabel = identity.color_ref ?? '?';
-  const nameHint = winner.color_name ? ` · listado como "${winner.color_name}"` : '';
+  // Honest signal: when the brief has no color_story (or every proposal
+  // collapsed against the winner), there's nothing concrete to propose.
+  // Suppress the action entirely rather than emit an abstract placeholder.
+  // The buyer should never see "consider adjacent tones" without names.
+  if (proposed.length === 0) return verdict;
 
-  // Per-SKU rationale (post 8.1 fix): we know this SKU IS the winner color.
-  // Phrase directly to THIS SKU rather than abstractly to the style.
+  // Buyer-clean copy: no codes, no validation caveats, no engineering
+  // notes. Style name in title case, color names verbatim. Frame the
+  // winner as the ANCHOR ("el ganador dentro de su estilo") and the
+  // proposals as the OUTPUT ("extiende la paleta hacia ...").
+  const styleName = (identity.product_name || '').trim() || identity.model_ref || 'este estilo';
+  const winnerName = (winner.color_name || '').replace(/_/g, ' ');
+  const proposalsText = proposed.map((p) => p.name.replace(/_/g, ' ')).join(', ');
+  const confidencePct = Math.round(winner.confidence * 100);
   const rationale =
     winner.rank === 'top'
-      ? `Este SKU (código de color ${codeLabel}${nameHint}) es el ganador dentro de su estilo con ${Math.round(winner.confidence * 100)}% de confianza.${adjacentClause} Verifica el código contra la foto del PDF antes de confirmar la propuesta — el nombre de la taxonomía está pendiente de validación.`
-      : `Este SKU (código de color ${codeLabel}${nameHint}) detectado como variante a evaluar dentro del estilo. Validar si extender o reasignar share de compra.`;
+      ? `${styleName} en ${winnerName} es el ganador dentro de su estilo, con ${confidencePct}% de confianza. Extiende la paleta del estilo hacia los colores del moodboard: ${proposalsText}.`
+      : `${styleName} en ${winnerName} es una variante a evaluar dentro de su estilo. Considera reasignar share de compra hacia los colores del moodboard: ${proposalsText}.`;
 
   const newItem: SkuVerdictItem = {
     action: 'extend_colors',
@@ -1116,12 +1109,16 @@ export function appendExtendColorsAction(
       // Preserve legacy field name for any downstream consumers that read
       // it; safe to remove after lineage→style rename pass (P2).
       lineage_family: identity.family_code ?? null,
-      proposed_adjacent_colors: adjacents,
+      // 2026-05-18 — UI renders these as chips; the winner is mentioned
+      // only in `rationale`. Each entry: {name, hex|null}. hex resolved
+      // by caller from tenant taxonomy first, then Spanish color dict.
+      proposed_colors: proposed,
+      // Legacy field kept for any backwards-compat reader; matches the
+      // names list only.
+      proposed_adjacent_colors: proposed.map((p) => p.name),
     },
     counter_evidence: {},
-    assumptions: [
-      'Action applies to THIS SKU (its colorway is the winner within the style). The other colorways are unaffected by this verb.',
-    ],
+    assumptions: [],
     data_sufficiency_warning: null,
   };
 
