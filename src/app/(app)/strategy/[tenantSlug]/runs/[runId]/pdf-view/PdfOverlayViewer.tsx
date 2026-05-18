@@ -103,6 +103,21 @@ interface HeadlineKpis {
   maintained_markup_pct: HeadlineKpiValue;
 }
 
+/** v2 — KPIs comerciales/operacionales del comprador, leídos del trace
+ *  v2_signals que F2 persiste. Se muestran en una segunda fila bajo los
+ *  5 KPIs cabecera financieros, para que el comprador vea de un vistazo
+ *  los KPIs canónicos de retail merchandising. */
+interface CommercialKpis {
+  /** Rotación 7d ajustada. >1 = excepcional, 0.5-1 = sana, <0.5 = estancada. */
+  rotation_aj_7d: number | null;
+  /** Aportación: % de la facturación de la familia que representa este SKU. */
+  family_contribution_pct: number | null;
+  /** Activación diaria: % de tiendas activas que vendieron ayer. */
+  daily_activation_pct: number | null;
+  /** Espacio al techo: % de espacio que queda antes de saturar capacidad. */
+  capacity_headroom_pct: number | null;
+}
+
 interface SkuRow {
   /** 1-based position matching the SKU's row order in the original PDF.
    *  Renders as a small numbered square so the buyer can map a verdict
@@ -127,6 +142,8 @@ interface SkuRow {
   /** Spec v1 — the 5 headline KPIs a buyer expects to see before drilling
    *  into verdicts. Populated by computeHeadlineKpis on the server. */
   headline_kpis?: HeadlineKpis;
+  /** Spec v2 §2 — KPIs comerciales leídos de v2_signals. */
+  commercial_kpis?: CommercialKpis;
 }
 
 interface ApiResponse {
@@ -801,46 +818,115 @@ function SkuDetailInline({ sku }: { sku: SkuRow }) {
           ))}
         </section>
 
-        {/* Headline KPIs — the 5 numbers a buyer expects to see (spec §3.1).
-         *  Below the action stack because the buyer expanded to see "what
-         *  should I do"; the KPIs anchor the decision but aren't the answer. */}
-        {sku.headline_kpis && (
+        {/* Headline KPIs — primera fila: los 5 KPIs financieros del comprador
+         *  (GMROI, sell-through vs plan, FWOC/LT, S/S, maintained markup).
+         *  Segunda fila: 4 KPIs comerciales canónicos de retail merchandising
+         *  (rotación, aportación a familia, activación diaria, espacio al
+         *  techo). El comprador senior los lee de un vistazo antes de
+         *  entrar en las acciones. */}
+        {(sku.headline_kpis || sku.commercial_kpis) && (
           <section>
             <h3 className="text-[10px] uppercase tracking-[0.12em] text-carbon/45 font-semibold mb-2">
-              KPIs cabecera
+              KPIs del SKU
             </h3>
-            <div className="grid grid-cols-5 gap-1.5 text-[10px]">
-              <HeadlineKpi
-                title="GMROI"
-                hint="target 3.0–3.5"
-                kpi={sku.headline_kpis.gmroi}
-                format={(v) => v.toFixed(2)}
-              />
-              <HeadlineKpi
-                title="STR vs plan"
-                hint="pp delta"
-                kpi={sku.headline_kpis.str_vs_plan_pp}
-                format={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`}
-              />
-              <HeadlineKpi
-                title="FWOC / LT"
-                hint="< 1 = stockout · > 2 = oversupplied"
-                kpi={sku.headline_kpis.fwoc_lt_ratio}
-                format={(v) => `${v.toFixed(1)}×`}
-              />
-              <HeadlineKpi
-                title="S / S ratio"
-                hint="parked stock when > 10"
-                kpi={sku.headline_kpis.s_s_ratio}
-                format={(v) => v.toFixed(1)}
-              />
-              <HeadlineKpi
-                title="Maint. MU"
-                hint="markup post-returns"
-                kpi={sku.headline_kpis.maintained_markup_pct}
-                format={(v) => `${v.toFixed(0)}%`}
-              />
-            </div>
+            {sku.headline_kpis && (
+              <div className="grid grid-cols-5 gap-1.5 text-[10px]">
+                <HeadlineKpi
+                  title="GMROI"
+                  hint="target 3.0–3.5"
+                  kpi={sku.headline_kpis.gmroi}
+                  format={(v) => v.toFixed(2)}
+                />
+                <HeadlineKpi
+                  title="STR vs plan"
+                  hint="pp delta"
+                  kpi={sku.headline_kpis.str_vs_plan_pp}
+                  format={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`}
+                />
+                <HeadlineKpi
+                  title="FWOC / LT"
+                  hint="< 1 = rotura · > 2 = oversupplied"
+                  kpi={sku.headline_kpis.fwoc_lt_ratio}
+                  format={(v) => `${v.toFixed(1)}×`}
+                />
+                <HeadlineKpi
+                  title="S / S ratio"
+                  hint="parked si > 10"
+                  kpi={sku.headline_kpis.s_s_ratio}
+                  format={(v) => v.toFixed(1)}
+                />
+                <HeadlineKpi
+                  title="Maint. MU"
+                  hint="margen post-rebajas"
+                  kpi={sku.headline_kpis.maintained_markup_pct}
+                  format={(v) => `${v.toFixed(0)}%`}
+                />
+              </div>
+            )}
+            {sku.commercial_kpis && (
+              <div className="grid grid-cols-4 gap-1.5 text-[10px] mt-1.5">
+                <CommercialKpi
+                  title="Rotación 7d"
+                  hint=">1 excepcional · 0.5-1 sana · <0.5 estancada"
+                  value={sku.commercial_kpis.rotation_aj_7d}
+                  format={(v) => v.toFixed(2)}
+                  status={
+                    sku.commercial_kpis.rotation_aj_7d == null
+                      ? null
+                      : sku.commercial_kpis.rotation_aj_7d >= 1.0
+                        ? 'good'
+                        : sku.commercial_kpis.rotation_aj_7d >= 0.5
+                          ? 'ok'
+                          : 'bad'
+                  }
+                />
+                <CommercialKpi
+                  title="Aportación"
+                  hint="% de la familia"
+                  value={sku.commercial_kpis.family_contribution_pct}
+                  format={(v) => `${v.toFixed(1)}%`}
+                  status={
+                    sku.commercial_kpis.family_contribution_pct == null
+                      ? null
+                      : sku.commercial_kpis.family_contribution_pct >= 15
+                        ? 'good'
+                        : sku.commercial_kpis.family_contribution_pct >= 5
+                          ? 'ok'
+                          : 'bad'
+                  }
+                />
+                <CommercialKpi
+                  title="Activación diaria"
+                  hint="% tiendas con venta ayer"
+                  value={sku.commercial_kpis.daily_activation_pct}
+                  format={(v) => `${v.toFixed(0)}%`}
+                  status={
+                    sku.commercial_kpis.daily_activation_pct == null
+                      ? null
+                      : sku.commercial_kpis.daily_activation_pct >= 70
+                        ? 'good'
+                        : sku.commercial_kpis.daily_activation_pct >= 40
+                          ? 'ok'
+                          : 'bad'
+                  }
+                />
+                <CommercialKpi
+                  title="Techo libre"
+                  hint="espacio antes de saturar"
+                  value={sku.commercial_kpis.capacity_headroom_pct}
+                  format={(v) => `${v.toFixed(0)}%`}
+                  status={
+                    sku.commercial_kpis.capacity_headroom_pct == null
+                      ? null
+                      : sku.commercial_kpis.capacity_headroom_pct >= 40
+                        ? 'good'
+                        : sku.commercial_kpis.capacity_headroom_pct >= 15
+                          ? 'ok'
+                          : 'bad'
+                  }
+                />
+              </div>
+            )}
           </section>
         )}
 
@@ -921,6 +1007,49 @@ function HeadlineKpi({
           {kpi.label}
         </div>
       )}
+    </div>
+  );
+}
+
+/** v2 — KPI comercial del comprador (rotación / aportación / activación
+ *  diaria / techo libre). Mismo lenguaje visual que HeadlineKpi pero con
+ *  semáforo good/ok/bad para que el comprador escanee la salud de un
+ *  vistazo. */
+function CommercialKpi({
+  title,
+  hint,
+  value,
+  format,
+  status,
+}: {
+  title: string;
+  hint: string;
+  value: number | null;
+  format: (v: number) => string;
+  status: 'good' | 'ok' | 'bad' | null;
+}) {
+  const borderColor =
+    status === 'good'
+      ? 'border-success/30'
+      : status === 'ok'
+        ? 'border-carbon/[0.10]'
+        : status === 'bad'
+          ? 'border-warning/40'
+          : 'border-carbon/[0.06]';
+  const valueColor =
+    status === 'good'
+      ? 'text-success'
+      : status === 'bad'
+        ? 'text-warning'
+        : 'text-carbon';
+  return (
+    <div className={`bg-white border ${borderColor} rounded-[8px] p-2`} title={hint}>
+      <div className="text-[9px] text-carbon/45 uppercase tracking-[0.06em] truncate">
+        {title}
+      </div>
+      <div className={`text-[14px] font-semibold tabular-nums mt-0.5 ${valueColor}`}>
+        {value != null ? format(value) : '—'}
+      </div>
     </div>
   );
 }

@@ -839,6 +839,24 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       planned_str_curve: null,              // synthetic linear ramp
       retailer_profile: retailerProfile,
     });
+    // v2 — KPIs comerciales del comprador desde classifier_traces.v2_signals
+    // (segunda fila bajo los 5 KPIs cabecera financieros).
+    const v2sig = (score?.v2 ?? null) as Record<string, unknown> | null;
+    const numOrNullVal = (key: string): number | null => {
+      const val = v2sig ? v2sig[key] : undefined;
+      return typeof val === 'number' ? val : null;
+    };
+    const contribution = numOrNullVal('family_contribution_score');
+    const dailyActivation = numOrNullVal('daily_activation_score');
+    const headroom = numOrNullVal('capacity_headroom');
+    const commercialKpis = v2sig
+      ? {
+          rotation_aj_7d: numOrNullVal('rotation_aj_7d_observed'),
+          family_contribution_pct: contribution != null ? contribution * 100 : null,
+          daily_activation_pct: dailyActivation != null ? dailyActivation * 100 : null,
+          capacity_headroom_pct: headroom != null ? headroom * 100 : null,
+        }
+      : undefined;
     return {
       rank: idx + 1,
       product_fact_id: p.id,
@@ -858,6 +876,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       actions: v?.actions ?? [],
       modulator_notes: v?.modulator_notes ?? [],
       headline_kpis: headlineKpis,
+      commercial_kpis: commercialKpis,
     };
   });
 

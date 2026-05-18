@@ -1240,6 +1240,10 @@ export function scoreSku(
     revenue_demand_score,
     family_contribution_score,
     rotation_health_score,
+    /** Rotación observada absoluta (input.rotation_td_tr_aj_7d). La
+     *  UI muestra este valor en la fila comercial; el _health_score es
+     *  la versión normalizada vs familia. */
+    rotation_aj_7d_observed: input.rotation_td_tr_aj_7d,
     daily_activation_score,
     // Ángulo 2
     markdown_already_applied,
