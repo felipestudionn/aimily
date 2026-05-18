@@ -286,12 +286,45 @@ function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
     if (!loser) return [];
     return [{ name: loser, hex: resolveHex(ev, loser) }];
   }
-  if (
-    a.action === 'amplify_winner' ||
-    a.action === 'amplify_in_season' ||
-    a.action === 'amplify_next_season'
-  ) {
+  // 2026-05-18 — Decision-map cleanup post-split (Spec §4.3 Gates 9/10/11):
+  //
+  //   • amplify_in_season (REPLICAR AHORA) = reorder + distort of THIS
+  //     SKU in ITS color. Output unit is SKU+color, color is implicit.
+  //     NO chips — moodboard colors are not part of this verb's output.
+  //     Pre-split amplify_winner used to attach moodboard chips here as a
+  //     leftover from when the verb was hybrid in-season + next-season.
+  //
+  //   • amplify_next_season (REPLICAR ESTILO PRÓXIMA TEMPORADA) = sequel
+  //     brief to design. Moodboard colors ARE the output (silhouette +
+  //     materials + 2-3 colorways). Renders chips using the same
+  //     [{name, hex}] resolved server-side as extend_colors so the chips
+  //     look right (no grey fallback for terracota/oliva/lavanda).
+  //
+  //   • amplify_winner (legacy alias) = treat as in-season for chip
+  //     purposes — defensive in case any persisted candidate still
+  //     references the pre-split action_type.
+  if (a.action === 'amplify_in_season' || a.action === 'amplify_winner') {
+    return [];
+  }
+  if (a.action === 'amplify_next_season') {
     const ev = a.evidence as Record<string, unknown>;
+    // Prefer the structured [{name, hex}] resolved by the backend (same
+    // module as extend_colors); fall back to the legacy name-only list
+    // resolved client-side for any candidate persisted before the upgrade.
+    const structured = Array.isArray(ev.proposed_colors)
+      ? (ev.proposed_colors as Array<{ name: string; hex: string | null }>)
+      : null;
+    if (structured && structured.length > 0) {
+      return structured
+        .filter((p) => !!p?.name)
+        .map((p) => ({
+          name: p.name,
+          hex:
+            (typeof p.hex === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(p.hex))
+              ? p.hex
+              : (colorToHex(p.name) ?? '#cfcfcf'),
+        }));
+    }
     const proposed = Array.isArray(ev.proposed_brief_colors)
       ? (ev.proposed_brief_colors as string[])
       : [];

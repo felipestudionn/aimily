@@ -650,6 +650,10 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       pdf_rank: pdfRankByPid.get(v.product_fact_id) ?? null,
       velocity_rank: velocityRankByPid.get(v.product_fact_id) ?? null,
       family_velocity_ratio: famRatio,
+      // Legacy field still consumed by appendAmplifyWinnerAction (the
+      // in-season appender). Will be retired once that function stops
+      // computing candidateColors. The UI ignores in-season chips per
+      // Spec Gate 9 (REPLICAR AHORA = same SKU + same color, no chips).
       brief_colors: briefCtx.color_story ?? [],
       current_color: currentColorName,
       pvp: productPvp != null ? Number(productPvp) : null,
@@ -661,10 +665,18 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       modulator_notes: next.modulator_notes,
     };
     // Then conditionally emit the next-season sequel brief — gated by
-    // days_in_store >= 28 (the 4-week validation window).
+    // days_in_store >= 28 (the 4-week validation window). Pass the
+    // resolved [{name, hex}] palette so the chips render with correct
+    // color for moodboard names not in the catalog (terracota, oliva,
+    // lavanda etc.).
+    const proposedColorsForNextSeason = resolveColorStory(
+      briefCtx.color_story ?? [],
+      taxonomyNameToHex
+    );
     next = {
       ...appendAmplifyNextSeasonAction(next, {
         ...amplifySignals,
+        brief_colors: proposedColorsForNextSeason,
         days_in_store: daysInStore,
       }),
       modulator_notes: next.modulator_notes,

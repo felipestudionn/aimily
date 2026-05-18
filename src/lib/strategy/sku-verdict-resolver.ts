@@ -915,7 +915,12 @@ export function appendAmplifyNextSeasonAction(
     pdf_rank: number | null;
     velocity_rank: number | null;
     family_velocity_ratio: number | null;
-    brief_colors: string[];
+    /** Moodboard palette resolved to [{name, hex|null}] by the caller.
+     *  hex resolution: tenant taxonomy first, Spanish color dict second
+     *  (see color-name-hex-fallback.ts). Carries the structured shape so
+     *  the UI can render proposal chips with correct color even for
+     *  moodboard names not yet in the catalog. */
+    brief_colors: Array<{ name: string; hex: string | null }>;
     current_color: string | null;
     pvp?: number | null;
     sibling_hero_model_refs?: string[];
@@ -939,10 +944,11 @@ export function appendAmplifyNextSeasonAction(
 
   // Brief-color shortlist (skip the SKU's own color).
   const currentColorLc = (signals.current_color ?? '').trim().toLowerCase();
-  const candidateColors = (signals.brief_colors ?? [])
-    .map((c) => (c ?? '').trim())
-    .filter(Boolean)
-    .filter((c) => c.toLowerCase() !== currentColorLc);
+  const candidatePairs = (signals.brief_colors ?? [])
+    .filter((c) => !!c?.name && c.name.trim() !== '')
+    .filter((c) => c.name.trim().toLowerCase() !== currentColorLc)
+    .slice(0, 4);
+  const candidateColors = candidatePairs.map((c) => c.name);
   const colorClause =
     candidateColors.length > 0
       ? ` Probar la misma silueta en colores del moodboard: ${candidateColors.slice(0, 4).join(', ')}.`
@@ -997,7 +1003,13 @@ export function appendAmplifyNextSeasonAction(
       velocity_rank: signals.velocity_rank,
       family_velocity_ratio: signals.family_velocity_ratio,
       days_in_store: signals.days_in_store,
-      proposed_brief_colors: candidateColors.slice(0, 4),
+      // 2026-05-18 — Structured palette with resolved hex for UI chips.
+      // Mirrors the shape used by extend_colors so the renderer can
+      // share the same chip code path. The legacy name-only list is
+      // kept under proposed_brief_colors for any downstream consumer
+      // that hasn't migrated.
+      proposed_colors: candidatePairs,
+      proposed_brief_colors: candidateColors,
     },
     counter_evidence: {},
     assumptions: [
