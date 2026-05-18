@@ -184,6 +184,26 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   amplify_winner: 'Replicar estilo',
 };
 
+// Felipe 2026-05-18: "Mantener no aporta nada. Si el estado es saludable
+// y no hay nada que hacer, mejor evitar una acción que sea mantener,
+// porque al final confunde." CARRYOVER y HOLD no son acciones — son
+// estados pasivos. Los filtramos completamente de la vista (pills,
+// filtros, conteos visibles). Si un SKU SOLO tiene carryover o hold,
+// se ve como SKU sin alertas — sin pills.
+const ACTIONABLE_VERBS: Array<VerdictAction['action']> = [
+  'kill',
+  'markdown_accelerate',
+  'amplify_distribution',
+  'pull_forward_intake',
+  'replenish',
+  'amplify_in_season',
+  'promote_push',
+  'resize_down',
+  'investigate_root_cause',
+  'amplify_next_season',
+  'extend_colors',
+];
+
 // Aimily accent palette. Each action keys to a different brand colour so
 // the buyer can scan a page of SKUs and tell verdicts apart at a glance.
 // Tokens (tailwind.config.js): error / warning / success / sea-foam / moss
@@ -360,19 +380,21 @@ function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
 // so the buyer sees "1 verdict en conflicto suprimido" instead of nothing.
 const WARNING_PRESERVATION_CONFIDENCE_THRESHOLD = 0.6;
 function visibleActions(actions: VerdictAction[]): VerdictAction[] {
+  // Felipe 2026-05-18: "Mantener no aporta nada. Si el estado es
+  // saludable y no hay nada que hacer, mejor evitar una acción que sea
+  // mantener, porque al final confunde." CARRYOVER y HOLD son estados
+  // pasivos (no son acciones). Los filtramos completamente. Un SKU sin
+  // verbos ACCIONABLES no muestra pills — la ausencia de pill = "sin
+  // alertas, todo saludable".
   const droppedHold = actions.find(
     (a) => a.action === 'hold' && a.data_sufficiency_warning
   );
-  let list = actions.filter((a) => a.action !== 'hold');
-  if (list.length === 0) list = actions;
+  let list = actions.filter((a) => a.action !== 'hold' && a.action !== 'carryover');
 
-  if (droppedHold && list.length > 0 && list[0]?.action !== 'hold') {
+  if (droppedHold && list.length > 0) {
     const survivor = list[0];
-    // Only preserve the "datos limitados" caveat when the surviving
-    // action's own confidence is low. A confident verdict (>= 0.6)
-    // overrides the data-sufficiency warning — the engine HAS a clear
-    // signal even if the candidate path didn't surface it (it came from
-    // a heuristic appender like amplify_in_season).
+    // Solo preservamos el "datos limitados" cuando la acción superviviente
+    // tiene baja confianza. Un verdict confiado (≥0.6) anula la caveat.
     if (
       !survivor.data_sufficiency_warning &&
       survivor.confidence < WARNING_PRESERVATION_CONFIDENCE_THRESHOLD
@@ -411,7 +433,15 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
   // open simultaneously. User stays in the panel, never loses the list
   // overview, can compare two SKUs side-by-side by opening both.
   const [expandedSkuIds, setExpandedSkuIds] = useState<Set<string>>(new Set());
-  const [actionFilter, setActionFilter] = useState<VerdictAction['action'] | 'all'>('all');
+  // Multi-select filter. Defaults a TODAS las acciones marcadas (= sin
+  // filtrar). Felipe 2026-05-18: "que el filtro esté todo marcado por
+  // defecto, pero que si quiero ver cuáles son cada uno, pues no puedo
+  // ir rápido directamente a cada uno." Filtro va dentro de un panel
+  // collapsable — visible bajo demanda, no de golpe.
+  const [actionFilter, setActionFilter] = useState<Set<VerdictAction['action']>>(
+    () => new Set(ACTIONABLE_VERBS)
+  );
+  const [filterExpanded, setFilterExpanded] = useState<boolean>(false);
   const pdfCanvasRef = useRef<HTMLDivElement>(null);
 
   // Fetch verdicts + PDF signed URL once on mount.
@@ -507,11 +537,22 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
       return next;
     });
   };
-  const filteredSkus = data?.skus.filter((sku) =>
-    actionFilter === 'all'
-      ? true
-      : sku.actions.some((a) => a.action === actionFilter)
-  ) ?? [];
+  // Multi-select filter: Set vacío = todos visibles. Si hay selecciones,
+  // mostramos los SKUs que tienen AL MENOS UNA de las acciones
+  // seleccionadas. Solo evaluamos sobre visibleActions (sin hold ni
+  // carryover) — esos no se pueden filtrar porque no son acciones.
+  const filteredSkus = data?.skus.filter((sku) => {
+    if (actionFilter.size === 0) return true;
+    return visibleActions(sku.actions).some((a) => actionFilter.has(a.action));
+  }) ?? [];
+  const toggleActionFilter = (a: VerdictAction['action']) => {
+    setActionFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(a)) next.delete(a);
+      else next.add(a);
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -551,7 +592,8 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
       <SkuPanel
         data={data}
         actionFilter={actionFilter}
-        setActionFilter={setActionFilter}
+        toggleActionFilter={toggleActionFilter}
+        clearFilter={() => setActionFilter(new Set())}
         filteredSkus={filteredSkus}
         expandedSkuIds={expandedSkuIds}
         onToggleExpand={toggleSkuExpansion}
@@ -563,42 +605,96 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
 function SkuPanel({
   data,
   actionFilter,
-  setActionFilter,
+  toggleActionFilter,
+  clearFilter,
   filteredSkus,
   expandedSkuIds,
   onToggleExpand,
 }: {
   data: ApiResponse;
-  actionFilter: VerdictAction['action'] | 'all';
-  setActionFilter: (a: VerdictAction['action'] | 'all') => void;
+  actionFilter: Set<VerdictAction['action']>;
+  toggleActionFilter: (a: VerdictAction['action']) => void;
+  clearFilter: () => void;
   filteredSkus: SkuRow[];
   expandedSkuIds: Set<string>;
   onToggleExpand: (id: string) => void;
 }) {
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  // Solo chips para acciones reales (sin carryover ni hold) que tengan
+  // ≥1 SKU en el run.
+  const availableActions = ACTIONABLE_VERBS.filter(
+    (a) => (data.summary.action_counts[a] || 0) > 0
+  );
+  const totalSelected = actionFilter.size;
+  const totalAvailable = availableActions.length;
+  const isShowingAll = totalSelected === totalAvailable || totalSelected === 0;
+  const selectAll = () => {
+    availableActions.forEach((a) => {
+      if (!actionFilter.has(a)) toggleActionFilter(a);
+    });
+  };
   return (
     <aside className="w-[520px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
-        {/* Filter bar */}
+        {/* Filter bar — collapsed por defecto para no ensuciar la vista.
+         *  Felipe 2026-05-18: "necesito un filtro... pero no puedo ver
+         *  todos los pills de golpe, porque ensucia mucho la vista". */}
         <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-3">
-          <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40 mb-2">
-            {data.summary.total_skus} SKUs · Arquetipo {data.archetype_id ?? '—'}
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40">
+              {filteredSkus.length} de {data.summary.total_skus} SKUs · Arquetipo {data.archetype_id ?? '—'}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFilterExpanded((v) => !v)}
+              className="text-[11px] text-carbon/60 hover:text-carbon flex items-center gap-1 px-2 py-1 rounded-full hover:bg-carbon/[0.04] transition-colors"
+            >
+              <span>
+                {isShowingAll
+                  ? 'Filtrar acciones'
+                  : `${totalSelected}/${totalAvailable} acciones`}
+              </span>
+              <ChevronRight
+                className={`h-3 w-3 transition-transform ${filterExpanded ? 'rotate-90' : ''}`}
+              />
+            </button>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <FilterChip label="Todos" count={data.summary.total_skus} active={actionFilter === 'all'} onClick={() => setActionFilter('all')} />
-            {(Object.keys(ACTION_LABEL_ES) as VerdictAction['action'][]).map((a) => {
-              const c = data.summary.action_counts[a] || 0;
-              if (c === 0) return null;
-              return (
-                <FilterChip
-                  key={a}
-                  label={ACTION_LABEL_ES[a]}
-                  count={c}
-                  active={actionFilter === a}
-                  tone={ACTION_TONE[a]}
-                  onClick={() => setActionFilter(a)}
-                />
-              );
-            })}
-          </div>
+          {filterExpanded && (
+            <div className="mt-2.5 space-y-2">
+              <div className="flex items-center gap-2 text-[10px]">
+                <button
+                  type="button"
+                  onClick={selectAll}
+                  className="text-carbon/55 hover:text-carbon underline decoration-dotted underline-offset-2"
+                >
+                  Marcar todas
+                </button>
+                <span className="text-carbon/25">·</span>
+                <button
+                  type="button"
+                  onClick={clearFilter}
+                  className="text-carbon/55 hover:text-carbon underline decoration-dotted underline-offset-2"
+                >
+                  Desmarcar todas
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {availableActions.map((a) => {
+                  const c = data.summary.action_counts[a] || 0;
+                  const checked = actionFilter.has(a);
+                  return (
+                    <FilterChip
+                      key={a}
+                      label={ACTION_LABEL_ES[a]}
+                      count={c}
+                      active={checked}
+                      tone={ACTION_TONE[a]}
+                      onClick={() => toggleActionFilter(a)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
         {/* SKU list — accordion pattern. Each row is a clickable header
          *  that toggles inline expansion. Multiple SKUs can be open at
