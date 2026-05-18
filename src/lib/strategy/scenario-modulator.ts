@@ -35,8 +35,19 @@ function passesScenarioThreshold(
   v2: V2Signals | null
 ): boolean {
   const t = diales.thresholds;
-  // D3, D4, D9 son invariantes — siempre pasan
-  if (action === 'replenish' || action === 'pull_forward_intake' || action === 'investigate_root_cause' || action === 'investigate') {
+  // D3, D4, D9 y D10 son invariantes — siempre pasan.
+  // Felipe 2026-05-18 caso #3: D10 REPLICAR CONCEPTO EN NUEVO MODELO
+  // pasa a invariante. Replicar concepto es brief a diseño para futuras
+  // drops, NO compromete budget/caja de la temporada en curso. La postura
+  // comercial regula la inversión PRESENTE, no las decisiones de
+  // desarrollo SIGUIENTE.
+  if (
+    action === 'replenish' ||
+    action === 'pull_forward_intake' ||
+    action === 'investigate_root_cause' ||
+    action === 'investigate' ||
+    action === 'amplify_next_season'
+  ) {
     return true;
   }
   // D11 carryover, D12 hold también pasan (estados pasivos, no se modulan)
@@ -106,15 +117,7 @@ function passesScenarioThreshold(
       const passS = sTh != null && efficiency_shipped != null && efficiency_shipped < sTh;
       return passB || passS;
     }
-    case 'amplify_next_season': {
-      const cTh = t.replicate_contribution_min;
-      const dTh = t.replicate_days_in_store_min;
-      // requiere aportación >= cTh AND days >= dTh (más conservador
-      // que in_season — comprometemos diseño)
-      if (cTh != null && aportacion != null && aportacion < cTh) return false;
-      if (dTh != null && days_in_store != null && days_in_store < dTh) return false;
-      return true;
-    }
+    // amplify_next_season ahora invariante (ver early-return arriba).
     default:
       return true;
   }
@@ -132,7 +135,7 @@ function modulateConfidence(action: SkuVerdictAction, conf: number, diales: Deci
     case 'amplify_winner': mod = diales.confidence_modifier.amplify_in_season; break;
     case 'extend_colors': mod = diales.confidence_modifier.extend_colors; break;
     case 'resize_down': mod = diales.confidence_modifier.resize_down; break;
-    case 'amplify_next_season': mod = diales.confidence_modifier.replicate; break;
+    // amplify_next_season invariante (caso #3): sin modulación de confianza por escenario.
     default: mod = 1.0;
   }
   return Math.min(0.98, Math.max(0.20, conf * mod));

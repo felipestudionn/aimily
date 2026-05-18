@@ -53,6 +53,34 @@ Felipe está exhausto. No apologices. No prometas. Solo (a) entiende el caso, (b
 
 Cada caso es un commit + un test en `scripts/test-sku-*.ts`. La siguiente ventana debe respetar las reglas que ya están vivas.
 
+### Caso #3 · Grandad Collar 4786 166 401 — REPLICAR CONCEPTO invariante (2026-05-18)
+
+**Pregunta de Felipe**: "En Conservar margen el modelo 1 no propone replicar concepto. Replicar concepto NO tiene efecto sobre el margen — debería aparecer."
+
+**Lección**: la postura comercial (Conservar/Balanceada/Maximizar) regula la inversión PRESENTE en la temporada en curso. Las acciones que solo afectan al desarrollo FUTURO (brief a diseño, próximas drops) deben ser invariantes de escenario.
+
+**Reglas**:
+1. **D10 REPLICAR CONCEPTO EN NUEVO MODELO es invariante de escenario.** Si dispara en Balanceada, dispara también en Conservar margen y en Maximizar venta — **mismo trigger, mismos SKUs, misma confianza**.
+2. La invariancia se logra en `passesScenarioThreshold` con early-return junto a replenish/pull_forward/investigate.
+3. `modulateConfidence` ya no tiene case para `amplify_next_season` (cae al default = 1.0).
+4. `confidence_modifier.replicate` queda a `1.0` en los 3 escenarios (letra muerta documentada, refleja la regla).
+5. Los thresholds `replicate_contribution_min` + `replicate_days_in_store_min` quedan definidos en `scenario-diales.ts` pero NO se consumen (letra muerta auditable — pueden reactivarse si la regla cambia).
+
+**Aplicado al Grandad Collar (aportación 0.18, días en tienda 21)**:
+- Antes: aparecía en Balanceada/Maximizar; desaparecía en Conservar (umbral antiguo 0.30).
+- Ahora: aparece en los 3 escenarios con confianza 0.78 invariante.
+
+**Archivos tocados**:
+- `src/lib/strategy/scenario-modulator.ts`: `amplify_next_season` añadido al early-return de invariantes en `passesScenarioThreshold`; eliminado el case del switch; eliminado el case en `modulateConfidence`.
+- `src/lib/strategy/scenario-diales.ts`: `confidence_modifier.replicate` puesto a 1.0 en Conservar y Maximizar; docstring del módulo actualizada con D10 en la lista de invariantes.
+- `scripts/test-sku-grandad-replicate-invariant.ts`: test canario 7/7 passing (3 presencia + 3 confianza + 1 umbral antiguo ignorado).
+
+**Verificación**: `DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/test-sku-grandad-replicate-invariant.ts` → 7/7 passing. Tests previos (bomber-5247, bomber-5247-magnitudes) intactos.
+
+**Cómo extender la regla a otras acciones**: si Felipe valida que otra acción solo afecta a desarrollo futuro y NO compromete budget/caja de la temporada en curso, candidata a invariante (mismo patrón: early-return + sin case en modulateConfidence).
+
+---
+
 ### Caso #2 · Bomber 5247/600 — magnitud de supply se gradualiza (2026-05-18)
 
 **Pregunta de Felipe**: "Adelantas 4.713 unidades. ¿De dónde sale? ¿En MAXIMIZAR adelantarías lo mismo que en CONSERVAR?"

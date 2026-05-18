@@ -14,9 +14,11 @@
  *   • confidence: cuánta convicción muestra el sistema
  *
  * Decisiones INVARIANTES a escenario:
- *   D3 REPOSICIÓN URGENTE — supply, no postura
- *   D4 ADELANTAR PEDIDO — supply
+ *   D3 REPOSICIÓN URGENTE — supply, no postura (caso #2: la MAGNITUD sí gradúa)
+ *   D4 ADELANTAR PEDIDO — supply (caso #2: la MAGNITUD sí gradúa)
  *   D9 MARCAR PARA REVISIÓN — diagnóstico
+ *   D10 REPLICAR CONCEPTO — brief a diseño para futuras drops, no compromete
+ *        budget/caja de la temporada en curso (Felipe 2026-05-18 caso #3)
  */
 
 export type ScenarioId =
@@ -184,7 +186,7 @@ export const CONSERVAR_MARGEN_DIALES: DecisionDiales = {
     amplify_in_season: 0.90,
     extend_colors: 0.90,
     resize_down: 1.05,
-    replicate: 0.90,
+    replicate: 1.0, // caso #3 — invariante de escenario
   },
 };
 
@@ -226,7 +228,7 @@ export const MAXIMIZAR_VENTA_DIALES: DecisionDiales = {
     amplify_in_season: 1.10,
     extend_colors: 1.10,
     resize_down: 0.90,
-    replicate: 1.10,
+    replicate: 1.0, // caso #3 — invariante de escenario
   },
 };
 
