@@ -53,6 +53,36 @@ Felipe está exhausto. No apologices. No prometas. Solo (a) entiende el caso, (b
 
 Cada caso es un commit + un test en `scripts/test-sku-*.ts`. La siguiente ventana debe respetar las reglas que ya están vivas.
 
+### Caso #2 · Bomber 5247/600 — magnitud de supply se gradualiza (2026-05-18)
+
+**Pregunta de Felipe**: "Adelantas 4.713 unidades. ¿De dónde sale? ¿En MAXIMIZAR adelantarías lo mismo que en CONSERVAR?"
+
+**Lección**: las decisiones de supply (ADELANTAR PEDIDO, REPONER) **NO son invariantes en magnitud por escenario**. El DISPARO (rotura logística manda) puede ser invariante, pero **CUÁNTO comprar/adelantar SÍ se gradualiza**.
+
+**Reglas**:
+1. `pull_forward_intake.recommended_units` se ajusta por escenario:
+   - Conservar margen: `min(pending, velocity_7d × 2)` (2 semanas — prudente con caja)
+   - Balanceada: `min(pending, velocity_7d × 4)` (4 semanas — fórmula base)
+   - Maximizar venta: `pending entero` (sin cap — adelantar TODO)
+2. `replenish.recommended_units` se ajusta por escenario via `target_cover_days`:
+   - Conservar: 14 días cobertura objetivo
+   - Balanceada: 21 días (actual)
+   - Maximizar: 30 días (colchón amplio)
+3. Las rationales se reescriben en el modulator para reflejar la magnitud (no quedarse con la del baseline).
+
+**Aplicado al Bomber**:
+- Pending 38.000, velocity_7d 3.957 → Conservar **7.914**, Balanceada **15.828**, Maximizar **38.000**.
+
+**Archivos tocados**:
+- `src/lib/strategy/scenario-diales.ts`: añadidos `pull_forward_weeks_of_cover` (Infinity en Maximizar) + `replenish_target_cover_days` al magnitude dial
+- `src/lib/strategy/sku-verdict-resolver.ts`: evidence enriquecido con `_raw_velocity_per_day`, `_raw_pipeline_total`, `_raw_lead_time_days`, `_raw_target_rotation_days` para replenish (pull_forward ya tenía los raw)
+- `src/lib/strategy/scenario-modulator.ts`: `modulateMagnitude` recalcula recommended_units para pull_forward + replenish según escenario, y reescribe rationale de pull_forward
+- `scripts/test-sku-bomber-5247-magnitudes.ts`: test 4/4 passing
+
+**Verificación**: `DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/test-sku-bomber-5247-magnitudes.ts` → 4/4 passing.
+
+---
+
 ### Caso #1 · Bomber Jacket 5247/600 (2026-05-18)
 
 **Datos**: éxito enviado 63.6%, éxito comprado 18.2%, stock_pending 38.000 con fecha 2026-05-16 (vencida), total_bought 55.122.

@@ -493,6 +493,26 @@ function buildVerdictItem(
     season_weeks_remaining: seasonWeeksRemaining,
   };
 
+  // Felipe 2026-05-18 caso #2: enriquecer evidence con los inputs raw
+  // que necesita el scenario modulator para recalcular recommended_units
+  // según el escenario (cover_days target distinto por postura).
+  // Solo aplica para verbs que llevan units (replenish actualmente).
+  const enrichedEvidence: Record<string, unknown> = { ...evidence };
+  if (action === 'replenish' && carry) {
+    const velocityPerDay =
+      input.velocity_stockout_adjusted_7d != null && input.velocity_stockout_adjusted_7d > 0
+        ? input.velocity_stockout_adjusted_7d / 7
+        : input.velocity_7d != null && input.velocity_7d > 0
+          ? input.velocity_7d / 7
+          : input.velocity_d1 != null && input.velocity_d1 > 0
+            ? input.velocity_d1
+            : null;
+    enrichedEvidence._raw_velocity_per_day = velocityPerDay;
+    enrichedEvidence._raw_pipeline_total = input.pipeline_total ?? input.stock_total ?? 0;
+    enrichedEvidence._raw_lead_time_days = leadTimeDays;
+    enrichedEvidence._raw_target_rotation_days = targetRotationDays;
+  }
+
   return {
     action,
     confidence: Number(candidate.confidence_action) || 0,
@@ -505,7 +525,7 @@ function buildVerdictItem(
       margin: candidate.confidence_margin ?? null,
       creative_fit: candidate.confidence_creative_fit ?? null,
     },
-    evidence,
+    evidence: enrichedEvidence,
     counter_evidence: (candidate.counter_evidence as Record<string, unknown>) ?? {},
     assumptions: (candidate.assumptions as string[]) ?? [],
     data_sufficiency_warning: candidate.data_sufficiency_warning,

@@ -138,22 +138,85 @@ function modulateConfidence(action: SkuVerdictAction, conf: number, diales: Deci
   return Math.min(0.98, Math.max(0.20, conf * mod));
 }
 
-/** Aplica modulador de magnitud sobre recommended_units cuando aplica. */
+/** Aplica modulador de magnitud sobre recommended_units cuando aplica.
+ *  Felipe 2026-05-18 caso #2: las decisiones de SUPPLY (pull_forward,
+ *  replenish) NO son invariantes en magnitud. El DISPARO sí (rotura
+ *  manda), pero CUÁNTO comprar/adelantar se gradualiza con el escenario:
+ *  - Conservar margen: más prudente con caja
+ *  - Balanceada: ritmo natural
+ *  - Maximizar venta: empujar fuerte (incluso adelantar TODO el pending)  */
 function modulateMagnitude(action: SkuVerdictAction, item: SkuVerdictItem, diales: DecisionDiales): SkuVerdictItem {
   const units = item.recommended_units;
-  if (units == null) return item;
-  let mul = 1.0;
   switch (action) {
-    case 'amplify_distribution': mul = diales.magnitude.amplify_dist_stores_multiplier; break;
+    case 'amplify_distribution': {
+      const mul = diales.magnitude.amplify_dist_stores_multiplier;
+      return units != null && mul !== 1.0
+        ? { ...item, recommended_units: Math.round(units * mul) }
+        : item;
+    }
     case 'amplify_in_season':
-    case 'amplify_winner': mul = diales.magnitude.amplify_in_season_units_multiplier; break;
-    case 'pull_forward_intake': mul = 1.0; break; // supply invariante
-    case 'replenish': mul = 1.0; break; // supply invariante
-    case 'resize_down': mul = diales.magnitude.resize_down_multiplier; break;
-    default: mul = 1.0;
+    case 'amplify_winner': {
+      const mul = diales.magnitude.amplify_in_season_units_multiplier;
+      return units != null && mul !== 1.0
+        ? { ...item, recommended_units: Math.round(units * mul) }
+        : item;
+    }
+    case 'resize_down': {
+      const mul = diales.magnitude.resize_down_multiplier;
+      return units != null && mul !== 1.0
+        ? { ...item, recommended_units: Math.round(units * mul) }
+        : item;
+    }
+    case 'pull_forward_intake': {
+      // Recalcular desde evidence raw: min(stock_pending, velocity_7d × weeks)
+      // Si weeks = Infinity (Maximizar) → adelantar TODO el pending.
+      const ev = item.evidence as Record<string, unknown>;
+      const pending = num(ev.stock_pending);
+      const velocity7d = num(ev.velocity_7d);
+      const weeks = diales.magnitude.pull_forward_weeks_of_cover;
+      if (pending == null || pending <= 0) return item;
+      let newUnits: number;
+      if (weeks === Infinity) {
+        newUnits = pending;
+      } else if (velocity7d != null && velocity7d > 0) {
+        newUnits = Math.min(pending, Math.round(velocity7d * weeks));
+      } else {
+        return item; // sin velocity, no podemos recalcular
+      }
+      // Reescribir rationale para reflejar la magnitud del escenario
+      const styleName =
+        (typeof ev._style_name === 'string' ? ev._style_name : '') || 'este SKU';
+      const overdue = num(ev.logistic_rupture_days_overdue);
+      const isRupture = ev.is_logistic_rupture === true;
+      const newRationale = isRupture
+        ? `ROTURA LOGÍSTICA · ${pending.toLocaleString('es-ES')} uds pendientes con fecha de entrada vencida hace ${overdue ?? '?'} día(s). ` +
+          (weeks === Infinity
+            ? `Adelantar TODO el pedido pendiente (${pending.toLocaleString('es-ES')} uds).`
+            : `Adelantar ${newUnits.toLocaleString('es-ES')} uds (≈${weeks} semanas de cobertura al ritmo actual).`)
+        : weeks === Infinity
+          ? `Adelantar TODO el pedido pendiente (${pending.toLocaleString('es-ES')} uds) para meter en tienda lo antes posible.`
+          : `Adelantar ${newUnits.toLocaleString('es-ES')} uds del pendiente (≈${weeks} semanas de cobertura).`;
+      return { ...item, recommended_units: newUnits, rationale: newRationale };
+    }
+    case 'replenish': {
+      // Recalcular target = velocity × (cover_target_days + lead_time_days)
+      // gap = max(0, target - pipeline_total). Inputs leídos desde evidence
+      // raw que buildVerdictItem ahora persiste.
+      const ev = item.evidence as Record<string, unknown>;
+      const velocityPerDay = num(ev._raw_velocity_per_day);
+      const pipelineTotal = num(ev._raw_pipeline_total);
+      const leadTime = num(ev._raw_lead_time_days) ?? 0;
+      const targetCoverDays = diales.magnitude.replenish_target_cover_days;
+      if (velocityPerDay == null || velocityPerDay <= 0) return item;
+      const coverageDays = targetCoverDays + leadTime;
+      const targetUnits = velocityPerDay * coverageDays;
+      const gap = Math.max(0, Math.round(targetUnits - (pipelineTotal ?? 0)));
+      // Mantener rationale base; el footer mostrará la cantidad correcta
+      return { ...item, recommended_units: gap };
+    }
+    default:
+      return item;
   }
-  if (mul === 1.0) return item;
-  return { ...item, recommended_units: Math.round(units * mul) };
 }
 
 /** Aplica el escenario completo a un verdict stack: filtra decisiones

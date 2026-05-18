@@ -79,6 +79,16 @@ export interface DecisionDiales {
     amplify_dist_stores_multiplier: number;
     amplify_in_season_units_multiplier: number;
     resize_down_multiplier: number; // cuánto reduce la compra
+    /** Felipe 2026-05-18 caso #2: ADELANTAR PEDIDO PENDIENTE gradualiza
+     *  cuántas semanas de cobertura adelantar.
+     *  Maximizar venta = Infinity → adelantar TODO el pending.
+     *  Balanceada = 4 semanas (fórmula actual).
+     *  Conservar margen = 2 semanas (mitad). */
+    pull_forward_weeks_of_cover: number;
+    /** Caso #2: REPOSICIÓN URGENTE gradualiza el target de cobertura
+     *  objetivo en días. Maximizar = 30d (colchón amplio). Balanceada =
+     *  21d (estándar). Conservar = 14d (mínimo viable). */
+    replenish_target_cover_days: number;
   };
   /** Modificador a la confianza base del verdict para reflejar la postura
    *  del escenario. Aplicado MULTIPLICATIVAMENTE al final (capped a [0.2, 0.98]). */
@@ -122,6 +132,8 @@ export const BASELINE_DIALES: DecisionDiales = {
     amplify_dist_stores_multiplier: 1.0,
     amplify_in_season_units_multiplier: 1.0,
     resize_down_multiplier: 0.6, // pedido próx = 60% del actual
+    pull_forward_weeks_of_cover: 4, // 4 semanas de cobertura del pending
+    replenish_target_cover_days: 21, // 21 días cobertura objetivo
   },
   confidence_modifier: {
     kill: 1.0,
@@ -162,6 +174,8 @@ export const CONSERVAR_MARGEN_DIALES: DecisionDiales = {
     amplify_dist_stores_multiplier: 0.7,
     amplify_in_season_units_multiplier: 0.7,
     resize_down_multiplier: 0.5, // pedido próx = 50% del actual
+    pull_forward_weeks_of_cover: 2, // solo 2 semanas (más prudente con caja)
+    replenish_target_cover_days: 14, // 14 días cobertura (mínimo viable)
   },
   confidence_modifier: {
     kill: 1.10, // más convicción al matar
@@ -202,6 +216,8 @@ export const MAXIMIZAR_VENTA_DIALES: DecisionDiales = {
     amplify_dist_stores_multiplier: 1.4,
     amplify_in_season_units_multiplier: 1.4,
     resize_down_multiplier: 0.8, // pedido próx = 80% del actual
+    pull_forward_weeks_of_cover: Infinity, // adelantar TODO el pending
+    replenish_target_cover_days: 30, // 30 días cobertura (colchón amplio)
   },
   confidence_modifier: {
     kill: 0.85, // menos convicción al matar
@@ -269,6 +285,18 @@ function interpolateDiales(
       amplify_dist_stores_multiplier: lerp(a.magnitude.amplify_dist_stores_multiplier, b.magnitude.amplify_dist_stores_multiplier),
       amplify_in_season_units_multiplier: lerp(a.magnitude.amplify_in_season_units_multiplier, b.magnitude.amplify_in_season_units_multiplier),
       resize_down_multiplier: lerp(a.magnitude.resize_down_multiplier, b.magnitude.resize_down_multiplier),
+      // pull_forward_weeks_of_cover puede ser Infinity en Maximizar.
+      // Si A o B es Infinity, NO interpolamos linealmente; preferimos
+      // el lado al que nos acercamos más (t > 0.5 → B, sino A).
+      pull_forward_weeks_of_cover:
+        a.magnitude.pull_forward_weeks_of_cover === Infinity ||
+        b.magnitude.pull_forward_weeks_of_cover === Infinity
+          ? (t > 0.5 ? b.magnitude.pull_forward_weeks_of_cover : a.magnitude.pull_forward_weeks_of_cover)
+          : lerp(a.magnitude.pull_forward_weeks_of_cover, b.magnitude.pull_forward_weeks_of_cover),
+      replenish_target_cover_days: lerp(
+        a.magnitude.replenish_target_cover_days,
+        b.magnitude.replenish_target_cover_days
+      ),
     },
     confidence_modifier: {
       kill: lerp(a.confidence_modifier.kill, b.confidence_modifier.kill),
