@@ -727,6 +727,13 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         ...amplifySignals,
         brief_colors: proposedColorsForNextSeason,
         days_in_store: daysInStore,
+        // v2 fast-track: héroes estructurales inequívocos (top-5 RNK +
+        // aportación ≥20% + rotación sana) no esperan los 28 días de
+        // validación canónicos.
+        family_contribution_score:
+          v2 ? (v2.family_contribution_score as number | null) ?? null : null,
+        rotation_health_score:
+          v2 ? (v2.rotation_health_score as number | null) ?? null : null,
       }),
       modulator_notes: next.modulator_notes,
     };

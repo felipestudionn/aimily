@@ -925,13 +925,31 @@ export function appendAmplifyNextSeasonAction(
     pvp?: number | null;
     sibling_hero_model_refs?: string[];
     /** Days the SKU has been in store. Gate: must be >= 28 (4 weeks of
-     *  validation data) before committing design team next-season. */
+     *  validation data) before committing design team next-season —
+     *  EXCEPT cuando es héroe estructural inequívoco (fast-track). */
     days_in_store: number | null;
+    /** v2 — Para fast-track: aportación a la familia. ≥0.20 + top-5 RNK
+     *  = héroe estructural inequívoco, no esperamos 28 días. */
+    family_contribution_score?: number | null;
+    /** v2 — Para fast-track: rotación sana. ≥0.20 (normalizado vs familia). */
+    rotation_health_score?: number | null;
   }
 ): SkuVerdict {
-  // Gate: returns block + 4-week validation window.
+  // Gate: returns block.
   if ((signals.returns_pct ?? 0) > 0.35) return verdict;
-  if ((signals.days_in_store ?? 0) < 28) return verdict;
+
+  // Validation window: standard 28 días (Fisher-Raman 1996 conservative)
+  // O fast-track para héroes estructurales inequívocos:
+  //   pdf_rank ≤ 5 AND aportación ≥ 20% AND rotación sana
+  // Felipe 2026-05-18: un top-5 del RNK con 28% aportación no debe
+  // esperar 28 días para considerarse para próxima temporada — Zara ya
+  // lo validó y los signals internos confirman estructura.
+  const hasMinValidationDays = (signals.days_in_store ?? 0) >= 28;
+  const isFastTrackHero =
+    (signals.pdf_rank ?? Infinity) <= 5 &&
+    (signals.family_contribution_score ?? 0) >= 0.20 &&
+    (signals.rotation_health_score ?? 0) >= 0.20;
+  if (!hasMinValidationDays && !isFastTrackHero) return verdict;
 
   // Same hero triggers as in_season; if none fire, no next-season brief.
   const pdfTopN = signals.pdf_rank != null && signals.pdf_rank <= 10;
