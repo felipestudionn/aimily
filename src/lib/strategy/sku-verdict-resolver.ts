@@ -950,7 +950,12 @@ export function appendAmplifyNextSeasonAction(
     (signals.demand_score ?? 0) >= 0.7 && (signals.sell_through_bought_pct ?? 0) >= 0.5;
   const rankBased = signals.velocity_rank != null && signals.velocity_rank <= 10;
   const familyBased = (signals.family_velocity_ratio ?? 0) >= 2.0;
-  const contributionBased = (signals.family_contribution_score ?? 0) >= 0.20;
+  // 2026-05-18 Felipe directive: el baseline del appender usa el threshold
+  // MÁS PERMISIVO (Maximizar venta). El modulator filtra hacia adentro per
+  // escenario (Balanceada / Conservar). Sin esto los 4 escenarios
+  // mostraban casi lo mismo porque el filtro no puede AÑADIR — solo
+  // suprimir lo que ya está en el baseline.
+  const contributionBased = (signals.family_contribution_score ?? 0) >= 0.10;
   if (!pdfTopN && !scoreBased && !rankBased && !familyBased && !contributionBased) return verdict;
   if (verdict.actions.some((a) => a.action === 'amplify_next_season')) return verdict;
 
@@ -1100,24 +1105,19 @@ export function appendExtendColorsAction(
     return verdict;
   }
 
-  // v2 Gate 11 — Solo ganadores diferenciados + estructurales.
-  // Aplicamos el filtro cuando hay señales v2; si no, fallback v1.
+  // 2026-05-18 Felipe: baseline permisivo (Maximizar venta). Modulator
+  // filtra hacia adentro per escenario (Balanceada / Conservar). Antes
+  // tenía 2.0 / 0.15 hardcoded → Balanceada y Maximizar producían
+  // idéntico stack porque no había acciones extra que filtro permisivo
+  // pudiera dejar pasar.
   //
-  // Umbral color_winner_strength = 2.0 (tuneado contra V26 corpus
-  // 2026-05-18): ganador clean diferenciado ≥2× sobre la media de sus
-  // hermanos. El primer intento 3.0 era demasiado estricto — un SKU
-  // como el top del RNK (4786/401) con 2.4× se quedaba fuera. 2.0 ≈
-  // "vendiendo el doble o más que sus hermanos del estilo" = ganador
-  // clean. Marginal winners (1.2-1.5×) siguen sin propagar.
-  //
-  // family_contribution_score ≥ 0.15: además el winner tiene que ser
-  // estructural en su familia (≥15% de aportación). Filtra ganadores
-  // de estilos irrelevantes que no merecen brief a diseño.
+  // Baseline ahora 1.5 / 0.10 = thresholds más permisivos (Maximizar).
+  // Marginal winners por debajo de 1.5× siguen sin propagar.
   if (v2Signals) {
     const strength = v2Signals.color_winner_strength;
     const contribution = v2Signals.family_contribution_score;
-    if (strength != null && strength < 2.0) return verdict;
-    if (contribution != null && contribution < 0.15) return verdict;
+    if (strength != null && strength < 1.5) return verdict;
+    if (contribution != null && contribution < 0.10) return verdict;
   }
 
   // If extend_colors already in the stack, keep the higher-confidence one.
@@ -1407,9 +1407,10 @@ export function appendAmplifyDistributionAction(
   const lift = signals.distribution_lift_capacity_stores ?? 0;
   const returns = signals.returns_vs_baseline_score;
 
-  // Gate conditions
-  if (fleet == null || fleet >= 0.70) return verdict;
-  if (demand < 0.5 && (signals.family_contribution_score ?? 0) < 0.10) return verdict;
+  // Gate conditions — baseline permissivo (Maximizar venta). Modulator
+  // filtra para Conservar/Balanceada per diales del escenario.
+  if (fleet == null || fleet >= 0.85) return verdict;
+  if (demand < 0.40 && (signals.family_contribution_score ?? 0) < 0.05) return verdict;
   if (!signals.can_replenish_now) return verdict;
   if (lift <= 0) return verdict;
   if (returns != null && returns > 1.5) return verdict;

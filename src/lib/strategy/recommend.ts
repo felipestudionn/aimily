@@ -226,7 +226,9 @@ export function generateSkuCandidates(
 
     // Markdown candidate — C.4 also fires for ANY oversupplied SKU now
     // (markdown_risk_score is computed regardless of lifecycle).
-    if ((score.markdown_risk_score ?? 0) > 0.4) {
+    // Baseline permisivo (Conservar margen — más fácil rebajar). Modulator
+    // filtra para Balanceada/Maximizar.
+    if ((score.markdown_risk_score ?? 0) > 0.3) {
       // C.3 · Price-tier-aware discount cap. Fast-fashion (pvp <€40) can
       // absorb 60% to move stuck stock; mid-market (€40-80) caps at 50%;
       // premium (≥€80) caps at 40% to preserve brand price perception.
@@ -286,9 +288,10 @@ export function generateSkuCandidates(
       });
     }
 
-    // Resize down candidate (oversupplied hero)
+    // Resize down candidate (oversupplied hero).
+    // Baseline permisivo (Conservar margen — más fácil reducir).
     if (
-      (input.sell_through_bought_pct ?? 0) < 0.2 &&
+      (input.sell_through_bought_pct ?? 0) < 0.3 &&
       input.total_bought != null &&
       input.total_bought > 1000 &&
       score.lifecycle_stage !== 'new'

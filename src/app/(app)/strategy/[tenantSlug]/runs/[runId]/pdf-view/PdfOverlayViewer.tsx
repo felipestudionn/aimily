@@ -873,7 +873,10 @@ function SkuPanel({
                 setComparisonScenario={setComparisonScenario}
               />
             </div>
-            <div className="grid grid-cols-4 gap-1 p-1 bg-carbon/[0.04] rounded-[10px]">
+            {/* Felipe 2026-05-18: toggle redondo · cada escenario es
+             *  una pill independiente. Activa = carbon sólido +
+             *  shadow. Inactiva = bg-carbon/[0.04] sutil. */}
+            <div className="flex flex-wrap gap-1.5">
               {SCENARIO_ORDER.map((sid) => {
                 const isActive = activeScenario === sid;
                 return (
@@ -881,10 +884,10 @@ function SkuPanel({
                     key={sid}
                     type="button"
                     onClick={() => setActiveScenario(sid)}
-                    className={`text-[11px] py-1.5 px-2 rounded-[8px] font-medium transition-colors text-center leading-tight ${
+                    className={`text-[11px] py-1.5 px-3 rounded-full font-medium transition-all leading-tight ${
                       isActive
-                        ? 'bg-carbon text-white shadow-sm'
-                        : 'text-carbon/55 hover:text-carbon hover:bg-white/50'
+                        ? 'bg-carbon text-white shadow-[0_2px_6px_rgba(0,0,0,0.12)]'
+                        : 'bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon'
                     }`}
                   >
                     {SCENARIO_LABEL_ES[sid]}
