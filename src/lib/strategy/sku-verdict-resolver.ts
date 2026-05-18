@@ -924,40 +924,34 @@ export function appendAmplifyNextSeasonAction(
     current_color: string | null;
     pvp?: number | null;
     sibling_hero_model_refs?: string[];
-    /** Days the SKU has been in store. Gate: must be >= 28 (4 weeks of
-     *  validation data) before committing design team next-season —
-     *  EXCEPT cuando es héroe estructural inequívoco (fast-track). */
+    /** Days the SKU has been in store. NO ES UN GATE — solo modula la
+     *  confianza del verdict. Felipe 2026-05-18: "desde el día 1, si los
+     *  datos son buenos, no hay que esperar. Ahí está la gracia de Zara:
+     *  el día 1, si el dato es bueno, ya mete otro color en el pipeline."
+     *  Quitamos el bloqueo binario de 28 días que era hubris académico
+     *  (Fisher-Raman 1996) — el comprador decide cuándo dismissar la
+     *  recomendación, no nosotros. */
     days_in_store: number | null;
-    /** v2 — Para fast-track: aportación a la familia. ≥0.20 + top-5 RNK
-     *  = héroe estructural inequívoco, no esperamos 28 días. */
     family_contribution_score?: number | null;
-    /** v2 — Para fast-track: rotación sana. ≥0.20 (normalizado vs familia). */
     rotation_health_score?: number | null;
   }
 ): SkuVerdict {
-  // Gate: returns block.
+  // Gate único: devoluciones que rompen economía unitaria. Si un SKU
+  // devuelve >35%, no proponemos sequel para próxima temporada (estamos
+  // dando aire a un fallo de fit/calidad). El comprador querría INVESTIGAR
+  // antes que REPLICAR.
   if ((signals.returns_pct ?? 0) > 0.35) return verdict;
 
-  // Validation window: standard 28 días (Fisher-Raman 1996 conservative)
-  // O fast-track para héroes estructurales inequívocos:
-  //   pdf_rank ≤ 5 AND aportación ≥ 20% AND rotación sana
-  // Felipe 2026-05-18: un top-5 del RNK con 28% aportación no debe
-  // esperar 28 días para considerarse para próxima temporada — Zara ya
-  // lo validó y los signals internos confirman estructura.
-  const hasMinValidationDays = (signals.days_in_store ?? 0) >= 28;
-  const isFastTrackHero =
-    (signals.pdf_rank ?? Infinity) <= 5 &&
-    (signals.family_contribution_score ?? 0) >= 0.20 &&
-    (signals.rotation_health_score ?? 0) >= 0.20;
-  if (!hasMinValidationDays && !isFastTrackHero) return verdict;
-
-  // Same hero triggers as in_season; if none fire, no next-season brief.
+  // Hero triggers (mismas señales que in_season). Cualquiera dispara.
+  // Estos SON los gates reales — si el SKU no es hero, no proponemos
+  // sequel; si es hero, proponemos desde el día 1.
   const pdfTopN = signals.pdf_rank != null && signals.pdf_rank <= 10;
   const scoreBased =
     (signals.demand_score ?? 0) >= 0.7 && (signals.sell_through_bought_pct ?? 0) >= 0.5;
   const rankBased = signals.velocity_rank != null && signals.velocity_rank <= 10;
   const familyBased = (signals.family_velocity_ratio ?? 0) >= 2.0;
-  if (!pdfTopN && !scoreBased && !rankBased && !familyBased) return verdict;
+  const contributionBased = (signals.family_contribution_score ?? 0) >= 0.20;
+  if (!pdfTopN && !scoreBased && !rankBased && !familyBased && !contributionBased) return verdict;
   if (verdict.actions.some((a) => a.action === 'amplify_next_season')) return verdict;
 
   // Brief-color shortlist (skip the SKU's own color).
@@ -975,29 +969,54 @@ export function appendAmplifyNextSeasonAction(
     signals.pvp != null && signals.pvp > 0
       ? ` Mantener el slot de precio €${Number(signals.pvp).toFixed(2)} como ancla.`
       : '';
-  const validationDays = signals.days_in_store ?? 28;
+  const validationDays = signals.days_in_store ?? 0;
   const siblings = (signals.sibling_hero_model_refs ?? []).filter(Boolean);
   const siblingAnchor =
     siblings.length > 0
       ? ` Co-validado por el estilo: ${siblings.slice(0, 3).join(', ')} también dispara amplify.`
       : '';
 
+  // Rationale frasea según madurez del dato. Día 1 = "señal muy temprana
+  // pero ya muy clara". 7-13 días = "primera semana". 14-27 = "ramp
+  // confirmado". 28+ = "validado con 4 semanas". El comprador ve
+  // inmediatamente cuánto dato hay detrás.
+  const maturityLabel =
+    validationDays >= 28
+      ? `Validado con ${validationDays} días de datos en tienda`
+      : validationDays >= 14
+        ? `Ramp confirmado a ${validationDays} días (filosofía Zara: con el RNK ya marcando top, no esperamos a las 4 semanas)`
+        : validationDays >= 7
+          ? `Primera semana en tienda (${validationDays} días) — señal muy clara, recomendamos arrancar el sequel ya para ganar lead time`
+          : `Señal muy temprana (${validationDays} días) pero el RNK ya lo marca como hero — Zara mete colores nuevos al pipeline desde el día 1 cuando los datos validan`;
+
   const rationale =
-    `Hero validado con ${validationDays} días de datos en tienda. ` +
+    `${maturityLabel}. ` +
     `Briefar al equipo de diseño 2-3 secuelas siguiendo este patrón (silueta + material + paleta).` +
     colorClause + pvpAnchor + siblingAnchor;
 
-  // Confidence: slightly lower than in_season (next-season commitments
-  // require more conviction; the 4-week gate already filters but we cap
-  // at 0.90 to leave room for design judgement).
+  // Confianza base por fuerza del trigger.
   const baseConf =
     Math.max(
       pdfTopN ? 0.85 : 0,
       scoreBased ? 0.85 : 0,
       rankBased ? 0.85 : 0,
-      familyBased ? 0.85 : 0
+      familyBased ? 0.85 : 0,
+      contributionBased ? 0.85 : 0
     );
-  const confidence = Math.min(0.90, baseConf);
+  // Dampening por madurez del dato (no es gate — solo modula confianza).
+  // Día 1-6: 0.70 cap (señal real pero menos historia que filtre flash-pop).
+  // Día 7-13: 0.80 cap.
+  // Día 14-27: 0.88 cap.
+  // Día 28+: sin dampening (cap original 0.90).
+  const maturityCap =
+    validationDays >= 28
+      ? 0.90
+      : validationDays >= 14
+        ? 0.88
+        : validationDays >= 7
+          ? 0.80
+          : 0.70;
+  const confidence = Math.min(maturityCap, baseConf);
 
   const newItem: SkuVerdictItem = {
     action: 'amplify_next_season',
