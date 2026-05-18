@@ -29,6 +29,8 @@ import {
   appendDropColorAction,
   appendAmplifyWinnerAction,
   appendAmplifyNextSeasonAction,
+  appendAmplifyDistributionAction,
+  appendPullForwardIntakeAction,
   enrichVerdict,
   DEFAULT_TARGET_ROTATION_DAYS,
   type SkuVerdictInput,
@@ -211,7 +213,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
             .in('window_type', ['d1', '7d']),
           supabaseAdmin
             .from('strategy_inventory_facts')
-            .select('product_fact_id, stores_active, stores_with_stock, stock_store, stock_warehouse, pipeline_total'),
+            .select('product_fact_id, stores_active, stores_with_stock, stock_store, stock_warehouse, pipeline_total, stock_available, stock_in_transit, stock_pending, cd2_available'),
           supabaseAdmin
             .from('strategy_sku_scores')
             .select('product_fact_id, demand_score, sell_through_bought_pct, returns_pct, classifier_traces')
@@ -252,6 +254,10 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       sell_through_bought_pct: number | null;
       returns_pct: number | null;
       velocity_stockout_adjusted_7d: number | null;
+      /** v2 signals persistidas en classifier_traces.v2_signals.
+       *  Forma libre — keys mirror SkuScore v2 fields. Null cuando
+       *  el run aún no se re-ejecutó con F2 (legacy). */
+      v2: Record<string, any> | null;
     }
   >();
   for (const row of ((scoresRes as any).data || []) as any[]) {
@@ -259,12 +265,14 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     // so replenish math can target the velocity-if-stocked.
     const traces = (row.classifier_traces ?? {}) as Record<string, any>;
     const adj = traces.stockout_aware_velocity?.adjusted_velocity_7d;
+    const v2 = (traces.v2_signals ?? null) as Record<string, any> | null;
     scoresByPid.set(row.product_fact_id, {
       demand_score: row.demand_score ?? null,
       sell_through_bought_pct: row.sell_through_bought_pct ?? null,
       returns_pct: row.returns_pct ?? null,
       velocity_stockout_adjusted_7d:
         typeof adj === 'number' && adj > 0 ? adj : null,
+      v2,
     });
   }
 
@@ -560,6 +568,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       color_ref: null,
       color_name: null,
     };
+    // v2 — Read persisted v2 signals from classifier_traces.v2_signals.
+    // Null when the run was scored before F2 (orchestrator must be re-run
+    // to populate the new traces). All v2 appenders gate on these.
+    const v2 = scoresByPid.get(v.product_fact_id)?.v2 ?? null;
+
     const winner = winnerByMemberPid.get(v.product_fact_id);
     if (winner) {
       // 2026-05-18 — Resolve color_story names into [{name, hex}] pairs
@@ -573,8 +586,19 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         briefCtx.color_story ?? [],
         taxonomyNameToHex
       );
+      // v2 Gate 11 stricter — solo dispara EXTENDER COLORES sobre
+      // ganadores limpios (color_winner_strength ≥ 3.0) y estructurales
+      // (family_contribution_score ≥ 0.15). Cuando no hay data v2
+      // (legacy traces), el appender mantiene compat v1.
+      const v2GateSignals = v2
+        ? {
+            color_winner_strength: (v2.color_winner_strength as number | null) ?? null,
+            family_contribution_score:
+              (v2.family_contribution_score as number | null) ?? null,
+          }
+        : undefined;
       next = {
-        ...appendExtendColorsAction(next, winner, identity, proposedColors),
+        ...appendExtendColorsAction(next, winner, identity, proposedColors, v2GateSignals),
         modulator_notes: next.modulator_notes,
       };
     }
@@ -681,6 +705,68 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       }),
       modulator_notes: next.modulator_notes,
     };
+
+    // v2 — Gates 3 (AMPLIAR DISTRIBUCIÓN) y 4 (ACELERAR ENTRADA).
+    // Solo disparan cuando hay señales v2 persistidas (orchestrator re-run
+    // con F2). Para runs legacy, los nuevos appenders no-op silenciosamente.
+    if (v2) {
+      // Leer stock_available / stock_pending / cd2_available directos
+      // desde inventoryByPid (no están en SkuVerdictInput).
+      const inv = (inventoryByPid.get(v.product_fact_id) ?? {}) as Record<string, any>;
+      const stockAvailable = typeof inv.stock_available === 'number'
+        ? inv.stock_available
+        : null;
+      const stockPending = typeof inv.stock_pending === 'number'
+        ? inv.stock_pending
+        : null;
+      const cd2Available = typeof inv.cd2_available === 'number'
+        ? inv.cd2_available
+        : null;
+      // Gate 3 · AMPLIAR DISTRIBUCIÓN
+      next = {
+        ...appendAmplifyDistributionAction(
+          next,
+          {
+            fleet_coverage_score: (v2.fleet_coverage_score as number | null) ?? null,
+            demand_score: amplifySignals.demand_score,
+            family_contribution_score:
+              (v2.family_contribution_score as number | null) ?? null,
+            can_replenish_now: Boolean(v2.can_replenish_now),
+            distribution_lift_capacity_stores:
+              (v2.distribution_lift_capacity_stores as number | null) ?? null,
+            returns_vs_baseline_score:
+              (v2.returns_vs_baseline_score as number | null) ?? null,
+            cd2_pool_strength: (v2.cd2_pool_strength as number | null) ?? null,
+            stock_available: stockAvailable,
+            cd2_available: cd2Available,
+          },
+          identity
+        ),
+        modulator_notes: next.modulator_notes,
+      };
+      // Gate 4 · ACELERAR ENTRADA
+      next = {
+        ...appendPullForwardIntakeAction(
+          next,
+          {
+            stockout_risk_score:
+              typeof anyEvidence.stockout_risk_score === 'number'
+                ? (anyEvidence.stockout_risk_score as number)
+                : null,
+            stock_pending: stockPending,
+            demand_score: amplifySignals.demand_score,
+            family_contribution_score:
+              (v2.family_contribution_score as number | null) ?? null,
+            pipeline_arrival_runway_days:
+              (v2.pipeline_arrival_runway_days as number | null) ?? null,
+            velocity_7d: vel,
+          },
+          identity
+        ),
+        modulator_notes: next.modulator_notes,
+      };
+    }
+
     return next;
   });
 

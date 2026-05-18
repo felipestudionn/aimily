@@ -1054,16 +1054,44 @@ export function appendExtendColorsAction(
   verdict: SkuVerdict,
   winner: LineageColorWinner,
   identity: { product_name: string | null; family_code: string | null; model_ref: string | null; color_ref: string | null; color_name: string | null },
-  proposedColors: Array<{ name: string; hex: string | null }> = []
+  proposedColors: Array<{ name: string; hex: string | null }> = [],
+  /** v2 — Spec §3 Gate 11 stricter: requiere color ganador limpio
+   *  (color_winner_strength ≥ 3.0) y aportación estructural ≥ 0.15.
+   *  Evita disparar sobre ganadores marginales que solo destacan
+   *  ligeramente. Cuando los signals no están disponibles (legacy
+   *  candidates persistidos antes de F2), permite pasar sin filtro
+   *  (backward compat — el filtro estricto solo se aplica si tenemos
+   *  data v2). */
+  v2Signals?: {
+    color_winner_strength: number | null;
+    family_contribution_score: number | null;
+  }
 ): SkuVerdict {
   // 8.1 (2026-05-17) — Output unit = SKU cardinal rule. Color-scope
   // propagation must FILTER by SKU color. extend_colors attaches ONLY
-  // to the SKU whose own color IS the winner. Other SKUs in the same
-  // style may reference the winning colorway in the rationale of OTHER
-  // actions (e.g., amplify_winner) as context, but the extend_colors
-  // verb itself is SKU-specific.
+  // to the SKU whose own color IS the winner.
   if (identity.color_ref == null || identity.color_ref !== winner.color_code) {
     return verdict;
+  }
+
+  // v2 Gate 11 — Solo ganadores diferenciados + estructurales.
+  // Aplicamos el filtro cuando hay señales v2; si no, fallback v1.
+  //
+  // Umbral color_winner_strength = 2.0 (tuneado contra V26 corpus
+  // 2026-05-18): ganador clean diferenciado ≥2× sobre la media de sus
+  // hermanos. El primer intento 3.0 era demasiado estricto — un SKU
+  // como el top del RNK (4786/401) con 2.4× se quedaba fuera. 2.0 ≈
+  // "vendiendo el doble o más que sus hermanos del estilo" = ganador
+  // clean. Marginal winners (1.2-1.5×) siguen sin propagar.
+  //
+  // family_contribution_score ≥ 0.15: además el winner tiene que ser
+  // estructural en su familia (≥15% de aportación). Filtra ganadores
+  // de estilos irrelevantes que no merecen brief a diseño.
+  if (v2Signals) {
+    const strength = v2Signals.color_winner_strength;
+    const contribution = v2Signals.family_contribution_score;
+    if (strength != null && strength < 2.0) return verdict;
+    if (contribution != null && contribution < 0.15) return verdict;
   }
 
   // If extend_colors already in the stack, keep the higher-confidence one.
@@ -1303,4 +1331,235 @@ export function resolveAllSkuVerdicts(
     );
   }
   return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// v2 — NEW APPENDERS para las 2 decisiones que el v1 nunca implementó.
+// Spec: memory/decision-map_aimily-in-season-v2-2026-05-18.md §3
+// Gates 3 (AMPLIAR DISTRIBUCIÓN) y 4 (ACELERAR ENTRADA).
+// Computan en request-time sobre la señales v2 persistidas en
+// classifier_traces.v2_signals.
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * AMPLIAR DISTRIBUCIÓN — Gate 3 del Spec v2.
+ *
+ * Pregunta: ¿Este SKU está cubriendo bien la flota o le faltan tiendas
+ * que podrían venderlo? Output: enviar stock desde almacén (CD1 o CD2)
+ * a las tiendas que aún no lo tienen.
+ *
+ * Disparos:
+ *   - fleet_coverage_score < 0.70  (faltan tiendas por activar)
+ *   - AND demand_score ≥ 0.5  (no ampliar un dog)
+ *   - AND can_replenish_now = true  (hay stock para mandar)
+ *   - AND distribution_lift_capacity_stores > 0
+ *   - AND returns_vs_baseline_score ≤ 1.5  (no ampliar un return-magnet)
+ */
+export function appendAmplifyDistributionAction(
+  verdict: SkuVerdict,
+  signals: {
+    fleet_coverage_score: number | null;
+    demand_score: number | null;
+    family_contribution_score: number | null;
+    can_replenish_now: boolean;
+    distribution_lift_capacity_stores: number | null;
+    returns_vs_baseline_score: number | null;
+    cd2_pool_strength: number | null;
+    stock_available: number | null;
+    cd2_available: number | null;
+  },
+  identity: {
+    product_name: string | null;
+    family_code: string | null;
+    model_ref: string | null;
+    color_ref: string | null;
+    color_name: string | null;
+  }
+): SkuVerdict {
+  const fleet = signals.fleet_coverage_score;
+  const demand = signals.demand_score ?? 0;
+  const lift = signals.distribution_lift_capacity_stores ?? 0;
+  const returns = signals.returns_vs_baseline_score;
+
+  // Gate conditions
+  if (fleet == null || fleet >= 0.70) return verdict;
+  if (demand < 0.5 && (signals.family_contribution_score ?? 0) < 0.10) return verdict;
+  if (!signals.can_replenish_now) return verdict;
+  if (lift <= 0) return verdict;
+  if (returns != null && returns > 1.5) return verdict;
+
+  // Don't double-fire
+  if (verdict.actions.some((a) => a.action === 'amplify_distribution')) {
+    return verdict;
+  }
+
+  // Confidence proportional to how much room there is + how strong demand is
+  const baseConf = Math.min(0.95, 0.55 + (1 - fleet) * 0.4 + demand * 0.1);
+  const confidence = Math.round(baseConf * 100) / 100;
+
+  // Stock source — preferimos CD1 (stock_available) si tiene, sino CD2.
+  const cd1Stock = signals.stock_available ?? 0;
+  const cd2Stock = signals.cd2_available ?? 0;
+  const stockSource: 'CD1' | 'CD2' | 'CD1+CD2' =
+    cd1Stock > 0 && cd2Stock > 0
+      ? 'CD1+CD2'
+      : cd2Stock > 0
+        ? 'CD2'
+        : 'CD1';
+  const availableUnits = cd1Stock + cd2Stock;
+
+  // Rationale buyer-clean
+  const styleName =
+    (identity.product_name || '').trim() || identity.model_ref || 'este SKU';
+  const coverPct = Math.round(fleet * 100);
+  const rationale =
+    `${styleName} está en el ${coverPct}% de la flota (faltan ${lift} tiendas). ` +
+    `La demanda y los datos de devoluciones son sanos para mandarlo a más tiendas. ` +
+    `Stock disponible desde ${stockSource}: ${availableUnits.toLocaleString('es-ES')} uds. ` +
+    `Ampliar cobertura a las ${lift} tiendas restantes para capturar la demanda perdida.`;
+
+  const newItem: SkuVerdictItem = {
+    action: 'amplify_distribution',
+    confidence,
+    rationale,
+    recommended_units: null,  // unidades por tienda las decide el allocator
+    confidence_breakdown: {
+      data_completeness: null,
+      identity: null,
+      demand: signals.demand_score,
+      margin: null,
+      creative_fit: null,
+    },
+    evidence: {
+      fleet_coverage_score: fleet,
+      stores_missing: lift,
+      stock_source: stockSource,
+      stock_available_units: availableUnits,
+      returns_vs_baseline_score: returns,
+    },
+    counter_evidence: {},
+    assumptions: [],
+    data_sufficiency_warning: null,
+  };
+
+  const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const a of verdict.actions) map.set(a.action, a);
+  map.set('amplify_distribution', newItem);
+  const reordered: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = map.get(a);
+    if (item) reordered.push(item);
+  }
+  return { ...verdict, actions: reordered };
+}
+
+/**
+ * ACELERAR ENTRADA — Gate 4 del Spec v2.
+ *
+ * Pregunta: ¿Hay stock pendiente que podríamos pedir al proveedor que
+ * adelante? Output: solicitar adelanto del pedido pendiente.
+ *
+ * Disparos:
+ *   - stockout_risk_score ≥ 0.4  (hay rotura observada o inminente)
+ *   - AND stock_pending > 0  (hay algo que adelantar — no se adelanta lo
+ *     que ya está en tránsito)
+ *   - AND demand_score ≥ 0.6  (o aportación estructural ≥ 10%)
+ *   - AND pipeline_arrival_runway_days > 14  (vale la pena solo si tarda
+ *     más de 2 semanas al ritmo actual)
+ */
+export function appendPullForwardIntakeAction(
+  verdict: SkuVerdict,
+  signals: {
+    stockout_risk_score: number | null;
+    stock_pending: number | null;
+    demand_score: number | null;
+    family_contribution_score: number | null;
+    pipeline_arrival_runway_days: number | null;
+    velocity_7d: number | null;
+  },
+  identity: {
+    product_name: string | null;
+    family_code: string | null;
+    model_ref: string | null;
+    color_ref: string | null;
+    color_name: string | null;
+  }
+): SkuVerdict {
+  const stockout = signals.stockout_risk_score ?? 0;
+  const pending = signals.stock_pending ?? 0;
+  const demand = signals.demand_score ?? 0;
+  const contribution = signals.family_contribution_score ?? 0;
+  const runway = signals.pipeline_arrival_runway_days;
+
+  // Gate conditions
+  if (pending <= 0) return verdict;
+  if (demand < 0.6 && contribution < 0.10) return verdict;
+  if (runway == null || runway < 14) return verdict;
+  // Stockout signal OR (very long runway + strong demand even without stockout yet)
+  const longRunwayHero = runway > 30 && (demand >= 0.7 || contribution >= 0.20);
+  if (stockout < 0.4 && !longRunwayHero) return verdict;
+
+  // Don't double-fire
+  if (verdict.actions.some((a) => a.action === 'pull_forward_intake')) {
+    return verdict;
+  }
+
+  // Units to pull forward — half of pending capped by 4 weeks of velocity buffer.
+  let unitsToPull: number | null = null;
+  if (signals.velocity_7d != null && signals.velocity_7d > 0) {
+    const fourWeeksDemand = signals.velocity_7d * 4;
+    unitsToPull = Math.min(pending, Math.round(fourWeeksDemand));
+  }
+
+  // Confidence: combinar stockout + magnitud de runway.
+  const stockoutTerm = Math.min(0.4, stockout * 0.5);
+  const runwayTerm = Math.min(0.4, runway / 60 * 0.4);
+  const demandTerm = Math.min(0.2, demand * 0.25);
+  const confidence =
+    Math.round(Math.min(0.92, 0.40 + stockoutTerm + runwayTerm + demandTerm) * 100) / 100;
+
+  const styleName =
+    (identity.product_name || '').trim() || identity.model_ref || 'este SKU';
+  const runwayWeeks = Math.round((runway / 7) * 10) / 10;
+  const stockoutPct = Math.round(stockout * 100);
+  const rationale =
+    `${styleName} tiene ${pending.toLocaleString('es-ES')} uds pendientes de fabricar/enviar ` +
+    `que tardarían ~${runwayWeeks} semanas en llegar al ritmo actual de venta` +
+    (stockoutPct > 0 ? ` (riesgo de rotura ${stockoutPct}%).` : '.') +
+    ` Pedir al proveedor que adelante ~${(unitsToPull ?? 0).toLocaleString('es-ES')} uds ` +
+    `para colchón de 4 semanas y evitar quedarnos sin stock antes de que llegue lo pedido.`;
+
+  const newItem: SkuVerdictItem = {
+    action: 'pull_forward_intake',
+    confidence,
+    rationale,
+    recommended_units: unitsToPull,
+    confidence_breakdown: {
+      data_completeness: null,
+      identity: null,
+      demand: signals.demand_score,
+      margin: null,
+      creative_fit: null,
+    },
+    evidence: {
+      stockout_risk_score: stockout,
+      stock_pending: pending,
+      pipeline_arrival_runway_days: runway,
+      velocity_7d: signals.velocity_7d,
+      family_contribution_score: contribution,
+    },
+    counter_evidence: {},
+    assumptions: [],
+    data_sufficiency_warning: null,
+  };
+
+  const map = new Map<SkuVerdictAction, SkuVerdictItem>();
+  for (const a of verdict.actions) map.set(a.action, a);
+  map.set('pull_forward_intake', newItem);
+  const reordered: SkuVerdictItem[] = [];
+  for (const a of ACTION_DISPLAY_ORDER) {
+    const item = map.get(a);
+    if (item) reordered.push(item);
+  }
+  return { ...verdict, actions: reordered };
 }

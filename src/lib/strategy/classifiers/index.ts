@@ -1231,6 +1231,56 @@ export function scoreSku(
   const lineage_consistency: 'stable' | 'fluctuating' | null = null;
   const staple_eligibility = is_survivor && (continuity_strength ?? 0) >= 0.50;
 
+  // Persistir todas las señales v2 al trace para que la route las pueda
+  // leer sin necesidad de recomputar. Mirror exacto de los campos
+  // retornados — actualizar JUNTOS si cambia uno.
+  traces.v2_signals = {
+    // Ángulo 1
+    velocity_trend_score,
+    revenue_demand_score,
+    family_contribution_score,
+    rotation_health_score,
+    daily_activation_score,
+    // Ángulo 2
+    markdown_already_applied,
+    markdown_stage,
+    price_elasticity_score,
+    shipped_margin_eur,
+    // Ángulo 3
+    capacity_utilization,
+    capacity_headroom,
+    promo_capacity_ceiling,
+    // Ángulo 4
+    can_replenish_now,
+    pipeline_arrival_runway_days,
+    activation_ratio_today,
+    // Ángulo 5
+    color_winner_strength,
+    share_concentration_gini,
+    sibling_returns_variance,
+    // Ángulo 6
+    rotation_stage_signal,
+    efficiency_bought_pct,
+    efficiency_shipped_pct,
+    // Ángulo 7
+    fleet_coverage_score,
+    distribution_lift_capacity_stores,
+    cd2_pool_strength,
+    // Ángulo 8
+    markdown_lift_estimate_units,
+    markdown_ladder_next_step,
+    markdown_margin_safety_eur,
+    // Ángulo 9
+    returns_vs_baseline_score,
+    returns_value_at_risk_eur,
+    is_unit_economics_negative,
+    // Ángulo 10
+    is_survivor,
+    continuity_strength,
+    lineage_consistency,
+    staple_eligibility,
+  };
+
   return {
     product_fact_id: input.product_fact_id,
     identity_node_id: input.identity_node_id,
