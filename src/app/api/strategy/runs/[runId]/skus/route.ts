@@ -87,8 +87,38 @@ function applyExclusionRules<V extends {
   verdict: V,
   v2SignalsByPid?: Map<string, Record<string, unknown> | null>
 ): V {
-  const actions = verdict.actions;
-  const hasAction = (a: string) => actions.some((x) => x.action === a);
+  // Felipe 2026-05-18 caso Bomber 5247/600 · STEP 1 · BLOQUEO CARDINAL
+  // PROTECTOR DEL HERO.
+  // Aplicado ANTES de evaluar exclusiones derivadas porque si el SKU
+  // es hero por éxito enviado, suprimimos kill/markdown/resize_down de
+  // raíz — para que no contaminen el cálculo de hasKill/hasMarkdown
+  // que dispararía bloqueos de amplify_* equivocados.
+  //
+  // Caso real: Bomber tenía éxito enviado 63% + rotura logística. Si
+  // dejamos pasar 'kill' (vino de un candidate persistido), hasKill=true
+  // bloquearía amplify_in_season, pull_forward_intake, etc. → stack
+  // vacío → SKU desaparece del UI.
+  const v2 = v2SignalsByPid?.get(verdict.product_fact_id) ?? null;
+  const shippedPct = v2 && typeof v2.efficiency_shipped_pct === 'number'
+    ? (v2.efficiency_shipped_pct as number)
+    : null;
+  const isLogisticRupture = v2 && v2.is_logistic_rupture === true;
+  const heroProtection =
+    (shippedPct != null && shippedPct >= 0.50) || isLogisticRupture;
+  let workingActions = verdict.actions;
+  if (heroProtection) {
+    workingActions = workingActions.filter(
+      (a) =>
+        a.action !== 'kill' &&
+        a.action !== 'markdown_accelerate' &&
+        a.action !== 'resize_down'
+    );
+  }
+
+  // STEP 2 · Exclusiones cruzadas normales, evaluadas sobre las
+  // acciones SUPERVIVIENTES al step 1.
+  const hasAction = (a: string) =>
+    workingActions.some((x) => x.action === a);
   const hasKill = hasAction('kill');
   const hasMarkdown = hasAction('markdown_accelerate');
   const hasUrgentReplenish = hasAction('replenish');
@@ -117,24 +147,13 @@ function applyExclusionRules<V extends {
     blocked.add('amplify_next_season');
   }
 
-  // Felipe 2026-05-18 caso Bomber 5247/600 · BLOQUEOS CARDINALES.
-  // Si el éxito del enviado es ≥ 50% el SKU es hero — NUNCA rebajar
-  // ni reducir compra, da igual lo que digan el resto de señales.
-  // Si hay rotura logística (pipeline vencido) la rotación baja es
-  // por logística — tampoco rebajar ni reducir.
-  const v2 = v2SignalsByPid?.get(verdict.product_fact_id) ?? null;
-  const shippedPct = v2 && typeof v2.efficiency_shipped_pct === 'number'
-    ? (v2.efficiency_shipped_pct as number)
-    : null;
-  const isLogisticRupture = v2 && v2.is_logistic_rupture === true;
-  if ((shippedPct != null && shippedPct >= 0.50) || isLogisticRupture) {
-    blocked.add('markdown_accelerate');
-    blocked.add('resize_down');
-    blocked.add('kill');
+  if (blocked.size === 0) {
+    return { ...verdict, actions: workingActions };
   }
-
-  if (blocked.size === 0) return verdict;
-  return { ...verdict, actions: actions.filter((a) => !blocked.has(a.action)) };
+  return {
+    ...verdict,
+    actions: workingActions.filter((a) => !blocked.has(a.action)),
+  };
 }
 
 interface RouteContext {

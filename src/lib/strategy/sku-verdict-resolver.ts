@@ -847,9 +847,18 @@ export function appendAmplifyWinnerAction(
     (signals.family_velocity_ratio ?? 0) >= 2.0
       ? Math.min(0.95, 0.7 + (signals.family_velocity_ratio! - 2) * 0.1)
       : 0;
+  // Felipe 2026-05-18 caso Bomber 5247/600: añadido shippedBased a la
+  // confianza. Sin esto, un SKU que era hero SOLO por éxito enviado
+  // (caso Bomber: pdf_rank 26 > 10, demand+ST falla, velocity_rank null,
+  // family_ratio 1.0) salía con confianza 0.0 aunque el trigger sí
+  // disparaba. Resultado: amplify aparecía pero invisible (conf 0).
+  const confShipped =
+    (signals.sell_through_shipped_pct ?? 0) >= 0.50
+      ? Math.min(0.95, 0.70 + ((signals.sell_through_shipped_pct! - 0.50) / 0.50) * 0.25)
+      : 0;
   const rawConfidence = Math.min(
     0.95,
-    Math.max(confScore, confVelRank, confPdfRank, confFamily)
+    Math.max(confScore, confVelRank, confPdfRank, confFamily, confShipped)
   );
   // A.2 · Zara-flag-only fires cap at 0.60 — the source ranking IS signal,
   // but without internal corroboration it's a curiosity flag, not a hero.
