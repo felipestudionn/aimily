@@ -263,6 +263,32 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
   const { skus: allSkus, addSku, updateSku, deleteSku, loading, refetch } = useSkus(collectionPlanId);
 
+  // Felipe sprint Aimily Design 2026-05-18 · auto-open SKU detail when
+  // navigating from In-Season ("Abrir Aimily Design →"). Reads ?open_sku=
+  // once after SKUs load and triggers openSkuDetail with that SKU. Cleans
+  // the URL so refresh doesn't re-trigger.
+  // Ref: /api/strategy/sku-actions/open-design/route.ts
+  const [autoOpenSkuId, setAutoOpenSkuId] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('open_sku');
+    if (target) {
+      setAutoOpenSkuId(target);
+      const clean = window.location.pathname;
+      window.history.replaceState({}, '', clean);
+    }
+  }, []);
+  useEffect(() => {
+    if (!autoOpenSkuId || loading) return;
+    const found = allSkus.find((s) => s.id === autoOpenSkuId);
+    if (found) {
+      setSelectedSku(found);
+      setEditingNotes(found.notes || '');
+      setAutoOpenSkuId(null);
+    }
+  }, [autoOpenSkuId, allSkus, loading]);
+
   /* ── Phase filter from sidebar navigation (reads URL ?phase= directly) ── */
   const currentSearchParams = useSearchParams();
   const phaseFilter = currentSearchParams?.get('phase') || null;

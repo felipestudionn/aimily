@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronRight, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronDown, ArrowRight } from 'lucide-react';
 
 interface VerdictAction {
   // 13-verb spec taxonomy (2026-05-17). The legacy aliases (investigate,
@@ -770,6 +770,7 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         recentlyChangedPids={recentlyChangedPids}
         comparisonScenario={comparisonScenario}
         setComparisonScenario={setComparisonScenario}
+        runId={runId}
       />
     </div>
   );
@@ -793,6 +794,7 @@ function SkuPanel({
   recentlyChangedPids,
   comparisonScenario,
   setComparisonScenario,
+  runId,
 }: {
   data: ApiResponse;
   actionFilter: Set<VerdictAction['action']>;
@@ -811,6 +813,7 @@ function SkuPanel({
   recentlyChangedPids: Set<string>;
   comparisonScenario: ScenarioId | null;
   setComparisonScenario: (s: ScenarioId | null) => void;
+  runId: string;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1104,7 +1107,7 @@ function SkuPanel({
                     />
                   </div>
                 </button>
-                {isExpanded && <SkuDetailInline sku={{ ...sku, actions: effectiveActions }} />}
+                {isExpanded && <SkuDetailInline sku={{ ...sku, actions: effectiveActions }} runId={runId} />}
               </li>
             );
           })}
@@ -1299,7 +1302,45 @@ function FilterChip({
  * button. Same headline KPIs, operational stats, modulator notes,
  * action stack with full detail.
  */
-function SkuDetailInline({ sku }: { sku: SkuRow }) {
+function SkuDetailInline({ sku, runId }: { sku: SkuRow; runId: string }) {
+  // Felipe sprint Aimily Design 2026-05-18 — botón "Abrir Aimily Design →"
+  // en cada action card de extend_colors / amplify_next_season. Crea un
+  // SKU en el plan "Aimily Design — In-Season" del usuario y lo abre en
+  // el Collection Builder. MISMO flow Design (concept → sketch → colorways
+  // → 3D), reusado tal cual del Collection Builder.
+  // Ref: /api/strategy/sku-actions/open-design/route.ts
+  const [launchingAction, setLaunchingAction] = useState<string | null>(null);
+  const launchDesign = async (actionType: 'extend_colors' | 'amplify_next_season') => {
+    if (launchingAction) return;
+    setLaunchingAction(actionType);
+    try {
+      const res = await fetch('/api/strategy/sku-actions/open-design', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          product_fact_id: sku.product_fact_id,
+          run_id: runId,
+          action_type: actionType,
+          // reference_image_url opcional · si product_image_url existe en
+          // strategy_product_facts (extraído del PDF), se pre-carga; si no,
+          // el usuario sube la foto en la fase concept del Design.
+          reference_image_url: undefined,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        alert(`No se pudo abrir Aimily Design: ${err.error || res.statusText}`);
+        return;
+      }
+      const { url } = await res.json() as { url: string };
+      window.open(url, '_blank');
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLaunchingAction(null);
+    }
+  };
+
   return (
     <div className="border-t border-carbon/[0.06] bg-white p-4 space-y-5">
         {/* ACTION STACK — the reason to expand. "Reponer", "Extender
@@ -1368,6 +1409,35 @@ function SkuDetailInline({ sku }: { sku: SkuRow }) {
                     <li key={j} className="leading-[1.5]">· {s}</li>
                   ))}
                 </ul>
+              )}
+              {/* Felipe sprint Aimily Design 2026-05-18 — CTA "Abrir Aimily
+               *  Design" en pills extend_colors y amplify_next_season.
+               *  Crea un SKU en la colección "Aimily Design — In-Season"
+               *  del usuario y lo abre en el Collection Builder con la
+               *  fase Design pre-cargada (mismo flow: concept → sketch →
+               *  colorways → 3D, todos los pasos del Collection Builder
+               *  reusados sin cambios). */}
+              {(a.action === 'extend_colors' || a.action === 'amplify_next_season') && (
+                <div className="mb-3">
+                  <button
+                    type="button"
+                    onClick={() => launchDesign(a.action as 'extend_colors' | 'amplify_next_season')}
+                    disabled={launchingAction === a.action}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon text-white text-[11px] font-medium hover:bg-carbon/90 transition-colors disabled:opacity-50"
+                  >
+                    {launchingAction === a.action ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Abriendo Aimily Design…
+                      </>
+                    ) : (
+                      <>
+                        Abrir en Aimily Design
+                        <ArrowRight className="h-3 w-3" />
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
               {/* Detailed evidence (the data behind) — collapsed by default
                *  so it doesn't drown the rationale, but always one click
