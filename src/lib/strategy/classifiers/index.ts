@@ -147,6 +147,43 @@ export interface SkuScoreInput {
   max_sale_promo: number | null;
   emptying_rate: number | null;
   emptying_rate_available: number | null;
+
+  // v2 — campos del RNK Zara que el v1 dejaba encima de la mesa.
+  // Vocabulario retail/moda (memory/decision-map_aimily-in-season-v2-2026-05-18.md).
+  //
+  // Distribución
+  /** Flota total — denominador real para "cuánta cobertura tengo vs la posible". */
+  stores_total: number | null;
+  /** Tiendas que hicieron al menos una venta ayer (ventana d1).
+   *  Actívación diaria = stores_with_sale_d1 / stores_active. */
+  stores_with_sale_d1: number | null;
+  // Stock
+  /** Stock que puedo mover AHORA. Distinto de stock_store + stock_warehouse:
+   *  ya descontados los bloqueos y ajustes. Es el denominador de "puedo
+   *  reponer" y "puedo ampliar distribución". */
+  stock_available: number | null;
+  /** Almacén secundario disponible (CD2). Pool alternativo cuando CD1 está
+   *  agotado o cuando hay restricciones logísticas. */
+  cd2_available: number | null;
+  // Eficiencia
+  /** Unidades enviadas a tienda cumulativo. Denominador del éxito del enviado;
+   *  distinto del comprado (que incluye stock muerto en almacén). */
+  total_shipped: number | null;
+  // Facturación y peso estratégico (ventana 7d — vista semanal canónica del buyer)
+  /** Facturación € en la ventana 7d. Permite ranking de héroes por revenue
+   *  (no solo unidades) y cómputo de GMROI preciso. */
+  importe_7d: number | null;
+  /** Aportación: % de la facturación neta de la familia que representa este
+   *  SKU en la ventana 7d. Un SKU con 25% de share es estructuralmente
+   *  importante; uno con 0.5% es accesorio aunque tenga velocidad similar. */
+  share_net_sales_7d: number | null;
+  // Productividad — los KPIs canónicos de merchandising
+  /** Rotación 7d ajustada (tienda + tránsito) — EL indicador canónico de
+   *  productividad del stock. Unidades vendidas ÷ stock medio del periodo.
+   *  >1.0 = excepcional · 0.5-1.0 = sana · <0.5 = estancado. */
+  rotation_td_tr_aj_7d: number | null;
+  /** Rotación 7d cruda (sin ajuste por tránsito). */
+  rotation_td_tr_7d: number | null;
 }
 
 export interface SkuScore {
@@ -228,14 +265,19 @@ export async function loadScoringInputs(
       id, model_ref, color_ref, family_code, pvp, pvp_compare, markup_pct, on_promo,
       cost_estimate, margin_pct_list, source_id, season_tag,
       strategy_inventory_facts (
-        days_in_store, stores_with_stock, stores_active, stock_store,
-        stock_warehouse, stock_in_transit, stock_pending, pipeline_total
+        days_in_store, stores_with_stock, stores_active, stores_total,
+        stock_store, stock_warehouse, stock_available,
+        stock_in_transit, stock_pending, pipeline_total, cd2_available
       ),
       strategy_sales_windows (
-        window_type, units, max_sale_no_promo, max_sale_promo, emptying_rate, emptying_rate_available
+        window_type, units, max_sale_no_promo, max_sale_promo,
+        importe, share_net_sales, stores_with_sale,
+        rotation_td_tr_aj_7d, rotation_td_tr_7d,
+        emptying_rate, emptying_rate_available
       ),
       strategy_efficiency_facts (
-        total_bought, total_sold, sell_through_shipped_pct, sell_through_bought_pct, returns_pct
+        total_bought, total_sold, total_shipped,
+        sell_through_shipped_pct, sell_through_bought_pct, returns_pct
       )
     `
     )
@@ -287,6 +329,21 @@ export async function loadScoringInputs(
     const emptyingRateAvailable =
       emptyingAvailValues.length > 0 ? Math.max(...emptyingAvailValues) : null;
 
+    // v2 — campos por-ventana del RNK Zara que el v1 dejaba sin leer.
+    // Ventana canónica para la vista semanal del comprador = 7d.
+    // Ventana canónica para "ayer" = d1 (activación diaria, tiendas con
+    // venta ayer).
+    const w7 = windows.find((x) => x.window_type === '7d') ?? {};
+    const wD1 = windows.find((x) => x.window_type === 'd1') ?? {};
+    // Rotación: el parser duplica el mismo valor en cada ventana. Tomamos
+    // el primero no-null para tolerar variaciones de parser.
+    const rotationAj =
+      windows.map((x) => numOrNull(x.rotation_td_tr_aj_7d)).find((v) => v != null) ??
+      null;
+    const rotationCru =
+      windows.map((x) => numOrNull(x.rotation_td_tr_7d)).find((v) => v != null) ??
+      null;
+
     const nodeId = identityByProduct.get(p.id) ?? null;
     return {
       product_fact_id: p.id,
@@ -323,6 +380,20 @@ export async function loadScoringInputs(
       max_sale_promo: maxPromo,
       emptying_rate: emptyingRate,
       emptying_rate_available: emptyingRateAvailable,
+      // v2 — Distribución
+      stores_total: numOrNull(inv.stores_total),
+      stores_with_sale_d1: numOrNull(wD1.stores_with_sale),
+      // v2 — Stock
+      stock_available: numOrNull(inv.stock_available),
+      cd2_available: numOrNull(inv.cd2_available),
+      // v2 — Eficiencia
+      total_shipped: numOrNull(eff.total_shipped),
+      // v2 — Facturación y peso estratégico (ventana 7d)
+      importe_7d: numOrNull(w7.importe),
+      share_net_sales_7d: numOrNull(w7.share_net_sales),
+      // v2 — Productividad (rotaciones canónicas)
+      rotation_td_tr_aj_7d: rotationAj,
+      rotation_td_tr_7d: rotationCru,
     };
   });
 
