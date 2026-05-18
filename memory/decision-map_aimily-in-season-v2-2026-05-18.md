@@ -252,7 +252,7 @@ Cada decisión es **un verbo concreto** que el comprador puede ejecutar el lunes
 - *Six Rights*: Right Place.
 - *Output*: ampliar a N tiendas más, desde almacén principal o CD2.
 
-**4. ACELERAR ENTRADA**
+**4. ADELANTAR PEDIDO PENDIENTE**
 - *Cuándo*: riesgo de rotura alto, hay stock pendiente (todavía no en tránsito), demanda sólida, el pipeline actual tarda >2 semanas en llegar al ritmo de venta.
 - *Owner*: Comprador + Supply Chain.
 - *Six Rights*: Right Time.
@@ -260,7 +260,7 @@ Cada decisión es **un verbo concreto** que el comprador puede ejecutar el lunes
 
 ### Este mes — tácticas
 
-**5. REPONER**
+**5. REPONER POR ROTURA DE STOCK**
 - *Cuándo*: o bien riesgo de rotura medio/alto, o bien rotación canónica sana (≥0.7 vs familia) + cobertura adecuada. Hay stock disponible para reponer. Devoluciones normales.
 - *Owner*: Comprador + Merchandiser.
 - *Six Rights*: Right Quantity.
@@ -278,7 +278,7 @@ Cada decisión es **un verbo concreto** que el comprador puede ejecutar el lunes
 - *Six Rights*: (es un flag, no encaja en un Six Right).
 - *Output*: motivo concreto a investigar (fit, tech-pack, exposición, talla).
 
-**8. REPLICAR AHORA** (anteriormente "amplify in season")
+**8. REPONER PARA MAXIMIZAR LA VENTA** (anteriormente "amplify in season")
 - *Cuándo*: o bien es héroe confirmado (top 10 del RNK + demanda fuerte + rotación sana + aportación ≥10% + activación diaria buena), o bien es héroe oculto por agotamiento (rotura alta + rotación que era sana antes del agotamiento), o bien es estructural (aportación ≥20% aunque no esté en velocidad-top). Bloqueado si la economía unitaria está rota o devoluciones ≥2.5× la familia.
 - *Owner*: Comprador + Merchandiser.
 - *Six Rights*: Right Quantity + Right Time.
@@ -287,7 +287,7 @@ Cada decisión es **un verbo concreto** que el comprador puede ejecutar el lunes
 ### Próxima temporada — estratégicas
 
 **9. REPLICAR ESTILO PRÓXIMA TEMPORADA**
-- *Cuándo*: mismas condiciones que "Replicar ahora" + **el SKU lleva ≥28 días en tienda** (4 semanas de validación, mínimo razonable para comprometer el ciclo de diseño próxima temporada).
+- *Cuándo*: mismas condiciones que "Reponer para maximizar la venta" + **el SKU lleva ≥28 días en tienda** (4 semanas de validación, mínimo razonable para comprometer el ciclo de diseño próxima temporada).
 - *Owner*: Comprador + Diseño.
 - *Six Rights*: Right Product (rango próxima temporada).
 - *Output*: brief estructurado a diseño — silueta + materiales + 2-3 colores secuela (con sus hex) sacados del moodboard. Enriquece la rationale con la fuerza de continuidad si el estilo lleva varias temporadas.
@@ -344,9 +344,9 @@ Cada decisión es **un verbo concreto** que el comprador puede ejecutar el lunes
 │ 12 DECISIONES                                                            │
 │                                                                          │
 │ ESTA SEMANA  ──► 1 Matar · 2 Rebajar · 3 Ampliar distribución            │
-│                  4 Acelerar entrada                                     │
+│                  4 Adelantar pedido pendiente                                     │
 │ ESTE MES     ──► 5 Reponer · 6 Reducir compra · 7 Marcar revisión       │
-│                  8 Replicar ahora                                       │
+│                  8 Reponer (max venta)                                       │
 │ PRÓXIMA T.   ──► 9 Replicar estilo · 10 Extender colores                │
 │                  11 Continuidad                                         │
 │ FALLBACK     ──► 12 Esperar                                             │
@@ -362,11 +362,11 @@ Cada decisión es **un verbo concreto** que el comprador puede ejecutar el lunes
 | Matar | dispara amplio | **dispara menos, más justo** | Añade aportación + rotación + rotura → no mata a contribuidores estructurales ni héroes ocultos por agotamiento |
 | Rebajar | sin escalón ni lift | **escalón duro + estimación de unidades liberadas** | El comprador ve el siguiente paso y cuánto desbloquea |
 | Ampliar distribución | **no implementado** | **dispara** | Con `tiendas totales` y `stock disponible` la condición es computable |
-| Acelerar entrada | **no implementado** | **dispara** | Con `stock pendiente` por separado de tránsito |
+| Adelantar pedido pendiente | **no implementado** | **dispara** | Con `stock pendiente` por separado de tránsito |
 | Reponer | solo por agotamiento | **+ vía rotación canónica** | La rotación es la métrica retail correcta para reposición |
 | Reducir compra | solo éxito del comprado | **+ éxito del enviado** | Dos lecturas paralelas — ambas pueden disparar |
 | Marcar revisión | solo devoluciones+velocidad | **+ stocked-but-not-selling + anomalías de hermanos** | Detecta problemas de exposición / talla / fit que antes pasaban |
-| Replicar ahora | velocity-rank simple | **+ rotación + aportación + activación** | Filtra falsos héroes |
+| Reponer (max venta) | velocity-rank simple | **+ rotación + aportación + activación** | Filtra falsos héroes |
 | Replicar estilo próx. T. | igual + 28 días | igual + contexto de continuidad | Rationale más rico |
 | Extender colores | "mejor color" | **solo ganadores limpios + estructurales** | Ya no propone sobre ganadores marginales |
 | Continuidad | maduro/plateau | **+ fuerza de continuidad** | Captura básicos estructurales |

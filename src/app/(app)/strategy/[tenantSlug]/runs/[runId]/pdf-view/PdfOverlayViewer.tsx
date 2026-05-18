@@ -161,10 +161,13 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   kill: 'Matar',
   markdown_accelerate: 'Rebajar',
   amplify_distribution: 'Ampliar distribución',
-  pull_forward_intake: 'Acelerar entrada',
+  pull_forward_intake: 'Adelantar pedido pendiente',
   // THIS MONTH
-  replenish: 'Reponer',
-  amplify_in_season: 'Replicar ahora',
+  // Felipe 2026-05-18: vocabulario retail real. Dos verbos REPONER
+  // distintos con su intención visible — el comprador lee la razón en
+  // el propio nombre del verbo, no en la rationale.
+  replenish: 'Reponer por rotura de stock',
+  amplify_in_season: 'Reponer para maximizar la venta',
   promote_push: 'Promocionar',
   resize_down: 'Reducir compra',
   investigate_root_cause: 'Marcar para revisión',
@@ -736,7 +739,7 @@ function FilterChip({
 function SkuDetailInline({ sku }: { sku: SkuRow }) {
   return (
     <div className="border-t border-carbon/[0.06] bg-white p-4 space-y-5">
-        {/* ACTION STACK — the reason to expand. "Replicar ahora", "Extender
+        {/* ACTION STACK — the reason to expand. "Reponer", "Extender
          *  colores", "Reponer", etc. with full rationale, Six Right anchor,
          *  owner, confidence + evidence per action. THIS is what the buyer
          *  wants to see when they expand a SKU, so it leads the detail. */}
