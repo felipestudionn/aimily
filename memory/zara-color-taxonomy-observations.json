@@ -1,0 +1,912 @@
+{
+  "generated_at": "2026-05-18T07:53:44.596Z",
+  "source_id": "21a17ec5-348a-46aa-bf10-7414638e5917",
+  "tenant_id": "60105796-ea66-4355-b904-e10296436ff9",
+  "model_used": "claude-sonnet-4-5",
+  "observations": [
+    {
+      "model_ref": "4786 166 401",
+      "color_code": "401",
+      "observed_color_name_es": "azul noche",
+      "observed_hex": "#1a3162",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "2507 43 919",
+      "color_code": "919",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8c5d1",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "2548 2 710",
+      "color_code": "710",
+      "observed_color_name_es": "verde menta",
+      "observed_hex": "#b8d4c8",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "6895 81 710",
+      "color_code": "710",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#4a6b54",
+      "confidence": 0.85,
+      "notes": null
+    },
+    {
+      "model_ref": "6095 982 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#f0ead6",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "2071 987 700",
+      "color_code": "700",
+      "observed_color_name_es": "marrón",
+      "observed_hex": "#5c4033",
+      "confidence": 0.91,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 166 250",
+      "color_code": "250",
+      "observed_color_name_es": "beige",
+      "observed_hex": "#e5dcc8",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "5107 96 712",
+      "color_code": "712",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f5f3ed",
+      "confidence": 0.94,
+      "notes": "bordado floral de colores sobre fondo blanco"
+    },
+    {
+      "model_ref": "9479 10 60",
+      "color_code": "060",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6a8bb5",
+      "confidence": 0.89,
+      "notes": "rayas azul y blanco, predomina azul"
+    },
+    {
+      "model_ref": "9632 74 715",
+      "color_code": "715",
+      "observed_color_name_es": "azul marino",
+      "observed_hex": "#2b3e50",
+      "confidence": 0.9,
+      "notes": "rayas finas blancas sobre azul marino"
+    },
+    {
+      "model_ref": "2127 67 620",
+      "color_code": "620",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8d4d1",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "1097 966 44",
+      "color_code": "044",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#5a7fa3",
+      "confidence": 0.88,
+      "notes": "rayas azul y blanco"
+    },
+    {
+      "model_ref": "2562 152 600",
+      "color_code": "600",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#88a685",
+      "confidence": 0.85,
+      "notes": "cuadros vichy verde y blanco"
+    },
+    {
+      "model_ref": "1099 207 250",
+      "color_code": "250",
+      "observed_color_name_es": "beige",
+      "observed_hex": "#e0d5c3",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "2702 295 800",
+      "color_code": "800",
+      "observed_color_name_es": "rojo",
+      "observed_hex": "#a83c3c",
+      "confidence": 0.91,
+      "notes": null
+    },
+    {
+      "model_ref": "5247 242 600",
+      "color_code": "600",
+      "observed_color_name_es": "verde oliva",
+      "observed_hex": "#6b7256",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 96 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.95,
+      "notes": null
+    },
+    {
+      "model_ref": "2678 51 712",
+      "color_code": "712",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f3ebe1",
+      "confidence": 0.9,
+      "notes": "bordado sobre lino blanco"
+    },
+    {
+      "model_ref": "6104 375 819",
+      "color_code": "819",
+      "observed_color_name_es": "rosa",
+      "observed_hex": "#d9a8a8",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "5107 97 712",
+      "color_code": "712",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f5f2ec",
+      "confidence": 0.93,
+      "notes": "bordado floral sobre blanco"
+    },
+    {
+      "model_ref": "2801 207 712",
+      "color_code": "712",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#7a9977",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 30 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ede7d8",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 30 620",
+      "color_code": "620",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e5c9c4",
+      "confidence": 0.89,
+      "notes": null
+    },
+    {
+      "model_ref": "1758 135 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#0f0f0f",
+      "confidence": 0.96,
+      "notes": null
+    },
+    {
+      "model_ref": "9479 8 91",
+      "color_code": "091",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f5f2ed",
+      "confidence": 0.92,
+      "notes": "rayas blanco y negro, predomina blanco"
+    },
+    {
+      "model_ref": "8307 59 441",
+      "color_code": "441",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6e8ca8",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "5474 58 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe3d2",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "7521 44 712",
+      "color_code": "712",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f4f0e8",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 93 620",
+      "color_code": "620",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8d2cc",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "5919 41 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.95,
+      "notes": null
+    },
+    {
+      "model_ref": "1953 967 94",
+      "color_code": "094",
+      "observed_color_name_es": "rojo",
+      "observed_hex": "#a84848",
+      "confidence": 0.87,
+      "notes": "rayas rojas y crudo"
+    },
+    {
+      "model_ref": "2678 47 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "6840 116 712",
+      "color_code": "712",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#8da98a",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "9632 93 400",
+      "color_code": "400",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5a7088",
+      "confidence": 0.91,
+      "notes": null
+    },
+    {
+      "model_ref": "5919 2 942",
+      "color_code": "942",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": "satén negro con encaje"
+    },
+    {
+      "model_ref": "4786 32 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ede7da",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "6108 306 712",
+      "color_code": "712",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f3ede5",
+      "confidence": 0.91,
+      "notes": "rayas blancas y verde"
+    },
+    {
+      "model_ref": "5474 54 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe4d5",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "8246 69 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ede6d8",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "2438 198 712",
+      "color_code": "712",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#7a9074",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "1201 995 623",
+      "color_code": "623",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6b8599",
+      "confidence": 0.88,
+      "notes": "rayas azul y blanco"
+    },
+    {
+      "model_ref": "9479 68 802",
+      "color_code": "802",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.93,
+      "notes": "jacquard negro con rayas"
+    },
+    {
+      "model_ref": "4676 50 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d6",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "4001 40 400",
+      "color_code": "400",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5c7288",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "1950 199 712",
+      "color_code": "712",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#88a082",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "5216 78 104",
+      "color_code": "104",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5a6f85",
+      "confidence": 0.91,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 151 300",
+      "color_code": "300",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#89a58a",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "7149 57 712",
+      "color_code": "712",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#869d7e",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 168 250",
+      "color_code": "250",
+      "observed_color_name_es": "beige",
+      "observed_hex": "#e0d5c4",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "5107 85 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d7",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "2111 987 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "7627 48 407",
+      "color_code": "407",
+      "observed_hex": "#3a4a5c",
+      "observed_color_name_es": "azul noche",
+      "confidence": 0.89,
+      "notes": null
+    },
+    {
+      "model_ref": "6840 113 428",
+      "color_code": "428",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5e7389",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "1100 198 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "4333 51 485",
+      "color_code": "485",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6a8aa8",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "8307 48 406",
+      "color_code": "406",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5c7287",
+      "confidence": 0.91,
+      "notes": null
+    },
+    {
+      "model_ref": "2797 538 632",
+      "color_code": "632",
+      "observed_color_name_es": "rojo",
+      "observed_hex": "#a84545",
+      "confidence": 0.89,
+      "notes": null
+    },
+    {
+      "model_ref": "2731 62 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "8307 58 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d6",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "2782 325 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.95,
+      "notes": null
+    },
+    {
+      "model_ref": "7149 57 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "6107 459 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.95,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 34 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe4d5",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "6027 44 250",
+      "color_code": "250",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f5f2ed",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "6095 783 44",
+      "color_code": "044",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6885a0",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 96 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ede7d8",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "340 50 506",
+      "color_code": "506",
+      "observed_color_name_es": "caqui",
+      "observed_hex": "#8a8670",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "5474 67 427",
+      "color_code": "427",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5e7389",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "2133 907 43",
+      "color_code": "043",
+      "observed_color_name_es": "azul marino",
+      "observed_hex": "#2d3e52",
+      "confidence": 0.89,
+      "notes": "cuadros azul marino y crudo"
+    },
+    {
+      "model_ref": "7149 73 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "8219 199 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "1758 235 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.95,
+      "notes": null
+    },
+    {
+      "model_ref": "6840 115 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d6",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "3548 56 716",
+      "color_code": "716",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": "cazadora tipo cuero negro"
+    },
+    {
+      "model_ref": "6895 87 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe4d5",
+      "confidence": 0.91,
+      "notes": null
+    },
+    {
+      "model_ref": "6840 82 427",
+      "color_code": "427",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5d7187",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "5474 66 252",
+      "color_code": "252",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ede6d7",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "9863 261 407",
+      "color_code": "407",
+      "observed_color_name_es": "azul noche",
+      "observed_hex": "#3a4a5c",
+      "confidence": 0.89,
+      "notes": null
+    },
+    {
+      "model_ref": "7223 40 407",
+      "color_code": "407",
+      "observed_color_name_es": "azul noche",
+      "observed_hex": "#3b4b5d",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "6027 45 932",
+      "color_code": "932",
+      "observed_color_name_es": "gris",
+      "observed_hex": "#8a8d8f",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "6895 90 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d6",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "4001 52 427",
+      "color_code": "427",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5e7288",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "2151 100 741",
+      "color_code": "741",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8d2cc",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "5474 67 427",
+      "color_code": "427",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5d7186",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "6109 782 44",
+      "color_code": "044",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6885a0",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "1551 355 104",
+      "color_code": "104",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5a6f84",
+      "confidence": 0.91,
+      "notes": "rayas denim"
+    },
+    {
+      "model_ref": "2370 372 615",
+      "color_code": "615",
+      "observed_color_name_es": "rosa",
+      "observed_hex": "#d9a5a5",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "2112 157 400",
+      "color_code": "400",
+      "observed_color_name_es": "azul",
+      "observed_hex": "#6886a2",
+      "confidence": 0.88,
+      "notes": "cuadros azul y blanco"
+    },
+    {
+      "model_ref": "5247 50 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1c1c1c",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "9632 65 400",
+      "color_code": "400",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5d7287",
+      "confidence": 0.9,
+      "notes": "rayas azules sobre denim"
+    },
+    {
+      "model_ref": "5107 91 402",
+      "color_code": "402",
+      "observed_color_name_es": "blanco",
+      "observed_hex": "#f4f0e8",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "2452 447 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe4d5",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "1934 43 400",
+      "color_code": "400",
+      "observed_color_name_es": "denim medio",
+      "observed_hex": "#5c7186",
+      "confidence": 0.9,
+      "notes": null
+    },
+    {
+      "model_ref": "2581 80 330",
+      "color_code": "330",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#88a482",
+      "confidence": 0.86,
+      "notes": "cuadros vichy verde"
+    },
+    {
+      "model_ref": "2124 588 700",
+      "color_code": "700",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.93,
+      "notes": null
+    },
+    {
+      "model_ref": "4786 166 305",
+      "color_code": "305",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#88a389",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "2338 110 70",
+      "color_code": "070",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d6",
+      "confidence": 0.91,
+      "notes": "lunares sobre fondo crudo"
+    },
+    {
+      "model_ref": "7223 40 407",
+      "color_code": "407",
+      "observed_color_name_es": "azul noche",
+      "observed_hex": "#3a4a5c",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "2605 538 802",
+      "color_code": "802",
+      "observed_color_name_es": "gris",
+      "observed_hex": "#999999",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "4333 48 330",
+      "color_code": "330",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#87a380",
+      "confidence": 0.85,
+      "notes": "cuadros verde"
+    },
+    {
+      "model_ref": "6895 79 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe4d5",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "8246 49 712",
+      "color_code": "712",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#869d7e",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "6110 26 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ede6d7",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "5919 43 512",
+      "color_code": "512",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8d2cc",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "340 4 300",
+      "color_code": "300",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#88a589",
+      "confidence": 0.87,
+      "notes": null
+    },
+    {
+      "model_ref": "5474 63 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "7290 240 250",
+      "color_code": "250",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe5d6",
+      "confidence": 0.92,
+      "notes": null
+    },
+    {
+      "model_ref": "4333 51 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "2151 375 612",
+      "color_code": "612",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8d4d0",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "2125 304 725",
+      "color_code": "725",
+      "observed_color_name_es": "verde",
+      "observed_hex": "#88a384",
+      "confidence": 0.86,
+      "notes": null
+    },
+    {
+      "model_ref": "2112 199 800",
+      "color_code": "800",
+      "observed_color_name_es": "negro",
+      "observed_hex": "#1a1a1a",
+      "confidence": 0.94,
+      "notes": null
+    },
+    {
+      "model_ref": "2767 751 741",
+      "color_code": "741",
+      "observed_color_name_es": "rosa palo",
+      "observed_hex": "#e8d3cd",
+      "confidence": 0.88,
+      "notes": null
+    },
+    {
+      "model_ref": "5107 83 251",
+      "color_code": "251",
+      "observed_color_name_es": "crudo",
+      "observed_hex": "#ebe4d5",
+      "confidence": 0.92,
+      "notes": null
+    }
+  ]
+}

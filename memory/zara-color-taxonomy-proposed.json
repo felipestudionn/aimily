@@ -1,0 +1,952 @@
+{
+  "generated_at": "2026-05-18T07:53:44.597Z",
+  "source_id": "21a17ec5-348a-46aa-bf10-7414638e5917",
+  "tenant_id": "60105796-ea66-4355-b904-e10296436ff9",
+  "n_codes": 43,
+  "consensus_stats": {
+    "unanimous": 9,
+    "majority": 3,
+    "split": 5,
+    "single": 26
+  },
+  "code_to_name": {
+    "104": "denim_medio",
+    "250": "crudo",
+    "251": "crudo",
+    "252": "crudo",
+    "300": "verde",
+    "305": "verde",
+    "330": "verde",
+    "400": "denim_medio",
+    "401": "azul_noche",
+    "402": "blanco",
+    "406": "denim_medio",
+    "407": "azul_noche",
+    "427": "denim_medio",
+    "428": "denim_medio",
+    "441": "azul",
+    "485": "azul",
+    "506": "caqui",
+    "512": "rosa_palo",
+    "600": "verde",
+    "612": "rosa_palo",
+    "615": "rosa",
+    "620": "rosa_palo",
+    "623": "azul",
+    "632": "rojo",
+    "700": "marrón",
+    "710": "verde_menta",
+    "712": "verde",
+    "715": "azul_marino",
+    "716": "negro",
+    "725": "verde",
+    "741": "rosa_palo",
+    "800": "negro",
+    "802": "negro",
+    "819": "rosa",
+    "919": "rosa_palo",
+    "932": "gris",
+    "942": "negro",
+    "043": "azul_marino",
+    "044": "azul",
+    "060": "azul",
+    "070": "crudo",
+    "091": "blanco",
+    "094": "rojo"
+  },
+  "code_to_hex": {
+    "104": "#5a6f85",
+    "250": "#ede7d8",
+    "251": "#ebe3d2",
+    "252": "#ede6d7",
+    "300": "#89a58a",
+    "305": "#88a389",
+    "330": "#88a482",
+    "400": "#5a7088",
+    "401": "#1a3162",
+    "402": "#f4f0e8",
+    "406": "#5c7287",
+    "407": "#3a4a5c",
+    "427": "#5e7389",
+    "428": "#5e7389",
+    "441": "#6e8ca8",
+    "485": "#6a8aa8",
+    "506": "#8a8670",
+    "512": "#e8d2cc",
+    "600": "#88a685",
+    "612": "#e8d4d0",
+    "615": "#d9a5a5",
+    "620": "#e5c9c4",
+    "623": "#6b8599",
+    "632": "#a84545",
+    "700": "#5c4033",
+    "710": "#b8d4c8",
+    "712": "#7a9074",
+    "715": "#2b3e50",
+    "716": "#1a1a1a",
+    "725": "#88a384",
+    "741": "#e8d2cc",
+    "800": "#0f0f0f",
+    "802": "#1c1c1c",
+    "819": "#d9a8a8",
+    "919": "#e8c5d1",
+    "932": "#8a8d8f",
+    "942": "#1a1a1a",
+    "043": "#2d3e52",
+    "044": "#5a7fa3",
+    "060": "#6a8bb5",
+    "070": "#ebe5d6",
+    "091": "#f5f2ed",
+    "094": "#a84848"
+  },
+  "per_code_details": [
+    {
+      "color_code": "043",
+      "n_observations": 1,
+      "proposed_name_es": "azul marino",
+      "proposed_hex": "#2d3e52",
+      "confidence_avg": 0.89,
+      "confidence_max": 0.89,
+      "all_observed_names": [
+        {
+          "name": "azul marino",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2133 907 43"
+      ]
+    },
+    {
+      "color_code": "044",
+      "n_observations": 3,
+      "proposed_name_es": "azul",
+      "proposed_hex": "#5a7fa3",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "azul",
+          "count": 3
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "1097 966 44",
+        "6095 783 44",
+        "6109 782 44"
+      ]
+    },
+    {
+      "color_code": "060",
+      "n_observations": 1,
+      "proposed_name_es": "azul",
+      "proposed_hex": "#6a8bb5",
+      "confidence_avg": 0.89,
+      "confidence_max": 0.89,
+      "all_observed_names": [
+        {
+          "name": "azul",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "9479 10 60"
+      ]
+    },
+    {
+      "color_code": "070",
+      "n_observations": 1,
+      "proposed_name_es": "crudo",
+      "proposed_hex": "#ebe5d6",
+      "confidence_avg": 0.91,
+      "confidence_max": 0.91,
+      "all_observed_names": [
+        {
+          "name": "crudo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2338 110 70"
+      ]
+    },
+    {
+      "color_code": "091",
+      "n_observations": 1,
+      "proposed_name_es": "blanco",
+      "proposed_hex": "#f5f2ed",
+      "confidence_avg": 0.92,
+      "confidence_max": 0.92,
+      "all_observed_names": [
+        {
+          "name": "blanco",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "9479 8 91"
+      ]
+    },
+    {
+      "color_code": "094",
+      "n_observations": 1,
+      "proposed_name_es": "rojo",
+      "proposed_hex": "#a84848",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "rojo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "1953 967 94"
+      ]
+    },
+    {
+      "color_code": "104",
+      "n_observations": 2,
+      "proposed_name_es": "denim medio",
+      "proposed_hex": "#5a6f85",
+      "confidence_avg": 0.91,
+      "confidence_max": 0.91,
+      "all_observed_names": [
+        {
+          "name": "denim medio",
+          "count": 2
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "5216 78 104",
+        "1551 355 104"
+      ]
+    },
+    {
+      "color_code": "250",
+      "n_observations": 15,
+      "proposed_name_es": "crudo",
+      "proposed_hex": "#ede7d8",
+      "confidence_avg": 0.9226666666666665,
+      "confidence_max": 0.94,
+      "all_observed_names": [
+        {
+          "name": "crudo",
+          "count": 11
+        },
+        {
+          "name": "beige",
+          "count": 3
+        },
+        {
+          "name": "blanco",
+          "count": 1
+        }
+      ],
+      "consensus": "majority",
+      "sample_model_refs": [
+        "6095 982 250",
+        "4786 166 250",
+        "1099 207 250",
+        "4786 30 250",
+        "4786 32 250"
+      ]
+    },
+    {
+      "color_code": "251",
+      "n_observations": 8,
+      "proposed_name_es": "crudo",
+      "proposed_hex": "#ebe3d2",
+      "confidence_avg": 0.92,
+      "confidence_max": 0.93,
+      "all_observed_names": [
+        {
+          "name": "crudo",
+          "count": 8
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "5474 58 251",
+        "5107 85 251",
+        "4786 34 251",
+        "6895 87 251",
+        "6895 90 251"
+      ]
+    },
+    {
+      "color_code": "252",
+      "n_observations": 1,
+      "proposed_name_es": "crudo",
+      "proposed_hex": "#ede6d7",
+      "confidence_avg": 0.92,
+      "confidence_max": 0.92,
+      "all_observed_names": [
+        {
+          "name": "crudo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "5474 66 252"
+      ]
+    },
+    {
+      "color_code": "300",
+      "n_observations": 2,
+      "proposed_name_es": "verde",
+      "proposed_hex": "#89a58a",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "verde",
+          "count": 2
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "4786 151 300",
+        "340 4 300"
+      ]
+    },
+    {
+      "color_code": "305",
+      "n_observations": 1,
+      "proposed_name_es": "verde",
+      "proposed_hex": "#88a389",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "verde",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "4786 166 305"
+      ]
+    },
+    {
+      "color_code": "330",
+      "n_observations": 2,
+      "proposed_name_es": "verde",
+      "proposed_hex": "#88a482",
+      "confidence_avg": 0.855,
+      "confidence_max": 0.86,
+      "all_observed_names": [
+        {
+          "name": "verde",
+          "count": 2
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "2581 80 330",
+        "4333 48 330"
+      ]
+    },
+    {
+      "color_code": "400",
+      "n_observations": 5,
+      "proposed_name_es": "denim medio",
+      "proposed_hex": "#5a7088",
+      "confidence_avg": 0.898,
+      "confidence_max": 0.91,
+      "all_observed_names": [
+        {
+          "name": "denim medio",
+          "count": 4
+        },
+        {
+          "name": "azul",
+          "count": 1
+        }
+      ],
+      "consensus": "majority",
+      "sample_model_refs": [
+        "9632 93 400",
+        "4001 40 400",
+        "2112 157 400",
+        "9632 65 400",
+        "1934 43 400"
+      ]
+    },
+    {
+      "color_code": "401",
+      "n_observations": 1,
+      "proposed_name_es": "azul noche",
+      "proposed_hex": "#1a3162",
+      "confidence_avg": 0.93,
+      "confidence_max": 0.93,
+      "all_observed_names": [
+        {
+          "name": "azul noche",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "4786 166 401"
+      ]
+    },
+    {
+      "color_code": "402",
+      "n_observations": 1,
+      "proposed_name_es": "blanco",
+      "proposed_hex": "#f4f0e8",
+      "confidence_avg": 0.92,
+      "confidence_max": 0.92,
+      "all_observed_names": [
+        {
+          "name": "blanco",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "5107 91 402"
+      ]
+    },
+    {
+      "color_code": "406",
+      "n_observations": 1,
+      "proposed_name_es": "denim medio",
+      "proposed_hex": "#5c7287",
+      "confidence_avg": 0.91,
+      "confidence_max": 0.91,
+      "all_observed_names": [
+        {
+          "name": "denim medio",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "8307 48 406"
+      ]
+    },
+    {
+      "color_code": "407",
+      "n_observations": 4,
+      "proposed_name_es": "azul noche",
+      "proposed_hex": "#3a4a5c",
+      "confidence_avg": 0.885,
+      "confidence_max": 0.89,
+      "all_observed_names": [
+        {
+          "name": "azul noche",
+          "count": 4
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "7627 48 407",
+        "9863 261 407",
+        "7223 40 407",
+        "7223 40 407"
+      ]
+    },
+    {
+      "color_code": "427",
+      "n_observations": 4,
+      "proposed_name_es": "denim medio",
+      "proposed_hex": "#5e7389",
+      "confidence_avg": 0.9,
+      "confidence_max": 0.9,
+      "all_observed_names": [
+        {
+          "name": "denim medio",
+          "count": 4
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "5474 67 427",
+        "6840 82 427",
+        "4001 52 427",
+        "5474 67 427"
+      ]
+    },
+    {
+      "color_code": "428",
+      "n_observations": 1,
+      "proposed_name_es": "denim medio",
+      "proposed_hex": "#5e7389",
+      "confidence_avg": 0.9,
+      "confidence_max": 0.9,
+      "all_observed_names": [
+        {
+          "name": "denim medio",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "6840 113 428"
+      ]
+    },
+    {
+      "color_code": "441",
+      "n_observations": 1,
+      "proposed_name_es": "azul",
+      "proposed_hex": "#6e8ca8",
+      "confidence_avg": 0.9,
+      "confidence_max": 0.9,
+      "all_observed_names": [
+        {
+          "name": "azul",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "8307 59 441"
+      ]
+    },
+    {
+      "color_code": "485",
+      "n_observations": 1,
+      "proposed_name_es": "azul",
+      "proposed_hex": "#6a8aa8",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "azul",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "4333 51 485"
+      ]
+    },
+    {
+      "color_code": "506",
+      "n_observations": 1,
+      "proposed_name_es": "caqui",
+      "proposed_hex": "#8a8670",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "caqui",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "340 50 506"
+      ]
+    },
+    {
+      "color_code": "512",
+      "n_observations": 1,
+      "proposed_name_es": "rosa palo",
+      "proposed_hex": "#e8d2cc",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "rosa palo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "5919 43 512"
+      ]
+    },
+    {
+      "color_code": "600",
+      "n_observations": 2,
+      "proposed_name_es": "verde",
+      "proposed_hex": "#88a685",
+      "confidence_avg": 0.865,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "verde",
+          "count": 1
+        },
+        {
+          "name": "verde oliva",
+          "count": 1
+        }
+      ],
+      "consensus": "split",
+      "sample_model_refs": [
+        "2562 152 600",
+        "5247 242 600"
+      ]
+    },
+    {
+      "color_code": "612",
+      "n_observations": 1,
+      "proposed_name_es": "rosa palo",
+      "proposed_hex": "#e8d4d0",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "rosa palo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2151 375 612"
+      ]
+    },
+    {
+      "color_code": "615",
+      "n_observations": 1,
+      "proposed_name_es": "rosa",
+      "proposed_hex": "#d9a5a5",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "rosa",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2370 372 615"
+      ]
+    },
+    {
+      "color_code": "620",
+      "n_observations": 3,
+      "proposed_name_es": "rosa palo",
+      "proposed_hex": "#e5c9c4",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.89,
+      "all_observed_names": [
+        {
+          "name": "rosa palo",
+          "count": 3
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "2127 67 620",
+        "4786 30 620",
+        "4786 93 620"
+      ]
+    },
+    {
+      "color_code": "623",
+      "n_observations": 1,
+      "proposed_name_es": "azul",
+      "proposed_hex": "#6b8599",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "azul",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "1201 995 623"
+      ]
+    },
+    {
+      "color_code": "632",
+      "n_observations": 1,
+      "proposed_name_es": "rojo",
+      "proposed_hex": "#a84545",
+      "confidence_avg": 0.89,
+      "confidence_max": 0.89,
+      "all_observed_names": [
+        {
+          "name": "rojo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2797 538 632"
+      ]
+    },
+    {
+      "color_code": "700",
+      "n_observations": 2,
+      "proposed_name_es": "marrón",
+      "proposed_hex": "#5c4033",
+      "confidence_avg": 0.92,
+      "confidence_max": 0.93,
+      "all_observed_names": [
+        {
+          "name": "marrón",
+          "count": 1
+        },
+        {
+          "name": "negro",
+          "count": 1
+        }
+      ],
+      "consensus": "split",
+      "sample_model_refs": [
+        "2071 987 700",
+        "2124 588 700"
+      ]
+    },
+    {
+      "color_code": "710",
+      "n_observations": 2,
+      "proposed_name_es": "verde menta",
+      "proposed_hex": "#b8d4c8",
+      "confidence_avg": 0.865,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "verde menta",
+          "count": 1
+        },
+        {
+          "name": "verde",
+          "count": 1
+        }
+      ],
+      "consensus": "split",
+      "sample_model_refs": [
+        "2548 2 710",
+        "6895 81 710"
+      ]
+    },
+    {
+      "color_code": "712",
+      "n_observations": 11,
+      "proposed_name_es": "verde",
+      "proposed_hex": "#7a9074",
+      "confidence_avg": 0.8881818181818182,
+      "confidence_max": 0.94,
+      "all_observed_names": [
+        {
+          "name": "verde",
+          "count": 6
+        },
+        {
+          "name": "blanco",
+          "count": 5
+        }
+      ],
+      "consensus": "split",
+      "sample_model_refs": [
+        "5107 96 712",
+        "2678 51 712",
+        "5107 97 712",
+        "2801 207 712",
+        "7521 44 712"
+      ]
+    },
+    {
+      "color_code": "715",
+      "n_observations": 1,
+      "proposed_name_es": "azul marino",
+      "proposed_hex": "#2b3e50",
+      "confidence_avg": 0.9,
+      "confidence_max": 0.9,
+      "all_observed_names": [
+        {
+          "name": "azul marino",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "9632 74 715"
+      ]
+    },
+    {
+      "color_code": "716",
+      "n_observations": 1,
+      "proposed_name_es": "negro",
+      "proposed_hex": "#1a1a1a",
+      "confidence_avg": 0.94,
+      "confidence_max": 0.94,
+      "all_observed_names": [
+        {
+          "name": "negro",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "3548 56 716"
+      ]
+    },
+    {
+      "color_code": "725",
+      "n_observations": 1,
+      "proposed_name_es": "verde",
+      "proposed_hex": "#88a384",
+      "confidence_avg": 0.86,
+      "confidence_max": 0.86,
+      "all_observed_names": [
+        {
+          "name": "verde",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2125 304 725"
+      ]
+    },
+    {
+      "color_code": "741",
+      "n_observations": 2,
+      "proposed_name_es": "rosa palo",
+      "proposed_hex": "#e8d2cc",
+      "confidence_avg": 0.88,
+      "confidence_max": 0.88,
+      "all_observed_names": [
+        {
+          "name": "rosa palo",
+          "count": 2
+        }
+      ],
+      "consensus": "unanimous",
+      "sample_model_refs": [
+        "2151 100 741",
+        "2767 751 741"
+      ]
+    },
+    {
+      "color_code": "800",
+      "n_observations": 18,
+      "proposed_name_es": "negro",
+      "proposed_hex": "#0f0f0f",
+      "confidence_avg": 0.9422222222222219,
+      "confidence_max": 0.96,
+      "all_observed_names": [
+        {
+          "name": "negro",
+          "count": 17
+        },
+        {
+          "name": "rojo",
+          "count": 1
+        }
+      ],
+      "consensus": "majority",
+      "sample_model_refs": [
+        "2702 295 800",
+        "4786 96 800",
+        "1758 135 800",
+        "5919 41 800",
+        "2678 47 800"
+      ]
+    },
+    {
+      "color_code": "802",
+      "n_observations": 2,
+      "proposed_name_es": "negro",
+      "proposed_hex": "#1c1c1c",
+      "confidence_avg": 0.895,
+      "confidence_max": 0.93,
+      "all_observed_names": [
+        {
+          "name": "negro",
+          "count": 1
+        },
+        {
+          "name": "gris",
+          "count": 1
+        }
+      ],
+      "consensus": "split",
+      "sample_model_refs": [
+        "9479 68 802",
+        "2605 538 802"
+      ]
+    },
+    {
+      "color_code": "819",
+      "n_observations": 1,
+      "proposed_name_es": "rosa",
+      "proposed_hex": "#d9a8a8",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "rosa",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "6104 375 819"
+      ]
+    },
+    {
+      "color_code": "919",
+      "n_observations": 1,
+      "proposed_name_es": "rosa palo",
+      "proposed_hex": "#e8c5d1",
+      "confidence_avg": 0.9,
+      "confidence_max": 0.9,
+      "all_observed_names": [
+        {
+          "name": "rosa palo",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "2507 43 919"
+      ]
+    },
+    {
+      "color_code": "932",
+      "n_observations": 1,
+      "proposed_name_es": "gris",
+      "proposed_hex": "#8a8d8f",
+      "confidence_avg": 0.87,
+      "confidence_max": 0.87,
+      "all_observed_names": [
+        {
+          "name": "gris",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "6027 45 932"
+      ]
+    },
+    {
+      "color_code": "942",
+      "n_observations": 1,
+      "proposed_name_es": "negro",
+      "proposed_hex": "#1a1a1a",
+      "confidence_avg": 0.94,
+      "confidence_max": 0.94,
+      "all_observed_names": [
+        {
+          "name": "negro",
+          "count": 1
+        }
+      ],
+      "consensus": "single",
+      "sample_model_refs": [
+        "5919 2 942"
+      ]
+    }
+  ]
+}
