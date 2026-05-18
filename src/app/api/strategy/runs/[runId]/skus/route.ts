@@ -356,10 +356,19 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // Aggregate color winners + losers per lineage. Color candidates carry
   // scope_ref = `<lineage_id>#<color_code>`. action_type === 'recolor' is
   // the winner (rank='top'); action_type === 'kill' is the loser
-  // (rank='bottom'). The winner becomes `extend_colors`; the loser becomes
-  // a color-scope `kill` (C.5 — was previously orphaned in the DB).
-  const colorWinnersByLineage = new Map<string, LineageColorWinner>();
-  const colorLosersByLineage = new Map<string, LineageColorLoser>();
+  // (rank='bottom').
+  //
+  // 2026-05-18 — Bug fix: un lineage puede tener MÚLTIPLES ganadores
+  // (dynamic top_n en generateColorWinnerCandidates puede ser 2+ para
+  // lineages de 2+ miembros). El v1 anterior guardaba solo UNO (el de
+  // mayor confianza global), descartando los otros. Eso causaba que un
+  // SKU como el 4786/401 (winner conf 0.8) quedara "shadow" por su
+  // hermano 4786/250 (winner conf 1.0), y EXTENDER COLORES no disparara
+  // para 401 al no matchear color en el filtro output-unit del appender.
+  // Ahora guardamos LISTA de ganadores y losers por lineage; al construir
+  // winnerByMemberPid matcheamos por color del SKU.
+  const colorWinnersByLineage = new Map<string, LineageColorWinner[]>();
+  const colorLosersByLineage = new Map<string, LineageColorLoser[]>();
   for (const c of colorCandidates) {
     const [lineageId, colorCode] = String(c.scope_ref).split('#');
     if (!lineageId || !colorCode) continue;
@@ -373,9 +382,8 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       (typeof evidence.rank === 'string' && evidence.rank === 'bottom');
     const colorHex = colorCodeHexMap[colorCode] ?? null;
     if (isLoser) {
-      const existing = colorLosersByLineage.get(lineageId);
-      if (existing && existing.confidence >= conf) continue;
-      colorLosersByLineage.set(lineageId, {
+      const arr = colorLosersByLineage.get(lineageId) ?? [];
+      arr.push({
         color_name: colorName,
         color_code: colorCode,
         color_hex: colorHex,
@@ -387,10 +395,10 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         margin_score:
           typeof evidence.margin_score === 'number' ? (evidence.margin_score as number) : null,
       });
+      colorLosersByLineage.set(lineageId, arr);
     } else {
-      const existing = colorWinnersByLineage.get(lineageId);
-      if (existing && existing.confidence >= conf) continue;
-      colorWinnersByLineage.set(lineageId, {
+      const arr = colorWinnersByLineage.get(lineageId) ?? [];
+      arr.push({
         color_name: colorName,
         color_code: colorCode,
         color_hex: colorHex,
@@ -399,6 +407,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         demand_score:
           typeof evidence.demand_score === 'number' ? (evidence.demand_score as number) : null,
       });
+      colorWinnersByLineage.set(lineageId, arr);
     }
   }
 
@@ -417,24 +426,40 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           .select('id, member_product_fact_ids')
           .in('id', lineageIdsForColors)
       : { data: [] as any[] };
+  // 2026-05-18 — Bug fix: matchear winner/loser por COLOR DEL SKU, no
+  // por confianza global del lineage. Ahora cada miembro recibe el winner
+  // (o loser) cuyo color_code coincide con su propio color_ref. Si el
+  // color del SKU no está entre los ganadores del lineage, no recibe
+  // winner (correcto — solo los SKUs que SON ganadores deben disparar
+  // EXTENDER COLORES, por la regla cardinal de output-unit).
   const winnerByMemberPid = new Map<string, LineageColorWinner>();
   const loserByMemberPid = new Map<string, LineageColorLoser>();
+  // Map pid → color_ref del producto, para el matching.
+  const colorRefByPid = new Map<string, string | null>();
+  for (const p of products) {
+    colorRefByPid.set(p.id, (p.color_ref as string | null | undefined) ?? null);
+  }
   for (const row of (lineageRowsForColors || []) as any[]) {
     const members = (row.member_product_fact_ids as string[]) || [];
-    const winner = colorWinnersByLineage.get(row.id);
-    const loser = colorLosersByLineage.get(row.id);
+    const winners = colorWinnersByLineage.get(row.id) ?? [];
+    const losers = colorLosersByLineage.get(row.id) ?? [];
     for (const pid of members) {
-      // Higher-confidence wins when a SKU sits in multiple lineages.
-      if (winner) {
+      const memberColor = colorRefByPid.get(pid);
+      if (!memberColor) continue;
+      const winnerForMember = winners.find((w) => w.color_code === memberColor);
+      if (winnerForMember) {
+        // Si el SKU está en múltiples lineages, nos quedamos con el
+        // winner de mayor confianza para este color específico.
         const existing = winnerByMemberPid.get(pid);
-        if (!existing || winner.confidence > existing.confidence) {
-          winnerByMemberPid.set(pid, winner);
+        if (!existing || winnerForMember.confidence > existing.confidence) {
+          winnerByMemberPid.set(pid, winnerForMember);
         }
       }
-      if (loser) {
+      const loserForMember = losers.find((l) => l.color_code === memberColor);
+      if (loserForMember) {
         const existing = loserByMemberPid.get(pid);
-        if (!existing || loser.confidence > existing.confidence) {
-          loserByMemberPid.set(pid, loser);
+        if (!existing || loserForMember.confidence > existing.confidence) {
+          loserByMemberPid.set(pid, loserForMember);
         }
       }
     }
