@@ -293,11 +293,18 @@ function actionColors(a: VerdictAction): Array<{ name: string; hex: string }> {
 // next season — those two signals are logically incompatible. Keep the
 // one with the highest confidence; the other was a noise candidate.
 //
-// G.2 · Preserve data_sufficiency_warning from a dropped `hold` by
-// copying it onto the surviving action so the buyer still sees the
-// "datos limitados" caveat.
+// G.2 (2026-05-17 audit) · Originally preserved data_sufficiency_warning
+// from a dropped `hold` onto the surviving action. CORRECTION 2026-05-18:
+// this was too aggressive — when a high-confidence appender fires (e.g.,
+// amplify_in_season at 93% on a confirmed hero), copying "No clear
+// signal" onto it is wrong and contradicts the verdict. We now only
+// preserve the warning when the surviving action's confidence is low
+// (< 0.6) AND its own warning is empty. A confident verdict overrides
+// the data-sufficiency caveat.
+//
 // G.3 · Annotate the surviving action when a contradiction is suppressed
 // so the buyer sees "1 verdict en conflicto suprimido" instead of nothing.
+const WARNING_PRESERVATION_CONFIDENCE_THRESHOLD = 0.6;
 function visibleActions(actions: VerdictAction[]): VerdictAction[] {
   const droppedHold = actions.find(
     (a) => a.action === 'hold' && a.data_sufficiency_warning
@@ -306,9 +313,16 @@ function visibleActions(actions: VerdictAction[]): VerdictAction[] {
   if (list.length === 0) list = actions;
 
   if (droppedHold && list.length > 0 && list[0]?.action !== 'hold') {
-    // Preserve the data_sufficiency_warning on the surviving top action.
     const survivor = list[0];
-    if (!survivor.data_sufficiency_warning) {
+    // Only preserve the "datos limitados" caveat when the surviving
+    // action's own confidence is low. A confident verdict (>= 0.6)
+    // overrides the data-sufficiency warning — the engine HAS a clear
+    // signal even if the candidate path didn't surface it (it came from
+    // a heuristic appender like amplify_in_season).
+    if (
+      !survivor.data_sufficiency_warning &&
+      survivor.confidence < WARNING_PRESERVATION_CONFIDENCE_THRESHOLD
+    ) {
       list = [{ ...survivor, data_sufficiency_warning: droppedHold.data_sufficiency_warning }, ...list.slice(1)];
     }
   }

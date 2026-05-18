@@ -1074,15 +1074,26 @@ export function appendExtendColorsAction(
     .filter((c) => c.toLowerCase() !== winnerLc)
     .slice(0, 3);
   const adjacentClause = adjacents.length > 0
-    ? ` Considera extender la paleta a tonos adyacentes del moodboard: ${adjacents.join(', ')}. Mantén ${winner.color_name} como ancla.`
+    ? ` Considera extender la paleta a tonos adyacentes del moodboard: ${adjacents.join(', ')}.`
     : ' Considera extender la paleta con tonos adyacentes para amplificar el winner.';
+
+  // 2026-05-18 — surface the COLOR CODE as the canonical identifier and
+  // demote the taxonomy name to a parenthetical "listed as ..." hint. The
+  // initial color taxonomy seed (migration 059d) used guessed mappings
+  // that don't match the actual Zara catalog photos (Felipe verified:
+  // code 401 is azul noche, not blanco). Code-first rationale lets the
+  // buyer cross-check against the PDF photo without being misled by the
+  // wrong name. Future: vision-based color extraction from PDF photos
+  // will reconcile the taxonomy automatically.
+  const codeLabel = identity.color_ref ?? '?';
+  const nameHint = winner.color_name ? ` · listado como "${winner.color_name}"` : '';
 
   // Per-SKU rationale (post 8.1 fix): we know this SKU IS the winner color.
   // Phrase directly to THIS SKU rather than abstractly to the style.
   const rationale =
     winner.rank === 'top'
-      ? `Este SKU (color ${winner.color_name}) es el ganador dentro de su estilo (${Math.round(winner.confidence * 100)}% confianza).${adjacentClause}`
-      : `Este SKU (color ${winner.color_name}) detectado como variante a evaluar dentro del estilo. Validar si extender o reasignar share de compra.`;
+      ? `Este SKU (código de color ${codeLabel}${nameHint}) es el ganador dentro de su estilo con ${Math.round(winner.confidence * 100)}% de confianza.${adjacentClause} Verifica el código contra la foto del PDF antes de confirmar la propuesta — el nombre de la taxonomía está pendiente de validación.`
+      : `Este SKU (código de color ${codeLabel}${nameHint}) detectado como variante a evaluar dentro del estilo. Validar si extender o reasignar share de compra.`;
 
   const newItem: SkuVerdictItem = {
     action: 'extend_colors',
@@ -1191,15 +1202,19 @@ export function appendDropColorAction(
 
   const familyName = identity.family_code ?? 'esta familia';
   // Per-SKU rationale (post 8.1 fix): we know this SKU IS the loser color.
-  // Phrase the recommendation directly to THIS SKU rather than abstractly
-  // to the style/lineage.
+  // Code-first phrasing (2026-05-18 — the seed taxonomy mapping is
+  // unverified against the actual Zara catalog; see appendExtendColorsAction
+  // for context).
+  const loserCodeLabel = identity.color_ref ?? '?';
+  const loserNameHint = loser.color_name ? ` · listado como "${loser.color_name}"` : '';
   const rationale =
-    `Este SKU (color ${loser.color_name}) es el de peor desempeño dentro del estilo ` +
+    `Este SKU (código de color ${loserCodeLabel}${loserNameHint}) es el de peor desempeño dentro del estilo ` +
     `(confianza ${Math.round(loser.confidence * 100)}%, return-risk ${
       loser.return_risk != null ? Math.round(loser.return_risk * 100) : '?'
     }%). ` +
     `Considera retirarlo de la próxima temporada en ${familyName} y rebalancear el share ` +
-    `hacia los colorways supervivientes del mismo estilo.`;
+    `hacia los colorways supervivientes del mismo estilo. ` +
+    `Verifica el código contra la foto del PDF — el nombre de la taxonomía está pendiente de validación.`;
 
   const newItem: SkuVerdictItem = {
     action: 'kill',
