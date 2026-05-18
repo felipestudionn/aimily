@@ -185,6 +185,18 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     };
   }
 
+  // v2 · Synthetic fleet size for fleet_coverage_score / lift capacity.
+  // The Zara RNK parser doesn't extract stores_total today (0/48 in V26
+  // corpus); approximate effective fleet as max(stores_with_stock) seen
+  // across the tenant's corpus. Graceful-degradation cardinal rule.
+  const storesWithStockObserved = inputs
+    .map((i) => i.stores_with_stock ?? 0)
+    .filter((n) => n > 0);
+  const storesTotalSynthetic =
+    storesWithStockObserved.length > 0
+      ? Math.max(...storesWithStockObserved)
+      : null;
+
   const ctx: ClassifierContext = {
     tenant_id: run.tenant_id,
     run_id: runId,
@@ -195,6 +207,8 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     // F.2 · Brief context for creative_fit computation.
     brief_family_pivot: (brief?.family_pivot as Record<string, number>) || undefined,
     brief_color_story: (brief?.color_story as string[]) || undefined,
+    // v2 · Synthetic fleet size when SKU.stores_total is null.
+    stores_total_synthetic: storesTotalSynthetic,
   };
 
   const familyBaselines = buildFamilyBaselines(inputs);

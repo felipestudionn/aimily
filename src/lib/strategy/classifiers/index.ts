@@ -60,6 +60,18 @@ export interface ClassifierContext {
    *  brief was attached — confidence_creative_fit stays null in that case. */
   brief_family_pivot?: Record<string, number>;
   brief_color_story?: string[];
+  /** v2 — Synthetic fleet size when SKU's stores_total is null. The Zara
+   *  RNK parser doesn't extract stores_total today (0/48 populated in V26
+   *  corpus); we approximate the effective fleet as the max of
+   *  stores_with_stock observed across the tenant's corpus. Graceful
+   *  degradation per memory/feedback_aimily-graceful-degradation-tenant-
+   *  input-or-synthetic.md. */
+  stores_total_synthetic?: number | null;
+  /** v2 — Season weeks remaining for markdown_risk_score (existing) and
+   *  for markdown_margin_safety. When the tenant doesn't supply a real
+   *  season-end date, falls back to 13 weeks (one quarter, generic
+   *  fast-fashion window). */
+  season_weeks_remaining?: number;
 }
 
 /** F.2 · Compute creative_fit for a SKU given the run's brief.
@@ -189,6 +201,8 @@ export interface SkuScoreInput {
 export interface SkuScore {
   product_fact_id: string;
   identity_node_id: string | null;
+
+  // v1 signals — kept for backward compat with recommend.ts + resolver
   demand_score: number | null;
   margin_score: number | null;
   effective_margin: number | null;
@@ -198,11 +212,126 @@ export interface SkuScore {
   cannibalization_risk_score: number | null;
   distribution_breadth_score: number | null;
   lifecycle_stage: LifecycleStage;
-  // Days remaining in the SKU's natural sell window. Drives the
-  // replenishment allocator: a V26 (S/S) SKU observed in May has more
-  // runway than the same SKU observed in September.
   seasonal_runway_days: number | null;
   seasonal_runway_score: number | null;
+
+  // v2 — Ángulo 1 · Demanda (new derived signals)
+  /** Tendencia: +1 acelerando (venta ayer > antesdeayer), -1 decelerando.
+   *  Magnitud proporcional al gap relativo. */
+  velocity_trend_score: number | null;
+  /** Demanda por facturación: rank de importe_7d dentro del corpus.
+   *  Captura héroes de revenue que velocity_rank por unidades pierde
+   *  (e.g., un caro de €120 con 50 uds pesa más que uno de €30 con 200). */
+  revenue_demand_score: number | null;
+  /** Aportación pesada por demanda: share_net_sales_7d × demand_score.
+   *  Un SKU con 0.3 share es estructuralmente importante incluso si
+   *  velocity_rank no es top. Bloquea KILL aunque otras señales lo pidan. */
+  family_contribution_score: number | null;
+  /** Rotación normalizada vs media de la familia. EL KPI canónico de
+   *  productividad. >=0.7 = rotación sana; <=0.3 = estancado. */
+  rotation_health_score: number | null;
+  /** Activación diaria: tiendas con venta ayer ÷ tiendas activas.
+   *  <0.5 = "stocked pero no vendiendo" → señal para INVESTIGAR
+   *  (problema en punto de venta, exposición, talla, fit). */
+  daily_activation_score: number | null;
+
+  // v2 — Ángulo 2 · Margen
+  /** ¿Ya hay una rebaja aplicada? (PVP < PVP referencia) */
+  markdown_already_applied: boolean;
+  /** Escalón canónico actual de rebaja:
+   *  0 = sin rebaja · 1 = -25/-30% · 2 = -40/-60% · 3 = -70%+ */
+  markdown_stage: 0 | 1 | 2 | 3;
+  /** Elasticidad: (max_sale_promo / max_sale_no_promo) − 1.
+   *  >0 = la promo empuja unidades. Cuanto más alto, más sentido tiene
+   *  REBAJAR o PROMOVER. */
+  price_elasticity_score: number | null;
+  /** Margen real sobre el suelo: effective_margin × éxito_del_enviado.
+   *  Lo que el suelo entrega de verdad, no lo que el plan asumía. */
+  shipped_margin_eur: number | null;
+
+  // v2 — Ángulo 3 · Techo de demanda
+  /** Utilización de capacidad: venta_d1 / max_sale_no_promo. */
+  capacity_utilization: number | null;
+  /** Espacio que queda al techo: 1 − capacity_utilization. */
+  capacity_headroom: number | null;
+  /** Techo con promo (max_sale_promo). Cuántas uds/día puede llegar a
+   *  hacer en su mejor día con descuento. */
+  promo_capacity_ceiling: number | null;
+
+  // v2 — Ángulo 4 · Agotamiento (stockout_risk_score ya existe)
+  /** ¿Puedo reponer AHORA? stock_available > 0 OR cd2_available > 0. */
+  can_replenish_now: boolean;
+  /** Días que tardaría el pipeline en llegar al ritmo actual de venta. */
+  pipeline_arrival_runway_days: number | null;
+  /** Activación de HOY: stores_with_sale_d1 / stores_with_stock.
+   *  Distinto de daily_activation_score (que usa stores_active = stores
+   *  que han vendido en algún momento). */
+  activation_ratio_today: number | null;
+
+  // v2 — Ángulo 5 · Canibalización (cannibalization_risk_score ya existe)
+  /** Fuerza del color ganador dentro del estilo:
+   *  share del #1 / media del resto. >=3.0 = ganador limpio (dispara
+   *  EXTENDER COLORES). <2.0 = ganadores marginales (no propaga). */
+  color_winner_strength: number | null;
+  /** Concentración Gini del share entre hermanos del estilo.
+   *  0 = balanceado · 1 = uno se lleva todo. */
+  share_concentration_gini: number | null;
+  /** Varianza de devoluciones entre hermanos. Alta = una variante es la
+   *  manzana podrida del estilo (señal para MARCAR REVISIÓN). */
+  sibling_returns_variance: number | null;
+
+  // v2 — Ángulo 6 · Ciclo (lifecycle_stage ya existe)
+  /** Rotación subiendo / bajando / estable esta semana. */
+  rotation_stage_signal: 'rising' | 'falling' | 'stable' | null;
+  /** Doble lectura de eficiencia: éxito del comprado (la decisión inicial). */
+  efficiency_bought_pct: number | null;
+  /** Éxito del enviado (la realidad en suelo, lo que el merchandiser ve). */
+  efficiency_shipped_pct: number | null;
+
+  // v2 — Ángulo 7 · Cobertura (distribution_breadth_score ya existe)
+  /** Cobertura de flota: stores_with_stock / stores_total.
+   *  Cuando stores_total es null, usa stores_total_synthetic del ctx. */
+  fleet_coverage_score: number | null;
+  /** Tiendas que faltan por activar — denominador de AMPLIAR DISTRIBUCIÓN. */
+  distribution_lift_capacity_stores: number | null;
+  /** Fuerza del CD2: cd2_available / pipeline_total. */
+  cd2_pool_strength: number | null;
+
+  // v2 — Ángulo 8 · Riesgo de rebaja (markdown_risk_score ya existe)
+  /** Estimación de unidades adicionales que libera el siguiente escalón:
+   *  derivado de max_sale_promo − max_sale_no_promo × días estimados. */
+  markdown_lift_estimate_units: number | null;
+  /** Siguiente escalón canónico (NUNCA bajar — Felipe ratchet duro).
+   *  Si stage=0 → 1; si 1 → 2; si 2 → 3; si 3 → null (terminal). */
+  markdown_ladder_next_step: 0 | 1 | 2 | 3 | null;
+  /** ¿La rebaja propuesta sigue dejando margen positivo?
+   *  shipped_margin − descuento_eur. */
+  markdown_margin_safety_eur: number | null;
+
+  // v2 — Ángulo 9 · Devoluciones (return_risk_score ya existe)
+  /** Devoluciones relativas a la familia: returns_pct / family_baseline.
+   *  >=2.0 = anómalo para la categoría. */
+  returns_vs_baseline_score: number | null;
+  /** Euros en juego: total_sold × PVP × returns_pct + logística inversa. */
+  returns_value_at_risk_eur: number | null;
+  /** Economía unitaria rota: effective_margin < 0 AND returns ≥ 30%.
+   *  Dispara KILL de emergencia incluso si la velocidad es alta. */
+  is_unit_economics_negative: boolean;
+
+  // v2 — Ángulo 10 · Continuidad
+  /** ¿Es superviviente probado? ≥2 temporadas + rotación sana +
+   *  devoluciones normales + sin rotura. */
+  is_survivor: boolean;
+  /** Fuerza de continuidad: temporadas × rotación × aportación. */
+  continuity_strength: number | null;
+  /** Consistencia entre temporadas (varianza de velocidad).
+   *  Stable / fluctuating / null (insufficient data). */
+  lineage_consistency: 'stable' | 'fluctuating' | null;
+  /** Elegible para plan de básicos: superviviente + fuerza alta +
+   *  categoría admite básicos. */
+  staple_eligibility: boolean;
+
+  // Confidence (unchanged)
   confidence_data_completeness: number;
   confidence_identity: number;
   confidence_demand: number;
@@ -409,8 +538,8 @@ export async function loadScoringInputs(
 export function scoreSku(
   input: SkuScoreInput,
   ctx: ClassifierContext,
-  /** Per-family velocity-density baselines for normalization. */
-  familyBaselines: Map<string, { median_density: number; max_density: number }>,
+  /** Per-family baselines (v2: rotation + returns + revenue + density). */
+  familyBaselines: Map<string, FamilyBaseline>,
   /** Per-lineage sibling list for cannibalization detection. */
   lineageSiblings: Map<string, SkuScoreInput[]>
 ): SkuScore {
@@ -782,9 +911,330 @@ export function scoreSku(
   const seasonal_runway_score = seasonal.runway_score;
   traces.seasonal_runway = seasonal;
 
+  // ═════════════════════════════════════════════════════════════════════
+  // v2 — SEÑALES DERIVADAS DE LOS 10 ÁNGULOS DE LECTURA
+  // Spec: memory/decision-map_aimily-in-season-v2-2026-05-18.md §2
+  // Cada bloque corresponde a un ángulo. Las señales aquí calculadas
+  // alimentan los disparos de las 12 decisiones (F3, próxima fase).
+  // ═════════════════════════════════════════════════════════════════════
+  const familyBaseline = input.family_code
+    ? familyBaselines.get(input.family_code) ?? null
+    : null;
+
+  // ── Ángulo 1 · Demanda ──────────────────────────────────────────────────
+  // velocity_trend_score: acelerando (+1) vs decelerando (−1). Magnitud
+  // proporcional al gap relativo entre venta ayer y antesdeayer.
+  let velocity_trend_score: number | null = null;
+  if (input.velocity_d1 > 0 || input.velocity_d2 > 0) {
+    const avg = (input.velocity_d1 + input.velocity_d2) / 2;
+    if (avg > 0) {
+      velocity_trend_score = Math.max(
+        -1,
+        Math.min(1, (input.velocity_d1 - input.velocity_d2) / avg)
+      );
+    }
+  }
+  // revenue_demand_score: importe vs máximo de la familia. Captura héroes
+  // de revenue que velocity-rank por unidades pierde.
+  let revenue_demand_score: number | null = null;
+  if (input.importe_7d != null && familyBaseline && familyBaseline.max_importe_7d > 0) {
+    revenue_demand_score = Math.max(
+      0,
+      Math.min(1, input.importe_7d / familyBaseline.max_importe_7d)
+    );
+  }
+  // family_contribution_score: aportación directa. Bloquea KILL aunque
+  // otras señales lo pidan si el SKU representa >5% de la familia.
+  const family_contribution_score: number | null =
+    input.share_net_sales_7d != null
+      ? Math.max(0, Math.min(1, input.share_net_sales_7d))
+      : null;
+  // rotation_health_score: rotación ajustada normalizada vs máximo de
+  // la familia. EL KPI canónico de productividad del stock.
+  let rotation_health_score: number | null = null;
+  if (
+    input.rotation_td_tr_aj_7d != null &&
+    familyBaseline &&
+    familyBaseline.max_rotation_aj > 0
+  ) {
+    rotation_health_score = Math.max(
+      0,
+      Math.min(1, input.rotation_td_tr_aj_7d / familyBaseline.max_rotation_aj)
+    );
+  }
+  // daily_activation_score: tiendas con venta ayer / tiendas activas.
+  // <0.5 = "stocked pero no vendiendo" → señal de problema en suelo.
+  let daily_activation_score: number | null = null;
+  if (
+    input.stores_with_sale_d1 != null &&
+    input.stores_active != null &&
+    input.stores_active > 0
+  ) {
+    daily_activation_score = Math.max(
+      0,
+      Math.min(1, input.stores_with_sale_d1 / input.stores_active)
+    );
+  }
+  traces.demanda_v2 = {
+    velocity_trend_score,
+    revenue_demand_score,
+    family_contribution_score,
+    rotation_health_score,
+    daily_activation_score,
+    rotation_observed: input.rotation_td_tr_aj_7d,
+    rotation_family_max: familyBaseline?.max_rotation_aj ?? null,
+    importe_7d: input.importe_7d,
+    share_net_sales_7d: input.share_net_sales_7d,
+  };
+
+  // ── Ángulo 2 · Margen ───────────────────────────────────────────────────
+  const markdown_already_applied =
+    input.pvp != null && input.pvp_compare != null && input.pvp_compare > input.pvp;
+  // Escalón canónico moda (Felipe: ratchet duro, prohibido bajar):
+  // 0 = sin rebaja · 1 = -25/-30% · 2 = -40/-60% · 3 = -70%+
+  let markdown_stage: 0 | 1 | 2 | 3 = 0;
+  if (markdown_already_applied && input.pvp != null && input.pvp_compare != null && input.pvp_compare > 0) {
+    const discount = 1 - input.pvp / input.pvp_compare;
+    if (discount >= 0.65) markdown_stage = 3;
+    else if (discount >= 0.35) markdown_stage = 2;
+    else if (discount >= 0.20) markdown_stage = 1;
+  }
+  // price_elasticity_score: (max_promo / max_no_promo) − 1. Cuánto más
+  // empujan unidades los días con promoción. >0.5 = elasticidad fuerte.
+  let price_elasticity_score: number | null = null;
+  if (
+    input.max_sale_promo != null &&
+    input.max_sale_no_promo != null &&
+    input.max_sale_no_promo > 0
+  ) {
+    price_elasticity_score = input.max_sale_promo / input.max_sale_no_promo - 1;
+  }
+  // shipped_margin_eur: margen efectivo × éxito del enviado. Lo que el
+  // suelo entrega de verdad, no lo que el plan asumía sobre lo comprado.
+  let shipped_margin_eur: number | null = null;
+  if (effective_margin != null && input.sell_through_shipped_pct != null) {
+    shipped_margin_eur = effective_margin * input.sell_through_shipped_pct;
+  }
+  traces.margen_v2 = {
+    markdown_already_applied,
+    markdown_stage,
+    price_elasticity_score,
+    shipped_margin_eur,
+  };
+
+  // ── Ángulo 3 · Techo de demanda ────────────────────────────────────────
+  const capacity_utilization = capacity_ratio;  // existing v1 computation
+  const capacity_headroom =
+    capacity_utilization != null ? Math.max(0, 1 - capacity_utilization) : null;
+  const promo_capacity_ceiling = input.max_sale_promo;
+
+  // ── Ángulo 4 · Agotamiento — señales adicionales ───────────────────────
+  // can_replenish_now: ¿hay stock para mover AHORA?
+  const can_replenish_now =
+    (input.stock_available ?? 0) > 0 || (input.cd2_available ?? 0) > 0;
+  // pipeline_arrival_runway_days: cuántos días tardaría el pipeline en
+  // llegar al ritmo actual de venta. Si es muy largo, ACELERAR ENTRADA.
+  let pipeline_arrival_runway_days: number | null = null;
+  if (input.pipeline_total != null && velocityRaw7d > 0) {
+    pipeline_arrival_runway_days = input.pipeline_total / (velocityRaw7d / 7);
+  }
+  // activation_ratio_today: tiendas con venta ayer / tiendas con stock.
+  // Distinto de daily_activation_score (que usa stores_active = históricas).
+  let activation_ratio_today: number | null = null;
+  if (
+    input.stores_with_sale_d1 != null &&
+    input.stores_with_stock != null &&
+    input.stores_with_stock > 0
+  ) {
+    activation_ratio_today = input.stores_with_sale_d1 / input.stores_with_stock;
+  }
+
+  // ── Ángulo 5 · Canibalización — señales adicionales ────────────────────
+  let color_winner_strength: number | null = null;
+  let share_concentration_gini: number | null = null;
+  let sibling_returns_variance: number | null = null;
+  if (input.identity_node_id) {
+    const allSiblings = lineageSiblings.get(input.identity_node_id) ?? [];
+    if (allSiblings.length > 1) {
+      // Color winner strength: my share / mean(other siblings' share).
+      const myShare = input.share_net_sales_7d ?? 0;
+      const otherShares = allSiblings
+        .filter((s) => s.product_fact_id !== input.product_fact_id)
+        .map((s) => s.share_net_sales_7d ?? 0);
+      const otherMean =
+        otherShares.length > 0
+          ? otherShares.reduce((a, b) => a + b, 0) / otherShares.length
+          : 0;
+      if (otherMean > 0) {
+        color_winner_strength = myShare / otherMean;
+      }
+      // Gini coefficient of shares across siblings.
+      const allShares = allSiblings.map((s) => s.share_net_sales_7d ?? 0);
+      const totalShare = allShares.reduce((a, b) => a + b, 0);
+      if (totalShare > 0 && allShares.length > 1) {
+        const sorted = allShares.slice().sort((a, b) => a - b);
+        let weightedSum = 0;
+        for (let i = 0; i < sorted.length; i++) {
+          weightedSum += (i + 1) * sorted[i];
+        }
+        share_concentration_gini =
+          (2 * weightedSum) / (sorted.length * totalShare) -
+          (sorted.length + 1) / sorted.length;
+      }
+      // Sibling returns variance (std dev).
+      const returnsArr = allSiblings.map((s) => s.returns_pct ?? 0);
+      if (returnsArr.length > 1) {
+        const mean = returnsArr.reduce((a, b) => a + b, 0) / returnsArr.length;
+        const variance =
+          returnsArr.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) /
+          returnsArr.length;
+        sibling_returns_variance = Math.sqrt(variance);
+      }
+    }
+  }
+
+  // ── Ángulo 6 · Ciclo — eficiencia dual ─────────────────────────────────
+  const efficiency_bought_pct = input.sell_through_bought_pct;
+  const efficiency_shipped_pct = input.sell_through_shipped_pct;
+  // rotation_stage_signal requires multi-period rotation history we don't
+  // ingest yet (V26 is a single snapshot). Honest null — will be wired
+  // when 2+ period data is available (also unblocks the backtest engine
+  // per audit H.1).
+  const rotation_stage_signal: 'rising' | 'falling' | 'stable' | null = null;
+
+  // ── Ángulo 7 · Cobertura — señales adicionales ─────────────────────────
+  // Synthetic fallback: when stores_total is null (Zara parser doesn't
+  // extract it), use the corpus-wide max(stores_with_stock) as effective
+  // fleet size (per graceful-degradation cardinal rule).
+  const effectiveStoresTotal =
+    input.stores_total ?? ctx.stores_total_synthetic ?? null;
+  let fleet_coverage_score: number | null = null;
+  if (
+    input.stores_with_stock != null &&
+    effectiveStoresTotal != null &&
+    effectiveStoresTotal > 0
+  ) {
+    fleet_coverage_score = Math.max(
+      0,
+      Math.min(1, input.stores_with_stock / effectiveStoresTotal)
+    );
+  }
+  let distribution_lift_capacity_stores: number | null = null;
+  if (effectiveStoresTotal != null && input.stores_with_stock != null) {
+    distribution_lift_capacity_stores = Math.max(
+      0,
+      effectiveStoresTotal - input.stores_with_stock
+    );
+  }
+  let cd2_pool_strength: number | null = null;
+  if (
+    input.cd2_available != null &&
+    input.pipeline_total != null &&
+    input.pipeline_total > 0
+  ) {
+    cd2_pool_strength = input.cd2_available / input.pipeline_total;
+  }
+  traces.cobertura_v2 = {
+    stores_total_source: input.stores_total != null ? 'tenant' : 'synthetic',
+    stores_total_effective: effectiveStoresTotal,
+    fleet_coverage_score,
+    distribution_lift_capacity_stores,
+    cd2_pool_strength,
+  };
+
+  // ── Ángulo 8 · Riesgo de rebaja — señales adicionales ──────────────────
+  // markdown_lift_estimate_units: estimación semanal de unidades
+  // adicionales que libera el escalón siguiente. Conservadora — asume
+  // que el día pico con promo se repite a lo largo de la semana al
+  // ritmo medio entre max_promo y max_no_promo. Real lift depende de
+  // duración + cadencia de la promoción.
+  let markdown_lift_estimate_units: number | null = null;
+  if (input.max_sale_promo != null && input.max_sale_no_promo != null) {
+    markdown_lift_estimate_units = Math.max(
+      0,
+      (input.max_sale_promo - input.max_sale_no_promo) * 7
+    );
+  }
+  // markdown_ladder_next_step — ratchet duro: nunca bajar de escalón.
+  const markdown_ladder_next_step: 0 | 1 | 2 | 3 | null =
+    markdown_stage === 0
+      ? 1
+      : markdown_stage === 1
+        ? 2
+        : markdown_stage === 2
+          ? 3
+          : null; // stage 3 is terminal
+  // markdown_margin_safety_eur: margen efectivo MENOS descuento del
+  // siguiente escalón. Si negativo, REBAJAR destruye economía.
+  let markdown_margin_safety_eur: number | null = null;
+  if (
+    effective_margin != null &&
+    input.pvp != null &&
+    markdown_ladder_next_step != null
+  ) {
+    const nextDiscountPct =
+      markdown_ladder_next_step === 1
+        ? 0.275 // -25/-30 midpoint
+        : markdown_ladder_next_step === 2
+          ? 0.50 // -40/-60 midpoint
+          : 0.75; // -70+ floor estimate
+    const discountEur = input.pvp * nextDiscountPct;
+    markdown_margin_safety_eur = effective_margin - discountEur;
+  }
+
+  // ── Ángulo 9 · Devoluciones — señales adicionales ──────────────────────
+  let returns_vs_baseline_score: number | null = null;
+  if (
+    input.returns_pct != null &&
+    familyBaseline &&
+    familyBaseline.weighted_returns_baseline > 0
+  ) {
+    returns_vs_baseline_score =
+      input.returns_pct / familyBaseline.weighted_returns_baseline;
+  }
+  let returns_value_at_risk_eur: number | null = null;
+  if (
+    input.total_sold != null &&
+    input.pvp != null &&
+    input.returns_pct != null
+  ) {
+    const returnedUnits = input.total_sold * input.returns_pct;
+    returns_value_at_risk_eur =
+      returnedUnits * (input.pvp + ctx.reverse_logistics_cost_per_unit);
+  }
+  // is_unit_economics_negative — emergency kill trigger.
+  const is_unit_economics_negative =
+    effective_margin != null &&
+    effective_margin < 0 &&
+    (input.returns_pct ?? 0) >= 0.30;
+
+  // ── Ángulo 10 · Continuidad — señales adicionales ──────────────────────
+  const is_survivor = carryoverSurvivor;
+  let continuity_strength: number | null = null;
+  if (
+    input.lineage_seasons_present &&
+    input.rotation_td_tr_aj_7d != null &&
+    input.share_net_sales_7d != null
+  ) {
+    continuity_strength = Math.max(
+      0,
+      Math.min(
+        1,
+        Math.min(1, input.lineage_seasons_present / 3) * 0.3 +
+          (rotation_health_score ?? 0) * 0.4 +
+          Math.min(1, input.share_net_sales_7d / 0.20) * 0.3
+      )
+    );
+  }
+  // lineage_consistency — requires multi-period sibling history. Honest
+  // null until 2+ period data is ingested.
+  const lineage_consistency: 'stable' | 'fluctuating' | null = null;
+  const staple_eligibility = is_survivor && (continuity_strength ?? 0) >= 0.50;
+
   return {
     product_fact_id: input.product_fact_id,
     identity_node_id: input.identity_node_id,
+    // v1 signals
     demand_score,
     margin_score,
     effective_margin,
@@ -796,6 +1246,51 @@ export function scoreSku(
     seasonal_runway_days,
     seasonal_runway_score,
     lifecycle_stage: lifecycle,
+    // v2 — Ángulo 1 Demanda
+    velocity_trend_score,
+    revenue_demand_score,
+    family_contribution_score,
+    rotation_health_score,
+    daily_activation_score,
+    // v2 — Ángulo 2 Margen
+    markdown_already_applied,
+    markdown_stage,
+    price_elasticity_score,
+    shipped_margin_eur,
+    // v2 — Ángulo 3 Techo
+    capacity_utilization,
+    capacity_headroom,
+    promo_capacity_ceiling,
+    // v2 — Ángulo 4 Agotamiento
+    can_replenish_now,
+    pipeline_arrival_runway_days,
+    activation_ratio_today,
+    // v2 — Ángulo 5 Canibalización
+    color_winner_strength,
+    share_concentration_gini,
+    sibling_returns_variance,
+    // v2 — Ángulo 6 Ciclo
+    rotation_stage_signal,
+    efficiency_bought_pct,
+    efficiency_shipped_pct,
+    // v2 — Ángulo 7 Cobertura
+    fleet_coverage_score,
+    distribution_lift_capacity_stores,
+    cd2_pool_strength,
+    // v2 — Ángulo 8 Rebaja
+    markdown_lift_estimate_units,
+    markdown_ladder_next_step,
+    markdown_margin_safety_eur,
+    // v2 — Ángulo 9 Devoluciones
+    returns_vs_baseline_score,
+    returns_value_at_risk_eur,
+    is_unit_economics_negative,
+    // v2 — Ángulo 10 Continuidad
+    is_survivor,
+    continuity_strength,
+    lineage_consistency,
+    staple_eligibility,
+    // Confidence
     confidence_data_completeness,
     confidence_identity,
     confidence_demand,
@@ -933,34 +1428,102 @@ export function aggregateFamilyScores(
   return out;
 }
 
+export interface FamilyBaseline {
+  /** v1 — velocity density (unidades / día / tienda) median+max */
+  median_density: number;
+  max_density: number;
+  /** v2 — rotación ajustada 7d, mediana + máximo de la familia.
+   *  Permite normalizar rotation_health_score: SKUs cuya rotación está
+   *  cerca del máximo de su familia son los héroes productivos. */
+  median_rotation_aj: number;
+  max_rotation_aj: number;
+  /** v2 — baseline de devoluciones pesada por unidades vendidas.
+   *  Si el SKU está 2× por encima, las devoluciones son anómalas para
+   *  esta categoría, no problema general de moda devolutiva. */
+  weighted_returns_baseline: number;
+  /** v2 — importe mediano y máximo de la familia. Para rankear héroes
+   *  por revenue contribution. */
+  median_importe_7d: number;
+  max_importe_7d: number;
+}
+
 /**
- * Build per-family velocity-density baselines for normalization.
+ * Build per-family baselines for v2 normalization.
+ * Velocity density (existing) + rotation + returns + importe (v2).
  */
 export function buildFamilyBaselines(
   inputs: SkuScoreInput[]
-): Map<string, { median_density: number; max_density: number }> {
-  const byFamily = new Map<string, number[]>();
+): Map<string, FamilyBaseline> {
+  const densityByFamily = new Map<string, number[]>();
+  const rotationByFamily = new Map<string, number[]>();
+  const returnsByFamily = new Map<string, { rp: number; sold: number }[]>();
+  const importeByFamily = new Map<string, number[]>();
+
   for (const i of inputs) {
     if (!i.family_code) continue;
-    if (i.stores_active == null || i.days_in_store == null || i.days_in_store <= 0) continue;
-    if (i.stores_active <= 0) continue;
-    const density = i.velocity_7d / Math.min(i.days_in_store, 7) / i.stores_active;
-    if (!Number.isFinite(density)) continue;
-    let arr = byFamily.get(i.family_code);
-    if (!arr) {
-      arr = [];
-      byFamily.set(i.family_code, arr);
+    const fam = i.family_code;
+    // Density
+    if (i.stores_active != null && i.days_in_store != null && i.days_in_store > 0 && i.stores_active > 0) {
+      const density = i.velocity_7d / Math.min(i.days_in_store, 7) / i.stores_active;
+      if (Number.isFinite(density)) {
+        const arr = densityByFamily.get(fam) ?? [];
+        arr.push(density);
+        densityByFamily.set(fam, arr);
+      }
     }
-    arr.push(density);
+    // Rotación ajustada
+    if (i.rotation_td_tr_aj_7d != null && i.rotation_td_tr_aj_7d > 0) {
+      const arr = rotationByFamily.get(fam) ?? [];
+      arr.push(i.rotation_td_tr_aj_7d);
+      rotationByFamily.set(fam, arr);
+    }
+    // Devoluciones pesadas por unidades
+    if (i.returns_pct != null && i.total_sold != null) {
+      const arr = returnsByFamily.get(fam) ?? [];
+      arr.push({ rp: i.returns_pct, sold: i.total_sold });
+      returnsByFamily.set(fam, arr);
+    }
+    // Importe 7d
+    if (i.importe_7d != null && i.importe_7d > 0) {
+      const arr = importeByFamily.get(fam) ?? [];
+      arr.push(i.importe_7d);
+      importeByFamily.set(fam, arr);
+    }
   }
 
-  const out = new Map<string, { median_density: number; max_density: number }>();
-  for (const [family, vals] of Array.from(byFamily.entries())) {
-    if (vals.length === 0) continue;
-    vals.sort((a, b) => a - b);
-    const median_density = vals[Math.floor(vals.length / 2)];
-    const max_density = vals[vals.length - 1] || 1;
-    out.set(family, { median_density, max_density });
+  const out = new Map<string, FamilyBaseline>();
+  const allFams = new Set<string>([
+    ...Array.from(densityByFamily.keys()),
+    ...Array.from(rotationByFamily.keys()),
+    ...Array.from(returnsByFamily.keys()),
+    ...Array.from(importeByFamily.keys()),
+  ]);
+  for (const fam of Array.from(allFams)) {
+    const densities = (densityByFamily.get(fam) ?? []).slice().sort((a, b) => a - b);
+    const rotations = (rotationByFamily.get(fam) ?? []).slice().sort((a, b) => a - b);
+    const returns = returnsByFamily.get(fam) ?? [];
+    const importes = (importeByFamily.get(fam) ?? []).slice().sort((a, b) => a - b);
+
+    const median = (arr: number[]) => arr.length > 0 ? arr[Math.floor(arr.length / 2)] : 0;
+    const max = (arr: number[]) => arr.length > 0 ? arr[arr.length - 1] : 0;
+
+    // Weighted returns baseline.
+    let rwNum = 0, rwDen = 0;
+    for (const r of returns) {
+      rwNum += r.rp * r.sold;
+      rwDen += r.sold;
+    }
+    const weighted_returns_baseline = rwDen > 0 ? rwNum / rwDen : 0;
+
+    out.set(fam, {
+      median_density: median(densities),
+      max_density: max(densities) || 1,
+      median_rotation_aj: median(rotations),
+      max_rotation_aj: max(rotations) || 1,
+      weighted_returns_baseline,
+      median_importe_7d: median(importes),
+      max_importe_7d: max(importes) || 1,
+    });
   }
   return out;
 }
