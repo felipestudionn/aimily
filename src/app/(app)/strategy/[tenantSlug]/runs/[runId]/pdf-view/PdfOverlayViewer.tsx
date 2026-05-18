@@ -657,80 +657,30 @@ function FilterChip({
  */
 function SkuDetailInline({ sku }: { sku: SkuRow }) {
   return (
-    <div className="border-t border-carbon/[0.04] bg-shade/40 p-4 space-y-4">
-        {/* Headline KPIs — the 5 numbers a buyer expects to see first.
-         *  Spec v1 §3.1. Sources cited per KPI in the source code; the
-         *  small 'estimate' badge surfaces when a value derives from
-         *  retailer-profile defaults rather than tenant input. */}
-        {sku.headline_kpis && (
-          <section className="grid grid-cols-5 gap-1.5 text-[10px]">
-            <HeadlineKpi
-              title="GMROI"
-              hint="target 3.0–3.5"
-              kpi={sku.headline_kpis.gmroi}
-              format={(v) => v.toFixed(2)}
-            />
-            <HeadlineKpi
-              title="STR vs plan"
-              hint="pp delta"
-              kpi={sku.headline_kpis.str_vs_plan_pp}
-              format={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`}
-            />
-            <HeadlineKpi
-              title="FWOC / LT"
-              hint="< 1 = stockout · > 2 = oversupplied"
-              kpi={sku.headline_kpis.fwoc_lt_ratio}
-              format={(v) => `${v.toFixed(1)}×`}
-            />
-            <HeadlineKpi
-              title="S / S ratio"
-              hint="parked stock when > 10"
-              kpi={sku.headline_kpis.s_s_ratio}
-              format={(v) => v.toFixed(1)}
-            />
-            <HeadlineKpi
-              title="Maint. MU"
-              hint="markup post-returns"
-              kpi={sku.headline_kpis.maintained_markup_pct}
-              format={(v) => `${v.toFixed(0)}%`}
-            />
-          </section>
-        )}
-
-        {/* Operational quick-stats */}
-        <section className="grid grid-cols-3 gap-2 text-[11px]">
-          <Stat label="Precio" value={sku.pvp != null ? `€${Number(sku.pvp).toFixed(2)}` : '—'} />
-          <Stat label="Velocidad 7d" value={sku.velocity_7d?.toLocaleString() ?? '—'} />
-          <Stat label="Stock días" value={sku.current_stock_days != null ? `${sku.current_stock_days}d` : '—'} />
-          <Stat label="Tiendas activas" value={sku.stores_active?.toLocaleString() ?? '—'} />
-          <Stat label="Stock total" value={sku.stock_total?.toLocaleString() ?? '—'} />
-          <Stat label="Rotación target" value={`${sku.target_rotation_days}d`} />
-        </section>
-
-        {/* Modulator notes (archetype/budget/brief annotations) */}
-        {sku.modulator_notes.length > 0 && (
-          <section className="bg-amber-50 border border-amber-200 rounded-[10px] p-3 space-y-1">
-            {sku.modulator_notes.map((n, i) => (
-              <p key={i} className="text-[11px] text-amber-900">
-                · {n.note}
-              </p>
-            ))}
-          </section>
-        )}
-
-        {/* Actions stack */}
+    <div className="border-t border-carbon/[0.06] bg-white p-4 space-y-5">
+        {/* ACTION STACK — the reason to expand. "Replicar ahora", "Extender
+         *  colores", "Reponer", etc. with full rationale, Six Right anchor,
+         *  owner, confidence + evidence per action. THIS is what the buyer
+         *  wants to see when they expand a SKU, so it leads the detail. */}
         <section className="space-y-3">
+          <h3 className="text-[10px] uppercase tracking-[0.12em] text-carbon/45 font-semibold">
+            Acciones recomendadas — qué hacer y por qué
+          </h3>
           {visibleActions(sku.actions).map((a, i) => (
-            <div key={`${a.action}-${i}`} className="border border-carbon/[0.06] rounded-[12px] p-3">
-              <div className="flex items-center justify-between mb-2 gap-3">
+            <div
+              key={`${a.action}-${i}`}
+              className="bg-white border border-carbon/[0.08] rounded-[14px] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+            >
+              {/* Action header — label pill + meta pills + units */}
+              <div className="flex items-center justify-between mb-3 gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] uppercase tracking-[0.06em] font-semibold ${ACTION_TONE[a.action]}`}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] uppercase tracking-[0.06em] font-semibold ${ACTION_TONE[a.action]}`}
                   >
                     {ACTION_LABEL_ES[a.action]}
                   </span>
                   {actionColors(a).length > 0 && (
-                    <ColorSwatches swatches={actionColors(a)} size={18} />
+                    <ColorSwatches swatches={actionColors(a)} size={20} />
                   )}
                   {a.six_right && (
                     <span
@@ -753,35 +703,111 @@ function SkuDetailInline({ sku }: { sku: SkuRow }) {
                   </span>
                 </div>
                 {a.recommended_units != null && a.recommended_units > 0 && (
-                  <span className="text-[14px] font-semibold tabular-nums">
+                  <span className="text-[16px] font-semibold tabular-nums shrink-0">
                     {a.recommended_units.toLocaleString()} uds
                   </span>
                 )}
               </div>
+              {/* The MEANING — what this action means for this SKU. Larger
+               *  prose so it's the focal point of the expanded detail. */}
               {a.rationale && (
-                <p className="text-[13px] text-carbon leading-[1.55] mb-3">
+                <p className="text-[14px] text-carbon leading-[1.6] mb-3">
                   {a.rationale}
                 </p>
               )}
               {a.data_sufficiency_warning && (
                 <p className="text-[11px] text-amber-800 italic mb-2">⚠ {a.data_sufficiency_warning}</p>
               )}
+              {a.assumptions.length > 0 && (
+                <ul className="text-[11px] text-carbon/55 space-y-0.5 mb-2 pl-2 border-l-2 border-carbon/[0.08]">
+                  {a.assumptions.map((s, j) => (
+                    <li key={j} className="leading-[1.5]">· {s}</li>
+                  ))}
+                </ul>
+              )}
+              {/* Detailed evidence (the data behind) — collapsed by default
+               *  so it doesn't drown the rationale, but always one click
+               *  away when the buyer wants to defend the decision. */}
               <details className="text-[11px]">
-                <summary className="cursor-pointer text-carbon/50 hover:text-carbon select-none mb-2">
+                <summary className="cursor-pointer text-carbon/50 hover:text-carbon select-none">
                   Ver datos detrás
                 </summary>
-                <EvidenceList obj={a.evidence} />
-                {a.assumptions.length > 0 && (
-                  <ul className="mt-2 text-[10px] text-carbon/55 space-y-0.5">
-                    {a.assumptions.map((s, j) => (
-                      <li key={j}>· {s}</li>
-                    ))}
-                  </ul>
-                )}
+                <div className="mt-2">
+                  <EvidenceList obj={a.evidence} />
+                </div>
               </details>
             </div>
           ))}
         </section>
+
+        {/* Headline KPIs — the 5 numbers a buyer expects to see (spec §3.1).
+         *  Below the action stack because the buyer expanded to see "what
+         *  should I do"; the KPIs anchor the decision but aren't the answer. */}
+        {sku.headline_kpis && (
+          <section>
+            <h3 className="text-[10px] uppercase tracking-[0.12em] text-carbon/45 font-semibold mb-2">
+              KPIs cabecera
+            </h3>
+            <div className="grid grid-cols-5 gap-1.5 text-[10px]">
+              <HeadlineKpi
+                title="GMROI"
+                hint="target 3.0–3.5"
+                kpi={sku.headline_kpis.gmroi}
+                format={(v) => v.toFixed(2)}
+              />
+              <HeadlineKpi
+                title="STR vs plan"
+                hint="pp delta"
+                kpi={sku.headline_kpis.str_vs_plan_pp}
+                format={(v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`}
+              />
+              <HeadlineKpi
+                title="FWOC / LT"
+                hint="< 1 = stockout · > 2 = oversupplied"
+                kpi={sku.headline_kpis.fwoc_lt_ratio}
+                format={(v) => `${v.toFixed(1)}×`}
+              />
+              <HeadlineKpi
+                title="S / S ratio"
+                hint="parked stock when > 10"
+                kpi={sku.headline_kpis.s_s_ratio}
+                format={(v) => v.toFixed(1)}
+              />
+              <HeadlineKpi
+                title="Maint. MU"
+                hint="markup post-returns"
+                kpi={sku.headline_kpis.maintained_markup_pct}
+                format={(v) => `${v.toFixed(0)}%`}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* Operational quick-stats */}
+        <section>
+          <h3 className="text-[10px] uppercase tracking-[0.12em] text-carbon/45 font-semibold mb-2">
+            Operacional
+          </h3>
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <Stat label="Precio" value={sku.pvp != null ? `€${Number(sku.pvp).toFixed(2)}` : '—'} />
+            <Stat label="Velocidad 7d" value={sku.velocity_7d?.toLocaleString() ?? '—'} />
+            <Stat label="Stock días" value={sku.current_stock_days != null ? `${sku.current_stock_days}d` : '—'} />
+            <Stat label="Tiendas activas" value={sku.stores_active?.toLocaleString() ?? '—'} />
+            <Stat label="Stock total" value={sku.stock_total?.toLocaleString() ?? '—'} />
+            <Stat label="Rotación target" value={`${sku.target_rotation_days}d`} />
+          </div>
+        </section>
+
+        {/* Modulator notes (archetype/budget/brief annotations) */}
+        {sku.modulator_notes.length > 0 && (
+          <section className="bg-amber-50 border border-amber-200 rounded-[10px] p-3 space-y-1">
+            {sku.modulator_notes.map((n, i) => (
+              <p key={i} className="text-[11px] text-amber-900">
+                · {n.note}
+              </p>
+            ))}
+          </section>
+        )}
     </div>
   );
 }
