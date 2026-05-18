@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface VerdictAction {
   // 13-verb spec taxonomy (2026-05-17). The legacy aliases (investigate,
@@ -622,82 +622,130 @@ function SkuPanel({
   expandedSkuIds: Set<string>;
   onToggleExpand: (id: string) => void;
 }) {
-  const [filterExpanded, setFilterExpanded] = useState(false);
-  // Solo chips para acciones reales (sin carryover ni hold) que tengan
-  // ≥1 SKU en el run.
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  // Solo acciones reales (sin carryover ni hold) que tengan ≥1 SKU en el run.
   const availableActions = ACTIONABLE_VERBS.filter(
     (a) => (data.summary.action_counts[a] || 0) > 0
   );
   const totalSelected = actionFilter.size;
   const totalAvailable = availableActions.length;
   const isShowingAll = totalSelected === totalAvailable || totalSelected === 0;
+  const triggerLabel = isShowingAll
+    ? 'Todos'
+    : `${totalSelected}/${totalAvailable} acciones`;
   const selectAll = () => {
     availableActions.forEach((a) => {
       if (!actionFilter.has(a)) toggleActionFilter(a);
     });
   };
+  // Close dropdown when clicking outside (Excel-style filter behavior).
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
   return (
     <aside className="w-[520px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
-        {/* Filter bar — collapsed por defecto para no ensuciar la vista.
-         *  Felipe 2026-05-18: "necesito un filtro... pero no puedo ver
-         *  todos los pills de golpe, porque ensucia mucho la vista". */}
-        <div className="sticky top-0 z-10 bg-white border-b border-carbon/[0.06] p-3">
+        {/* Filter bar — Excel-style dropdown (Felipe 2026-05-18):
+         *  un solo pill "Todos ▼" que abre lista vertical con checkboxes.
+         *  Por defecto todos marcados. Click para des-marcar y filtrar.  */}
+        <div className="sticky top-0 z-20 bg-white border-b border-carbon/[0.06] p-3">
           <div className="flex items-center justify-between">
             <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40">
               {filteredSkus.length} de {data.summary.total_skus} SKUs · Arquetipo {data.archetype_id ?? '—'}
             </div>
-            <button
-              type="button"
-              onClick={() => setFilterExpanded((v) => !v)}
-              className="text-[11px] text-carbon/60 hover:text-carbon flex items-center gap-1 px-2 py-1 rounded-full hover:bg-carbon/[0.04] transition-colors"
-            >
-              <span>
-                {isShowingAll
-                  ? 'Filtrar acciones'
-                  : `${totalSelected}/${totalAvailable} acciones`}
-              </span>
-              <ChevronRight
-                className={`h-3 w-3 transition-transform ${filterExpanded ? 'rotate-90' : ''}`}
-              />
-            </button>
-          </div>
-          {filterExpanded && (
-            <div className="mt-2.5 space-y-2">
-              <div className="flex items-center gap-2 text-[10px]">
-                <button
-                  type="button"
-                  onClick={selectAll}
-                  className="text-carbon/55 hover:text-carbon underline decoration-dotted underline-offset-2"
-                >
-                  Marcar todas
-                </button>
-                <span className="text-carbon/25">·</span>
-                <button
-                  type="button"
-                  onClick={clearFilter}
-                  className="text-carbon/55 hover:text-carbon underline decoration-dotted underline-offset-2"
-                >
-                  Desmarcar todas
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {availableActions.map((a) => {
-                  const c = data.summary.action_counts[a] || 0;
-                  const checked = actionFilter.has(a);
-                  return (
-                    <FilterChip
-                      key={a}
-                      label={ACTION_LABEL_ES[a]}
-                      count={c}
-                      active={checked}
-                      tone={ACTION_TONE[a]}
-                      onClick={() => toggleActionFilter(a)}
-                    />
-                  );
-                })}
-              </div>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setDropdownOpen((v) => !v)}
+                className={`text-[11px] flex items-center gap-1 px-3 py-1.5 rounded-full transition-colors ${
+                  isShowingAll
+                    ? 'bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08]'
+                    : 'bg-carbon text-white hover:bg-carbon/90'
+                }`}
+              >
+                <span className="font-medium">{triggerLabel}</span>
+                <ChevronDown
+                  className={`h-3 w-3 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-[280px] bg-white border border-carbon/[0.10] rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.10)] overflow-hidden z-30">
+                  <div className="flex items-center gap-2 px-3 py-2 border-b border-carbon/[0.06] bg-carbon/[0.02] text-[10px]">
+                    <button
+                      type="button"
+                      onClick={selectAll}
+                      className="text-carbon/60 hover:text-carbon font-medium uppercase tracking-[0.04em]"
+                    >
+                      Marcar todas
+                    </button>
+                    <span className="text-carbon/20">·</span>
+                    <button
+                      type="button"
+                      onClick={clearFilter}
+                      className="text-carbon/60 hover:text-carbon font-medium uppercase tracking-[0.04em]"
+                    >
+                      Desmarcar todas
+                    </button>
+                  </div>
+                  <ul className="max-h-[400px] overflow-y-auto py-1">
+                    {availableActions.map((a) => {
+                      const c = data.summary.action_counts[a] || 0;
+                      const checked = actionFilter.has(a);
+                      return (
+                        <li key={a}>
+                          <button
+                            type="button"
+                            onClick={() => toggleActionFilter(a)}
+                            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-carbon/[0.03] transition-colors"
+                          >
+                            <span className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`shrink-0 w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
+                                  checked
+                                    ? 'bg-carbon border-carbon'
+                                    : 'bg-white border-carbon/[0.20]'
+                                }`}
+                              >
+                                {checked && (
+                                  <svg
+                                    width="10"
+                                    height="10"
+                                    viewBox="0 0 12 12"
+                                    fill="none"
+                                  >
+                                    <path
+                                      d="M2 6L5 9L10 3"
+                                      stroke="white"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                )}
+                              </span>
+                              <span className="text-[12px] text-carbon truncate">
+                                {ACTION_LABEL_ES[a]}
+                              </span>
+                            </span>
+                            <span className="text-[10px] text-carbon/45 tabular-nums shrink-0">
+                              {c}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
         {/* SKU list — accordion pattern. Each row is a clickable header
          *  that toggles inline expansion. Multiple SKUs can be open at
