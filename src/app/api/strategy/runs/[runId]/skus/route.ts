@@ -33,11 +33,14 @@ import {
   appendPullForwardIntakeAction,
   enrichVerdict,
   DEFAULT_TARGET_ROTATION_DAYS,
+  type SkuVerdict,
   type SkuVerdictInput,
   type SkuVerdictAction,
   type LineageColorWinner,
   type LineageColorLoser,
 } from '@/lib/strategy/sku-verdict-resolver';
+import { getDialesForScenario, type ScenarioId } from '@/lib/strategy/scenario-diales';
+import { applyScenarioToVerdict } from '@/lib/strategy/scenario-modulator';
 import {
   modulateSkuVerdicts,
   type ArchetypeContext,
@@ -923,6 +926,47 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const afterExclusions = modulated.map(applyExclusionRules);
   const enriched = afterExclusions.map(enrichVerdict);
   const modulatedByPid = new Map(enriched.map((m) => [m.product_fact_id, m]));
+
+  // v2 (2026-05-18 spec §8.2) — Computar los 4 escenarios comerciales
+  // aplicando los diales (threshold/magnitude/confidence) sobre el verdict
+  // base de cada SKU. Cardinal: ningún escenario elimina decisiones, las
+  // gradualiza. El motor genera el universo permisivo (la `enriched`
+  // base ≈ Balanceada con appenders) y los diales filtran/escalan por
+  // escenario.
+  const scenarioStacksByPid = new Map<string, Record<ScenarioId, SkuVerdict>>();
+  for (const baseVerdict of enriched) {
+    const v2 = (scoresByPid.get(baseVerdict.product_fact_id)?.v2 ?? null) as Record<string, unknown> | null;
+    const customMix = (constraint?.action_mix as Record<string, number> | null | undefined) ?? null;
+    const perScenario: Record<ScenarioId, SkuVerdict> = {
+      conservar_margen: applyScenarioToVerdict(baseVerdict, getDialesForScenario('conservar_margen'), v2),
+      balanceada: applyScenarioToVerdict(baseVerdict, getDialesForScenario('balanceada'), v2),
+      maximizar_venta: applyScenarioToVerdict(baseVerdict, getDialesForScenario('maximizar_venta'), v2),
+      tu_mezcla: applyScenarioToVerdict(baseVerdict, getDialesForScenario('tu_mezcla', customMix), v2),
+    };
+    scenarioStacksByPid.set(baseVerdict.product_fact_id, perScenario);
+  }
+
+  // v2 (§8.3) — Cargar locks del usuario para este run. Cada lock fija
+  // un SKU a un escenario específico, sobrescribiendo el toggle global.
+  const { data: userLocksRows } = await supabaseAdmin
+    .from('strategy_user_sku_selections')
+    .select('product_fact_id, chosen_scenario, locked_by, locked_at')
+    .eq('run_id', runId)
+    .is('unlocked_at', null);
+  const userLocksByPid = new Map<string, { chosen_scenario: ScenarioId; locked_at: string }>();
+  for (const row of (userLocksRows || []) as Array<{ product_fact_id: string; chosen_scenario: string; locked_at: string }>) {
+    if (
+      row.chosen_scenario === 'conservar_margen' ||
+      row.chosen_scenario === 'balanceada' ||
+      row.chosen_scenario === 'maximizar_venta' ||
+      row.chosen_scenario === 'tu_mezcla'
+    ) {
+      userLocksByPid.set(row.product_fact_id, {
+        chosen_scenario: row.chosen_scenario,
+        locked_at: row.locked_at,
+      });
+    }
+  }
   // Today's date for days_in_store. Production: would come from the run's
   // observation_date. For dogfood: today's run.
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -987,6 +1031,20 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           capacity_headroom_pct: headroom != null ? headroom * 100 : null,
         }
       : undefined;
+    // v2 (§8.2) — Por SKU exponemos las 4 stacks (uno por escenario)
+    // para que el frontend pueda toggler sin re-llamadas. La key `actions`
+    // se mantiene como compatibilidad — apunta a la 'balanceada' (default
+    // del toggle global al cargar).
+    const scenarioStacks = scenarioStacksByPid.get(p.id);
+    const verdictsByScenario = scenarioStacks
+      ? {
+          conservar_margen: scenarioStacks.conservar_margen.actions ?? [],
+          balanceada: scenarioStacks.balanceada.actions ?? [],
+          maximizar_venta: scenarioStacks.maximizar_venta.actions ?? [],
+          tu_mezcla: scenarioStacks.tu_mezcla.actions ?? [],
+        }
+      : null;
+    const userLock = userLocksByPid.get(p.id) ?? null;
     return {
       rank: idx + 1,
       product_fact_id: p.id,
@@ -1003,7 +1061,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       days_in_store: daysInStore,
       target_rotation_days: v?.target_rotation_days ?? 4,
       current_stock_days: v?.current_stock_days ?? null,
-      actions: v?.actions ?? [],
+      // Legacy: keep `actions` pointing to balanceada (= toggle default)
+      actions: verdictsByScenario?.balanceada ?? v?.actions ?? [],
+      // v2 — full per-scenario stacks
+      verdicts_by_scenario: verdictsByScenario,
+      user_lock: userLock,
       modulator_notes: v?.modulator_notes ?? [],
       headline_kpis: headlineKpis,
       commercial_kpis: commercialKpis,
@@ -1011,12 +1073,32 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   });
 
   // Summary for the page header.
+  // Legacy `action_counts` apunta a Balanceada (default toggle).
+  // v2: `action_counts_by_scenario` permite que el filtro UI se ajuste
+  // cuando el usuario cambia escenario.
   const actionCounts: Record<string, number> = {};
   for (const sku of skus) {
     for (const a of sku.actions) {
       actionCounts[a.action] = (actionCounts[a.action] || 0) + 1;
     }
   }
+  const scenarioIds: ScenarioId[] = ['conservar_margen', 'balanceada', 'maximizar_venta', 'tu_mezcla'];
+  const actionCountsByScenario: Record<ScenarioId, Record<string, number>> = {
+    conservar_margen: {},
+    balanceada: {},
+    maximizar_venta: {},
+    tu_mezcla: {},
+  };
+  for (const sid of scenarioIds) {
+    for (const sku of skus) {
+      const stack = sku.verdicts_by_scenario?.[sid] ?? [];
+      for (const a of stack) {
+        actionCountsByScenario[sid][a.action] = (actionCountsByScenario[sid][a.action] || 0) + 1;
+      }
+    }
+  }
+  // SKUs decididos = los que tienen lock activo.
+  const lockedSkusCount = skus.filter((s) => s.user_lock != null).length;
 
   return NextResponse.json({
     run_id: runId,
@@ -1031,6 +1113,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     summary: {
       total_skus: skus.length,
       action_counts: actionCounts as Record<SkuVerdictAction, number>,
+      // v2 § 8.2 — counts por escenario para que el filtro de la UI
+      // muestre los conteos correctos al cambiar el toggle global.
+      action_counts_by_scenario: actionCountsByScenario as Record<ScenarioId, Record<SkuVerdictAction, number>>,
+      // v2 §8.3 — totales del plan en construcción
+      locked_skus: lockedSkusCount,
+      pending_skus: skus.length - lockedSkusCount,
     },
   });
 }
