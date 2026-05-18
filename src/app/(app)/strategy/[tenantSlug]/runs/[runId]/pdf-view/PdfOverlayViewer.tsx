@@ -494,7 +494,52 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
   // v2 §8.3 — locks per-SKU del usuario. Map<product_fact_id, ScenarioId>.
   // Se sincroniza al servidor en cada cambio (auto-save Google Docs).
   const [userLocks, setUserLocks] = useState<Map<string, ScenarioId>>(new Map());
+  // Fase 2 · diff visual: al cambiar el escenario activo, los SKUs cuyo
+  // stack difiere del anterior se resaltan 1.5s. Permite ver QUÉ cambia
+  // sin escanear los 48 SKUs uno por uno.
+  const previousScenarioRef = useRef<ScenarioId>('balanceada');
+  const [recentlyChangedPids, setRecentlyChangedPids] = useState<Set<string>>(new Set());
+  // Fase 2 · modo comparación side-by-side: cuando hay un segundo
+  // escenario activo, cada SKU muestra DOS stacks de pills.
+  const [comparisonScenario, setComparisonScenario] = useState<ScenarioId | null>(null);
   const pdfCanvasRef = useRef<HTMLDivElement>(null);
+
+  // Fase 2 · al cambiar el escenario activo, calcular qué SKUs CAMBIAN
+  // su verdict stack y resaltarlos por 1.5s. La comparación se hace
+  // entre el escenario anterior y el nuevo, ignorando SKUs con lock
+  // (esos no cambian por definición — siguen su escenario fijado).
+  useEffect(() => {
+    const prev = previousScenarioRef.current;
+    if (prev === activeScenario) return;
+    if (!data) {
+      previousScenarioRef.current = activeScenario;
+      return;
+    }
+    const changed = new Set<string>();
+    for (const sku of data.skus) {
+      // SKUs lockeados nunca "cambian" con el toggle global
+      if (userLocks.has(sku.product_fact_id)) continue;
+      const prevActions = sku.verdicts_by_scenario?.[prev] ?? sku.actions;
+      const newActions = sku.verdicts_by_scenario?.[activeScenario] ?? sku.actions;
+      const prevSet = new Set(visibleActions(prevActions).map((a) => a.action));
+      const newSet = new Set(visibleActions(newActions).map((a) => a.action));
+      let differs = prevSet.size !== newSet.size;
+      if (!differs) {
+        for (const a of Array.from(prevSet)) {
+          if (!newSet.has(a)) {
+            differs = true;
+            break;
+          }
+        }
+      }
+      if (differs) changed.add(sku.product_fact_id);
+    }
+    previousScenarioRef.current = activeScenario;
+    if (changed.size === 0) return;
+    setRecentlyChangedPids(changed);
+    const timeout = setTimeout(() => setRecentlyChangedPids(new Set()), 1800);
+    return () => clearTimeout(timeout);
+  }, [activeScenario, data, userLocks]);
 
   // Fetch verdicts + PDF signed URL once on mount.
   useEffect(() => {
@@ -722,6 +767,9 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         unlockSku={unlockSku}
         getEffectiveScenario={getEffectiveScenario}
         getEffectiveActions={getEffectiveActions}
+        recentlyChangedPids={recentlyChangedPids}
+        comparisonScenario={comparisonScenario}
+        setComparisonScenario={setComparisonScenario}
       />
     </div>
   );
@@ -742,6 +790,9 @@ function SkuPanel({
   unlockSku,
   getEffectiveScenario,
   getEffectiveActions,
+  recentlyChangedPids,
+  comparisonScenario,
+  setComparisonScenario,
 }: {
   data: ApiResponse;
   actionFilter: Set<VerdictAction['action']>;
@@ -757,6 +808,9 @@ function SkuPanel({
   unlockSku: (productFactId: string) => Promise<void>;
   getEffectiveScenario: (productFactId: string) => ScenarioId;
   getEffectiveActions: (sku: SkuRow) => VerdictAction[];
+  recentlyChangedPids: Set<string>;
+  comparisonScenario: ScenarioId | null;
+  setComparisonScenario: (s: ScenarioId | null) => void;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -808,8 +862,16 @@ function SkuPanel({
          *  cómo cambian los diferentes outputs". */}
         <div className="sticky top-0 z-20 bg-white border-b border-carbon/[0.06]">
           <div className="p-3 pb-2">
-            <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/40 mb-1.5">
-              Escenario comercial
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/40">
+                Escenario comercial
+              </div>
+              {/* Fase 2 · botón comparación side-by-side */}
+              <ComparisonControl
+                activeScenario={activeScenario}
+                comparisonScenario={comparisonScenario}
+                setComparisonScenario={setComparisonScenario}
+              />
             </div>
             <div className="grid grid-cols-4 gap-1 p-1 bg-carbon/[0.04] rounded-[10px]">
               {SCENARIO_ORDER.map((sid) => {
@@ -935,6 +997,15 @@ function SkuPanel({
             const visibleActs = visibleActions(effectiveActions);
             const lockedScenario = userLocks.get(sku.product_fact_id);
             const isLocked = lockedScenario != null;
+            const isRecentlyChanged = recentlyChangedPids.has(sku.product_fact_id);
+            // Fase 2 · si modo comparación activo, también necesitamos el stack
+            // del 2º escenario para mostrar side-by-side.
+            const comparisonActions = comparisonScenario && sku.verdicts_by_scenario
+              ? sku.verdicts_by_scenario[comparisonScenario] ?? []
+              : null;
+            const comparisonVisibleActs = comparisonActions
+              ? visibleActions(comparisonActions)
+              : null;
             return (
               <li key={sku.product_fact_id} className="border-b border-carbon/[0.04]">
                 <button
@@ -943,7 +1014,9 @@ function SkuPanel({
                   aria-expanded={isExpanded}
                   className={`w-full text-left p-3 hover:bg-carbon/[0.02] transition-colors ${
                     isExpanded ? 'bg-carbon/[0.03]' : ''
-                  } ${isLocked ? 'border-l-2 border-l-carbon/40' : ''}`}
+                  } ${isLocked ? 'border-l-2 border-l-carbon/40' : ''} ${
+                    isRecentlyChanged ? 'animate-[pulse_0.9s_ease-out_2] bg-warning/[0.05]' : ''
+                  }`}
                 >
                   <div className="flex items-start gap-2.5 mb-1.5">
                     {/* Ranking square · matches Zara RNK row position 1:1. */}
@@ -970,28 +1043,45 @@ function SkuPanel({
                     />
                   </div>
                   <div className="pl-[42px] space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {visibleActs.map((a) => {
-                        const colors = actionColors(a);
-                        return (
-                          <span
-                            key={a.action}
-                            className="inline-flex items-center gap-1.5"
-                          >
+                    {/* Fase 2 · modo comparación: dos stacks etiquetados.
+                     *  Modo normal: un solo stack horizontal. */}
+                    {comparisonVisibleActs ? (
+                      <div className="space-y-1.5">
+                        <ScenarioStackRow
+                          label={SCENARIO_LABEL_ES[activeScenario]}
+                          actions={visibleActs}
+                          accent="primary"
+                        />
+                        <ScenarioStackRow
+                          label={SCENARIO_LABEL_ES[comparisonScenario as ScenarioId]}
+                          actions={comparisonVisibleActs}
+                          accent="secondary"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {visibleActs.map((a) => {
+                          const colors = actionColors(a);
+                          return (
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                              key={a.action}
+                              className="inline-flex items-center gap-1.5"
                             >
-                              {ACTION_LABEL_ES[a.action]}
-                              {a.recommended_units != null && a.recommended_units > 0
-                                ? ` · ${a.recommended_units.toLocaleString()} uds`
-                                : ''}
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                              >
+                                {ACTION_LABEL_ES[a.action]}
+                                {a.recommended_units != null && a.recommended_units > 0
+                                  ? ` · ${a.recommended_units.toLocaleString()} uds`
+                                  : ''}
+                              </span>
+                              {colors.length > 0 && <ColorSwatches swatches={colors} />}
                             </span>
-                            {colors.length > 0 && <ColorSwatches swatches={colors} />}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    {!isExpanded && visibleActs[0]?.rationale && (
+                          );
+                        })}
+                      </div>
+                    )}
+                    {!isExpanded && !comparisonVisibleActs && visibleActs[0]?.rationale && (
                       <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
                         {visibleActs[0].rationale}
                       </p>
@@ -1665,6 +1755,119 @@ function LoadingWheel({ totalSkus }: { totalSkus: number | null }) {
             );
           })}
         </ul>
+      </div>
+    </div>
+  );
+}
+
+/** Fase 2 · botón "Comparar" en el header. Abre dropdown con los 3
+ *  escenarios distintos al activo. Al picar uno, activa modo
+ *  side-by-side. */
+function ComparisonControl({
+  activeScenario,
+  comparisonScenario,
+  setComparisonScenario,
+}: {
+  activeScenario: ScenarioId;
+  comparisonScenario: ScenarioId | null;
+  setComparisonScenario: (s: ScenarioId | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+  if (comparisonScenario) {
+    return (
+      <button
+        type="button"
+        onClick={() => setComparisonScenario(null)}
+        className="inline-flex items-center gap-1 text-[10px] text-carbon/60 hover:text-carbon px-2 py-1 rounded-full bg-warning/15 hover:bg-warning/25"
+      >
+        <span>vs {SCENARIO_LABEL_ES[comparisonScenario]}</span>
+        <span className="text-carbon/45 ml-0.5">×</span>
+      </button>
+    );
+  }
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1 text-[10px] text-carbon/55 hover:text-carbon px-2 py-1 rounded-full hover:bg-carbon/[0.04]"
+      >
+        <span>Comparar con…</span>
+        <ChevronDown className={`h-2.5 w-2.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-[180px] bg-white border border-carbon/[0.10] rounded-[10px] shadow-[0_6px_20px_rgba(0,0,0,0.08)] overflow-hidden z-30">
+          <ul className="py-1">
+            {SCENARIO_ORDER.filter((s) => s !== activeScenario).map((sid) => (
+              <li key={sid}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setComparisonScenario(sid);
+                    setOpen(false);
+                  }}
+                  className="w-full px-3 py-1.5 text-left text-[11px] text-carbon hover:bg-carbon/[0.03]"
+                >
+                  {SCENARIO_LABEL_ES[sid]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Fase 2 · una fila etiquetada de pills bajo modo comparación. Se
+ *  renderizan DOS de estas filas por SKU (una por escenario comparado). */
+function ScenarioStackRow({
+  label,
+  actions,
+  accent,
+}: {
+  label: string;
+  actions: VerdictAction[];
+  accent: 'primary' | 'secondary';
+}) {
+  const labelColor = accent === 'primary' ? 'text-carbon/70' : 'text-warning';
+  return (
+    <div className="flex items-start gap-1.5">
+      <span className={`text-[9px] uppercase tracking-[0.06em] font-medium ${labelColor} shrink-0 mt-1 w-[68px]`}>
+        {label}
+      </span>
+      <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
+        {actions.length === 0 ? (
+          <span className="text-[10px] text-carbon/30 italic">sin alertas</span>
+        ) : (
+          actions.map((a) => {
+            const colors = actionColors(a);
+            return (
+              <span key={a.action} className="inline-flex items-center gap-1">
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] uppercase tracking-[0.06em] ${ACTION_TONE[a.action]}`}
+                >
+                  {ACTION_LABEL_ES[a.action]}
+                  {a.recommended_units != null && a.recommended_units > 0
+                    ? ` · ${a.recommended_units.toLocaleString()}`
+                    : ''}
+                </span>
+                {colors.length > 0 && <ColorSwatches swatches={colors} size={12} />}
+              </span>
+            );
+          })
+        )}
       </div>
     </div>
   );
