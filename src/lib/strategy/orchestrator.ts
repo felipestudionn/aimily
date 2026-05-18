@@ -197,6 +197,14 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
       ? Math.max(...storesWithStockObserved)
       : null;
 
+  // v2 · Lead time per retailer profile. Drives cobertura ratio para
+  // REPOSICIÓN URGENTE POR ROTURA. Heuristic per family_code prefix:
+  // - W.* (Zara) → 15 días (Ferdows et al. 2004 HBR)
+  // - El resto → 60 días (mid-market default)
+  // Cuando el tenant supplemente lead time explícito por SKU, se sobrescribe.
+  const dominantFamily = inputs[0]?.family_code ?? '';
+  const leadTimeDays = dominantFamily.startsWith('W.') ? 15 : 60;
+
   const ctx: ClassifierContext = {
     tenant_id: run.tenant_id,
     run_id: runId,
@@ -209,6 +217,8 @@ export async function executeAnalysisRun(runId: string): Promise<ExecuteRunResul
     brief_color_story: (brief?.color_story as string[]) || undefined,
     // v2 · Synthetic fleet size when SKU.stores_total is null.
     stores_total_synthetic: storesTotalSynthetic,
+    // v2 · Lead time del proveedor (retailer profile heuristic).
+    lead_time_days: leadTimeDays,
   };
 
   const familyBaselines = buildFamilyBaselines(inputs);

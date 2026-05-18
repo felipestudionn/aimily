@@ -164,9 +164,9 @@ const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
   pull_forward_intake: 'Adelantar pedido pendiente',
   // THIS MONTH
   // Felipe 2026-05-18: vocabulario retail real. Dos verbos REPONER
-  // distintos con su intención visible — el comprador lee la razón en
-  // el propio nombre del verbo, no en la rationale.
-  replenish: 'Reponer por rotura de stock',
+  // distintos. Reposición urgente manda sobre Reponer max venta — son
+  // mutuamente excluyentes en exclusion rules.
+  replenish: 'Reposición urgente por rotura',
   amplify_in_season: 'Reponer para maximizar la venta',
   promote_push: 'Promocionar',
   resize_down: 'Reducir compra',
@@ -197,7 +197,10 @@ const ACTIONABLE_VERBS: Array<VerdictAction['action']> = [
   'pull_forward_intake',
   'replenish',
   'amplify_in_season',
-  'promote_push',
+  // Felipe 2026-05-18: PROMOCIONAR oculto del filtro hasta tener feed
+  // de marketing_calendar. Sigue en el sistema (puede disparar si llega
+  // input) pero no contamina visualmente. Para Zara casi nunca aplica.
+  // 'promote_push',
   'resize_down',
   'investigate_root_cause',
   'amplify_next_season',

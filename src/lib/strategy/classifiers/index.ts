@@ -72,6 +72,12 @@ export interface ClassifierContext {
    *  season-end date, falls back to 13 weeks (one quarter, generic
    *  fast-fashion window). */
   season_weeks_remaining?: number;
+  /** v2 — Lead time del proveedor en días. Drives the cobertura
+   *  ratio para detectar REPOSICIÓN URGENTE POR ROTURA. Felipe
+   *  2026-05-18: thresholds relativos al lead time (no absolutos):
+   *  ratio = cobertura_dias / lead_time. <0.5 = urgente · <0.1 = crítico.
+   *  Default por retailer profile: Zara=15, Mango=60, Shopify=75, generic=60. */
+  lead_time_days?: number;
 }
 
 /** F.2 · Compute creative_fit for a SKU given the run's brief.
@@ -267,6 +273,18 @@ export interface SkuScore {
    *  Distinto de daily_activation_score (que usa stores_active = stores
    *  que han vendido en algún momento). */
   activation_ratio_today: number | null;
+  /** Días de cobertura disponibles HOY (stock_tienda + almacén) / ritmo.
+   *  No pondera pipeline (eso es señal separada). */
+  cobertura_days_now: number | null;
+  /** Ratio cobertura/lead_time. Métrica retail estándar para urgencia
+   *  de reposición. <0.5 = urgente · <0.1 = crítico. */
+  cobertura_ratio_lead_time: number | null;
+  /** Dispara REPOSICIÓN URGENTE POR ROTURA. Felipe 2026-05-18 cardinal:
+   *  excluye REPONER PARA MAX VENTA cuando dispara. */
+  is_urgent_replenish: boolean;
+  /** Sub-grado dentro de urgente: cobertura ratio <0.1 = rotura
+   *  inminente, prioridad máxima. */
+  is_critical_replenish: boolean;
 
   // v2 — Ángulo 5 · Canibalización (cannibalization_risk_score ya existe)
   /** Fuerza del color ganador dentro del estilo:
@@ -1048,6 +1066,26 @@ export function scoreSku(
   ) {
     activation_ratio_today = input.stores_with_sale_d1 / input.stores_with_stock;
   }
+  // v2 — Cobertura y urgencia de reposición relativa al lead time.
+  // Felipe 2026-05-18: cobertura (tienda + almacén) / ritmo diario =
+  // días que aguantamos al ritmo actual. Ratio vs lead_time decide
+  // si es urgente (<0.5) o crítica (<0.1) la reposición.
+  const stockOnHand =
+    (input.stock_store ?? 0) + (input.stock_warehouse ?? 0);
+  const dailyVelocity = velocityRaw7d > 0 ? velocityRaw7d / 7 : 0;
+  let cobertura_days_now: number | null = null;
+  let cobertura_ratio_lead_time: number | null = null;
+  if (dailyVelocity > 0) {
+    cobertura_days_now = stockOnHand / dailyVelocity;
+    const leadTime = ctx.lead_time_days ?? 15;
+    cobertura_ratio_lead_time = leadTime > 0 ? cobertura_days_now / leadTime : null;
+  }
+  // Si dailyVelocity = 0 (SKU sin venta), cobertura es "infinita" desde
+  // un punto de vista de rotura — no aplica reposición urgente. No fires.
+  const is_urgent_replenish =
+    cobertura_ratio_lead_time != null && cobertura_ratio_lead_time < 0.5;
+  const is_critical_replenish =
+    cobertura_ratio_lead_time != null && cobertura_ratio_lead_time < 0.1;
 
   // ── Ángulo 5 · Canibalización — señales adicionales ────────────────────
   let color_winner_strength: number | null = null;
@@ -1258,6 +1296,10 @@ export function scoreSku(
     can_replenish_now,
     pipeline_arrival_runway_days,
     activation_ratio_today,
+    cobertura_days_now,
+    cobertura_ratio_lead_time,
+    is_urgent_replenish,
+    is_critical_replenish,
     // Ángulo 5
     color_winner_strength,
     share_concentration_gini,
@@ -1319,6 +1361,10 @@ export function scoreSku(
     can_replenish_now,
     pipeline_arrival_runway_days,
     activation_ratio_today,
+    cobertura_days_now,
+    cobertura_ratio_lead_time,
+    is_urgent_replenish,
+    is_critical_replenish,
     // v2 — Ángulo 5 Canibalización
     color_winner_strength,
     share_concentration_gini,

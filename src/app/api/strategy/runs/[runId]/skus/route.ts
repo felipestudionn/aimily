@@ -57,6 +57,63 @@ export const maxDuration = 60;
 const PDF_BUCKET = 'strategy-uploads';
 const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 
+/**
+ * v2 (Felipe 2026-05-18) — Exclusion rules. Cuando dos verbos
+ * lógicamente incompatibles disparan a la vez sobre el mismo SKU, el
+ * más prioritario gana y el otro se suprime. Las reglas:
+ *
+ *   1. MATAR bloquea: AMPLIAR_DIST, REPLENISH × 2, ADELANTAR_PEDIDO,
+ *      REPLICAR_CONCEPTO, EXTENDER_COLORES
+ *      → Si vas a matar, no inviertes en su crecimiento.
+ *   2. REBAJAR bloquea: AMPLIAR_DIST, REPLENISH × 2, ADELANTAR_PEDIDO
+ *      → Si vas a vaciar via rebaja, no compras más ni amplías.
+ *   3. REPOSICIÓN URGENTE (replenish) bloquea: REPONER MAX VENTA
+ *      (amplify_in_season). Mutuamente excluyentes — la urgente cubre
+ *      máximo y la max-venta inflaría la compra.
+ *   4. REDUCIR COMPRA (resize_down) bloquea: REPLICAR CONCEPTO
+ *      → Contradictorios — si reduces compra no extiendes concepto.
+ *
+ * MARCAR PARA REVISIÓN es compatible con todo (es flag, no acción).
+ * REPLICAR CONCEPTO + EXTENDER COLORES + ADELANTAR PEDIDO + AMPLIAR
+ * DIST entre sí son compatibles (todos refuerzan al hero).
+ */
+function applyExclusionRules<V extends { actions: Array<{ action: string }> }>(
+  verdict: V
+): V {
+  const actions = verdict.actions;
+  const hasAction = (a: string) => actions.some((x) => x.action === a);
+  const hasKill = hasAction('kill');
+  const hasMarkdown = hasAction('markdown_accelerate');
+  const hasUrgentReplenish = hasAction('replenish');
+  const hasResizeDown = hasAction('resize_down');
+
+  const blocked = new Set<string>();
+  if (hasKill) {
+    blocked.add('amplify_distribution');
+    blocked.add('replenish');
+    blocked.add('amplify_in_season');
+    blocked.add('pull_forward_intake');
+    blocked.add('amplify_next_season');
+    blocked.add('extend_colors');
+  }
+  if (hasMarkdown) {
+    blocked.add('amplify_distribution');
+    blocked.add('replenish');
+    blocked.add('amplify_in_season');
+    blocked.add('pull_forward_intake');
+  }
+  if (hasUrgentReplenish) {
+    // Regla cardinal Felipe: "Reposición urgente manda sobre Reponer".
+    blocked.add('amplify_in_season');
+  }
+  if (hasResizeDown) {
+    blocked.add('amplify_next_season');
+  }
+
+  if (blocked.size === 0) return verdict;
+  return { ...verdict, actions: actions.filter((a) => !blocked.has(a.action)) };
+}
+
 interface RouteContext {
   params: Promise<{ runId: string }>;
 }
@@ -799,6 +856,42 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       };
     }
 
+    // v2 — Enriquecer rationale del verbo REPOSICIÓN URGENTE con
+    // contexto de cobertura vs lead_time (Felipe 2026-05-18 cardinal).
+    // Si el SKU tiene replenish y hay señales v2, reescribimos el
+    // rationale para que el comprador VEA por qué se considera urgente
+    // ("cobertura 3 días vs lead time 15 días → ratio 0.20 = urgente").
+    // El verbo en sí ya está disparado (vía generateSkuCandidates con
+    // stockout_suppressed); este enrichment solo mejora el mensaje.
+    if (v2 && (v2.is_urgent_replenish || v2.is_critical_replenish)) {
+      const coberturaDays = v2.cobertura_days_now as number | null;
+      const coberturaRatio = v2.cobertura_ratio_lead_time as number | null;
+      const isCritical = Boolean(v2.is_critical_replenish);
+      const pipelineRunway = v2.pipeline_arrival_runway_days as number | null;
+      const leadTimeDays = coberturaRatio != null && coberturaDays != null && coberturaRatio > 0
+        ? Math.round(coberturaDays / coberturaRatio)
+        : null;
+      next = {
+        ...next,
+        actions: next.actions.map((a) => {
+          if (a.action !== 'replenish') return a;
+          const urgencyLabel = isCritical ? 'CRÍTICA (rotura inminente)' : 'urgente';
+          const coberturaPhrase =
+            coberturaDays != null && leadTimeDays != null
+              ? `Cobertura actual de ${coberturaDays.toFixed(1)} días vs lead time ${leadTimeDays} días → reposición ${urgencyLabel}.`
+              : `Reposición ${urgencyLabel} detectada por rotura de stock.`;
+          const pipelinePhrase =
+            pipelineRunway != null && pipelineRunway < (leadTimeDays ?? 14) * 2
+              ? ` El pipeline pendiente tardaría ${Math.round(pipelineRunway)} días en llegar al ritmo actual — no llegará a tiempo para cubrir el hueco.`
+              : '';
+          return {
+            ...a,
+            rationale: coberturaPhrase + pipelinePhrase,
+          };
+        }),
+      };
+    }
+
     return next;
   });
 
@@ -823,7 +916,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // in sku-verdict-resolver.ts. The UI surfaces these fields as the
   // "Six Right anchor" + "Owner" pills on each action card. Spec source:
   // memory/product-spec_aimily-in-season-2026-05-17.md §4.
-  const enriched = modulated.map(enrichVerdict);
+  // v2 — Aplicar reglas de exclusión cruzada ANTES de enrichVerdict.
+  // Garantiza que verbos lógicamente incompatibles no coexistan en el
+  // mismo SKU (e.g., MATAR + AMPLIAR DIST, REPOSICIÓN URGENTE +
+  // REPONER MAX VENTA). Ver applyExclusionRules() arriba para reglas.
+  const afterExclusions = modulated.map(applyExclusionRules);
+  const enriched = afterExclusions.map(enrichVerdict);
   const modulatedByPid = new Map(enriched.map((m) => [m.product_fact_id, m]));
   // Today's date for days_in_store. Production: would come from the run's
   // observation_date. For dogfood: today's run.
