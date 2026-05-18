@@ -188,7 +188,9 @@ export async function POST(req: NextRequest) {
   }
 
   // 4) Build URL to the Collection Builder with the SKU detail auto-open param.
-  const url = `/collection/${collectionPlanId}?open_sku=${newSku.id}&from=in_season&action=${body.action_type}`;
+  // El CollectionBuilder vive en /collection/[id]/product (no en la raíz
+  // /collection/[id] que es el Overview).
+  const url = `/collection/${collectionPlanId}/product?open_sku=${newSku.id}&from=in_season&action=${body.action_type}`;
 
   return NextResponse.json({
     url,
