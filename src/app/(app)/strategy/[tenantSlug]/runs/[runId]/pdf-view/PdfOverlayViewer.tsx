@@ -118,6 +118,35 @@ interface CommercialKpis {
   capacity_headroom_pct: number | null;
 }
 
+/** v2 §8.2 — los 4 escenarios comerciales (gradualización 3-dial sobre
+ *  thresholds + magnitudes + confianza, NO eliminación). El comprador
+ *  puede moverse entre ellos via toggle global o fijar uno por SKU
+ *  (§8.3). */
+type ScenarioId =
+  | 'conservar_margen'
+  | 'balanceada'
+  | 'maximizar_venta'
+  | 'tu_mezcla';
+
+const SCENARIO_LABEL_ES: Record<ScenarioId, string> = {
+  conservar_margen: 'Conservar margen',
+  balanceada: 'Balanceada',
+  maximizar_venta: 'Maximizar venta',
+  tu_mezcla: 'Tu mezcla',
+};
+
+const SCENARIO_ORDER: ScenarioId[] = [
+  'conservar_margen',
+  'balanceada',
+  'maximizar_venta',
+  'tu_mezcla',
+];
+
+interface UserLock {
+  chosen_scenario: ScenarioId;
+  locked_at: string;
+}
+
 interface SkuRow {
   /** 1-based position matching the SKU's row order in the original PDF.
    *  Renders as a small numbered square so the buyer can map a verdict
@@ -137,7 +166,13 @@ interface SkuRow {
   days_in_store: number | null;
   target_rotation_days: number;
   current_stock_days: number | null;
+  /** Legacy — apunta a `balanceada` para back-compat. La UI debería
+   *  preferir `verdicts_by_scenario[activeScenario]` para el render. */
   actions: VerdictAction[];
+  /** v2 §8.2 — los 4 stacks por escenario, pre-computados en el server. */
+  verdicts_by_scenario?: Record<ScenarioId, VerdictAction[]> | null;
+  /** v2 §8.3 — lock activo del usuario sobre este SKU, si lo hay. */
+  user_lock?: UserLock | null;
   modulator_notes: Array<{ kind: 'archetype' | 'budget' | 'brief'; note: string }>;
   /** Spec v1 — the 5 headline KPIs a buyer expects to see before drilling
    *  into verdicts. Populated by computeHeadlineKpis on the server. */
@@ -153,7 +188,16 @@ interface ApiResponse {
   archetype_id: string | null;
   target_buy_budget_eur: number | null;
   skus: SkuRow[];
-  summary: { total_skus: number; action_counts: Record<string, number> };
+  summary: {
+    total_skus: number;
+    action_counts: Record<string, number>;
+    /** v2 §8.2 — counts por escenario para que el filtro UI se ajuste
+     *  cuando el usuario cambia el toggle global. */
+    action_counts_by_scenario?: Record<ScenarioId, Record<string, number>>;
+    /** v2 §8.3 — contadores del plan en construcción */
+    locked_skus?: number;
+    pending_skus?: number;
+  };
 }
 
 const ACTION_LABEL_ES: Record<VerdictAction['action'], string> = {
@@ -444,7 +488,12 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
   const [actionFilter, setActionFilter] = useState<Set<VerdictAction['action']>>(
     () => new Set(ACTIONABLE_VERBS)
   );
-  const [filterExpanded, setFilterExpanded] = useState<boolean>(false);
+  // v2 §8.2 — escenario activo del toggle global. Default: 'balanceada'.
+  // Cambiar el toggle re-renderiza todos los SKUs no-lockeados.
+  const [activeScenario, setActiveScenario] = useState<ScenarioId>('balanceada');
+  // v2 §8.3 — locks per-SKU del usuario. Map<product_fact_id, ScenarioId>.
+  // Se sincroniza al servidor en cada cambio (auto-save Google Docs).
+  const [userLocks, setUserLocks] = useState<Map<string, ScenarioId>>(new Map());
   const pdfCanvasRef = useRef<HTMLDivElement>(null);
 
   // Fetch verdicts + PDF signed URL once on mount.
@@ -458,7 +507,17 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
           throw new Error(err.error || `HTTP ${res.status}`);
         }
         const json = (await res.json()) as ApiResponse;
-        if (!cancelled) setData(json);
+        if (!cancelled) {
+          setData(json);
+          // v2 §8.3 — Inicializar locks del usuario desde la API.
+          const initialLocks = new Map<string, ScenarioId>();
+          for (const sku of json.skus) {
+            if (sku.user_lock) {
+              initialLocks.set(sku.product_fact_id, sku.user_lock.chosen_scenario);
+            }
+          }
+          setUserLocks(initialLocks);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Load failed');
       } finally {
@@ -540,13 +599,74 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
       return next;
     });
   };
+
+  // v2 §8.3 — Helper: escenario EFECTIVO por SKU.
+  //   Si tiene lock → ese escenario.
+  //   Si no → el escenario global activo (toggle top).
+  const getEffectiveScenario = (productFactId: string): ScenarioId => {
+    return userLocks.get(productFactId) ?? activeScenario;
+  };
+
+  // v2 §8.2/§8.3 — Helper: stack de verdicts EFECTIVO por SKU.
+  //   Lee verdicts_by_scenario[escenario_efectivo]. Si la API no
+  //   devolvió el campo (run legacy sin §8 ejecutado), cae a actions.
+  const getEffectiveActions = (sku: SkuRow): VerdictAction[] => {
+    const scenario = getEffectiveScenario(sku.product_fact_id);
+    return sku.verdicts_by_scenario?.[scenario] ?? sku.actions;
+  };
+
+  // v2 §8.3 — Auto-save (Google Docs style). Cada lock/unlock va al
+  // servidor inmediatamente. Optimistic update — UI cambia antes de la
+  // confirmación. Si la API falla, rollback local + log al console
+  // (silencioso para el usuario — no rompemos su flujo).
+  const lockSku = async (productFactId: string, scenario: ScenarioId) => {
+    setUserLocks((prev) => {
+      const next = new Map(prev);
+      next.set(productFactId, scenario);
+      return next;
+    });
+    try {
+      const res = await fetch(`/api/strategy/runs/${runId}/sku-selections`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ product_fact_id: productFactId, chosen_scenario: scenario }),
+      });
+      if (!res.ok) throw new Error(`lock_failed_${res.status}`);
+    } catch (e) {
+      console.error('[lock] persist failed', e);
+      // Rollback local — no podemos garantizar el lock
+      setUserLocks((prev) => {
+        const next = new Map(prev);
+        next.delete(productFactId);
+        return next;
+      });
+    }
+  };
+
+  const unlockSku = async (productFactId: string) => {
+    setUserLocks((prev) => {
+      const next = new Map(prev);
+      next.delete(productFactId);
+      return next;
+    });
+    try {
+      const res = await fetch(
+        `/api/strategy/runs/${runId}/sku-selections?product_fact_id=${encodeURIComponent(productFactId)}`,
+        { method: 'DELETE' }
+      );
+      if (!res.ok) throw new Error(`unlock_failed_${res.status}`);
+    } catch (e) {
+      console.error('[unlock] persist failed', e);
+    }
+  };
   // Multi-select filter: Set vacío = todos visibles. Si hay selecciones,
   // mostramos los SKUs que tienen AL MENOS UNA de las acciones
   // seleccionadas. Solo evaluamos sobre visibleActions (sin hold ni
   // carryover) — esos no se pueden filtrar porque no son acciones.
   const filteredSkus = data?.skus.filter((sku) => {
     if (actionFilter.size === 0) return true;
-    return visibleActions(sku.actions).some((a) => actionFilter.has(a.action));
+    const effectiveActions = getEffectiveActions(sku);
+    return visibleActions(effectiveActions).some((a) => actionFilter.has(a.action));
   }) ?? [];
   const toggleActionFilter = (a: VerdictAction['action']) => {
     setActionFilter((prev) => {
@@ -558,12 +678,7 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32 text-carbon/55">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" />
-        <span className="text-[13px]">Cargando verdicts…</span>
-      </div>
-    );
+    return <LoadingWheel totalSkus={null} />;
   }
   if (error) {
     return (
@@ -600,6 +715,13 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         filteredSkus={filteredSkus}
         expandedSkuIds={expandedSkuIds}
         onToggleExpand={toggleSkuExpansion}
+        activeScenario={activeScenario}
+        setActiveScenario={setActiveScenario}
+        userLocks={userLocks}
+        lockSku={lockSku}
+        unlockSku={unlockSku}
+        getEffectiveScenario={getEffectiveScenario}
+        getEffectiveActions={getEffectiveActions}
       />
     </div>
   );
@@ -613,6 +735,13 @@ function SkuPanel({
   filteredSkus,
   expandedSkuIds,
   onToggleExpand,
+  activeScenario,
+  setActiveScenario,
+  userLocks,
+  lockSku,
+  unlockSku,
+  getEffectiveScenario,
+  getEffectiveActions,
 }: {
   data: ApiResponse;
   actionFilter: Set<VerdictAction['action']>;
@@ -621,12 +750,26 @@ function SkuPanel({
   filteredSkus: SkuRow[];
   expandedSkuIds: Set<string>;
   onToggleExpand: (id: string) => void;
+  activeScenario: ScenarioId;
+  setActiveScenario: (s: ScenarioId) => void;
+  userLocks: Map<string, ScenarioId>;
+  lockSku: (productFactId: string, scenario: ScenarioId) => Promise<void>;
+  unlockSku: (productFactId: string) => Promise<void>;
+  getEffectiveScenario: (productFactId: string) => ScenarioId;
+  getEffectiveActions: (sku: SkuRow) => VerdictAction[];
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // v2 §8.2 — Counts del filtro DEPENDEN del escenario activo (porque
+  // las decisiones de cada SKU varían con el escenario por gradualización
+  // de los diales). Usamos action_counts_by_scenario cuando está
+  // disponible; fallback a action_counts para runs legacy.
+  const countsForScenario =
+    data.summary.action_counts_by_scenario?.[activeScenario] ??
+    data.summary.action_counts;
   // Solo acciones reales (sin carryover ni hold) que tengan ≥1 SKU en el run.
   const availableActions = ACTIONABLE_VERBS.filter(
-    (a) => (data.summary.action_counts[a] || 0) > 0
+    (a) => (countsForScenario[a] || 0) > 0
   );
   const totalSelected = actionFilter.size;
   const totalAvailable = availableActions.length;
@@ -650,15 +793,49 @@ function SkuPanel({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [dropdownOpen]);
+  // v2 §8.3 — Contadores del plan para el footer
+  const lockedCount = userLocks.size;
+  const pendingCount = data.summary.total_skus - lockedCount;
+  const planCompletePct = data.summary.total_skus > 0
+    ? Math.round((lockedCount / data.summary.total_skus) * 100)
+    : 0;
+
   return (
-    <aside className="w-[520px] border-l border-carbon/[0.06] bg-white overflow-y-auto">
-        {/* Filter bar — Excel-style dropdown (Felipe 2026-05-18):
-         *  un solo pill "Todos ▼" que abre lista vertical con checkboxes.
-         *  Por defecto todos marcados. Click para des-marcar y filtrar.  */}
-        <div className="sticky top-0 z-20 bg-white border-b border-carbon/[0.06] p-3">
-          <div className="flex items-center justify-between">
+    <aside className="w-[520px] border-l border-carbon/[0.06] bg-white overflow-y-auto flex flex-col">
+        {/* v2 §8.2 — Toggle global de 4 ESCENARIOS comerciales.
+         *  Felipe 2026-05-18: "arriba hubiera un toggle de los cuatro
+         *  escenarios y te pudieras mover entre ellos para poder ver
+         *  cómo cambian los diferentes outputs". */}
+        <div className="sticky top-0 z-20 bg-white border-b border-carbon/[0.06]">
+          <div className="p-3 pb-2">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/40 mb-1.5">
+              Escenario comercial
+            </div>
+            <div className="grid grid-cols-4 gap-1 p-1 bg-carbon/[0.04] rounded-[10px]">
+              {SCENARIO_ORDER.map((sid) => {
+                const isActive = activeScenario === sid;
+                return (
+                  <button
+                    key={sid}
+                    type="button"
+                    onClick={() => setActiveScenario(sid)}
+                    className={`text-[11px] py-1.5 px-2 rounded-[8px] font-medium transition-colors text-center leading-tight ${
+                      isActive
+                        ? 'bg-carbon text-white shadow-sm'
+                        : 'text-carbon/55 hover:text-carbon hover:bg-white/50'
+                    }`}
+                  >
+                    {SCENARIO_LABEL_ES[sid]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Filter bar (acciones) */}
+          <div className="px-3 pb-3 flex items-center justify-between">
             <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40">
-              {filteredSkus.length} de {data.summary.total_skus} SKUs · Arquetipo {data.archetype_id ?? '—'}
+              {filteredSkus.length} de {data.summary.total_skus} SKUs
             </div>
             <div className="relative" ref={dropdownRef}>
               <button
@@ -696,7 +873,7 @@ function SkuPanel({
                   </div>
                   <ul className="max-h-[400px] overflow-y-auto py-1">
                     {availableActions.map((a) => {
-                      const c = data.summary.action_counts[a] || 0;
+                      const c = countsForScenario[a] || 0;
                       const checked = actionFilter.has(a);
                       return (
                         <li key={a}>
@@ -751,9 +928,13 @@ function SkuPanel({
          *  that toggles inline expansion. Multiple SKUs can be open at
          *  once so the buyer can compare side-by-side without losing the
          *  full list overview. */}
-        <ul>
+        <ul className="flex-1 overflow-y-auto">
           {filteredSkus.map((sku) => {
             const isExpanded = expandedSkuIds.has(sku.product_fact_id);
+            const effectiveActions = getEffectiveActions(sku);
+            const visibleActs = visibleActions(effectiveActions);
+            const lockedScenario = userLocks.get(sku.product_fact_id);
+            const isLocked = lockedScenario != null;
             return (
               <li key={sku.product_fact_id} className="border-b border-carbon/[0.04]">
                 <button
@@ -762,7 +943,7 @@ function SkuPanel({
                   aria-expanded={isExpanded}
                   className={`w-full text-left p-3 hover:bg-carbon/[0.02] transition-colors ${
                     isExpanded ? 'bg-carbon/[0.03]' : ''
-                  }`}
+                  } ${isLocked ? 'border-l-2 border-l-carbon/40' : ''}`}
                 >
                   <div className="flex items-start gap-2.5 mb-1.5">
                     {/* Ranking square · matches Zara RNK row position 1:1. */}
@@ -781,9 +962,7 @@ function SkuPanel({
                       )}
                     </div>
                     {/* Accordion chevron — rotates 90° to point down when
-                     *  the row is expanded. Mirrors disclosure-arrow
-                     *  pattern from Apple Finder / iOS Settings.
-                     */}
+                     *  the row is expanded. */}
                     <ChevronRight
                       className={`h-4 w-4 text-carbon/40 mt-1 shrink-0 transition-transform duration-150 ${
                         isExpanded ? 'rotate-90 text-carbon/70' : ''
@@ -792,7 +971,7 @@ function SkuPanel({
                   </div>
                   <div className="pl-[42px] space-y-1.5">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      {visibleActions(sku.actions).map((a) => {
+                      {visibleActs.map((a) => {
                         const colors = actionColors(a);
                         return (
                           <span
@@ -812,19 +991,176 @@ function SkuPanel({
                         );
                       })}
                     </div>
-                    {!isExpanded && visibleActions(sku.actions)[0]?.rationale && (
+                    {!isExpanded && visibleActs[0]?.rationale && (
                       <p className="text-[11px] text-carbon/60 leading-[1.45] line-clamp-2">
-                        {visibleActions(sku.actions)[0].rationale}
+                        {visibleActs[0].rationale}
                       </p>
                     )}
+                    {/* v2 §8.3 — Selector de escenario per-SKU + lock state.
+                     *  Si está locked → muestra badge "🔒 [Escenario]" + botón
+                     *  para liberar. Si no → muestra "Sigue al global" con
+                     *  opción de fijar. Click no propaga al accordion. */}
+                    <SkuScenarioControl
+                      productFactId={sku.product_fact_id}
+                      currentEffectiveScenario={getEffectiveScenario(sku.product_fact_id)}
+                      isLocked={isLocked}
+                      lockedScenario={lockedScenario}
+                      activeGlobalScenario={activeScenario}
+                      lockSku={lockSku}
+                      unlockSku={unlockSku}
+                    />
                   </div>
                 </button>
-                {isExpanded && <SkuDetailInline sku={sku} />}
+                {isExpanded && <SkuDetailInline sku={{ ...sku, actions: effectiveActions }} />}
               </li>
             );
           })}
         </ul>
+        {/* v2 §8.3 — Footer del plan en construcción. Contador vivo de
+         *  SKUs decididos vs pendientes. Felipe: "que parezca que lo hace
+         *  todo infinitamente rápido". */}
+        <div className="sticky bottom-0 z-10 bg-white border-t border-carbon/[0.08] px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[18px] font-semibold tabular-nums text-carbon">
+                  {lockedCount}
+                </span>
+                <span className="text-[11px] text-carbon/55">
+                  de {data.summary.total_skus} SKUs decididos
+                </span>
+                <span className="text-[10px] text-carbon/35 tabular-nums">
+                  · {pendingCount} pendientes
+                </span>
+              </div>
+              {/* Progress bar visual */}
+              <div className="mt-1.5 h-1 bg-carbon/[0.06] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-carbon transition-all duration-500"
+                  style={{ width: `${planCompletePct}%` }}
+                />
+              </div>
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/35 shrink-0 text-right">
+              <div>plan</div>
+              <div className="text-[16px] font-semibold tabular-nums text-carbon/70 leading-none mt-0.5">
+                {planCompletePct}%
+              </div>
+            </div>
+          </div>
+        </div>
       </aside>
+  );
+}
+
+/** Selector de escenario per-SKU. Click abre dropdown con los 4
+ *  escenarios. Si el SKU está locked, muestra badge con el escenario
+ *  fijado + botón unlock. Si no está locked, muestra "Sigue al global". */
+function SkuScenarioControl({
+  productFactId,
+  currentEffectiveScenario,
+  isLocked,
+  lockedScenario,
+  activeGlobalScenario,
+  lockSku,
+  unlockSku,
+}: {
+  productFactId: string;
+  currentEffectiveScenario: ScenarioId;
+  isLocked: boolean;
+  lockedScenario: ScenarioId | undefined;
+  activeGlobalScenario: ScenarioId;
+  lockSku: (productFactId: string, scenario: ScenarioId) => Promise<void>;
+  unlockSku: (productFactId: string) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+  return (
+    <div
+      ref={containerRef}
+      className="relative inline-flex items-center gap-1.5"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {isLocked ? (
+        <span className="inline-flex items-center gap-1.5 text-[10px] text-carbon/65 px-2 py-0.5 rounded-full bg-carbon/[0.06]">
+          <svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M3 5V3.5a3 3 0 116 0V5m-7 0h8v6H2V5z"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              fill="none"
+            />
+          </svg>
+          <span className="font-medium">
+            {SCENARIO_LABEL_ES[lockedScenario ?? currentEffectiveScenario]}
+          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              unlockSku(productFactId);
+            }}
+            className="text-carbon/45 hover:text-carbon ml-0.5"
+            title="Liberar SKU (sigue al toggle global)"
+          >
+            ×
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+          className="inline-flex items-center gap-1 text-[10px] text-carbon/45 hover:text-carbon/70 px-2 py-0.5 rounded-full hover:bg-carbon/[0.04]"
+        >
+          <span>Fijar escenario</span>
+          <ChevronDown
+            className={`h-2.5 w-2.5 transition-transform ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
+      )}
+      {open && !isLocked && (
+        <div className="absolute left-0 top-full mt-1 w-[180px] bg-white border border-carbon/[0.10] rounded-[10px] shadow-[0_6px_20px_rgba(0,0,0,0.08)] overflow-hidden z-30">
+          <ul className="py-1">
+            {SCENARIO_ORDER.map((sid) => {
+              const isCurrent = sid === activeGlobalScenario;
+              return (
+                <li key={sid}>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      lockSku(productFactId, sid);
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-1.5 text-left text-[11px] text-carbon hover:bg-carbon/[0.03]"
+                  >
+                    <span>{SCENARIO_LABEL_ES[sid]}</span>
+                    {isCurrent && (
+                      <span className="text-[9px] text-carbon/45 italic">
+                        global
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1238,5 +1574,98 @@ function EvidenceList({ obj }: { obj: Record<string, unknown> }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+
+/**
+ * v2 §9 — Rueda de carga estilo aimily Studio. 10 fases visibles que
+ * tangibilizan el análisis ocurriendo. Cada fase dura 200-400ms. Felipe
+ * 2026-05-18: "que parezca que lo hace todo infinitamente rápido".
+ *
+ * El comprador SIENTE la profundidad del análisis — no es loading
+ * spinner abstracto, es teatro de la complejidad que valida ante el
+ * cliente que detrás hay rigor metodológico.
+ */
+const LOADING_PHASES: Array<{ text: string }> = [
+  { text: 'Analizando datos del RNK Zara · detectando SKUs activos…' },
+  { text: 'Cargando inventario, stock, ventas, devoluciones, pipeline…' },
+  { text: 'Computando rotación canónica, aportación a familia, cobertura efectiva…' },
+  { text: 'Detectando anomalías y rotura de stock suprimida…' },
+  { text: 'Evaluando las 10 decisiones de comprador por cada SKU…' },
+  { text: 'Aplicando dirección creativa · paleta moodboard · family pivot…' },
+  { text: 'Generando 4 escenarios comerciales · Conservar margen / Maximizar venta / Balanceada / Tu mezcla…' },
+  { text: 'Resolviendo exclusiones cruzadas y prioridades…' },
+  { text: 'Construyendo plan final con cobertura por SKU…' },
+  { text: 'Listo · análisis completo' },
+];
+
+function LoadingWheel({ totalSkus }: { totalSkus: number | null }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    if (phase >= LOADING_PHASES.length - 1) return;
+    const t = setTimeout(() => setPhase((p) => Math.min(LOADING_PHASES.length - 1, p + 1)), 220);
+    return () => clearTimeout(t);
+  }, [phase]);
+  const progress = ((phase + 1) / LOADING_PHASES.length) * 100;
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] px-8">
+      <div className="w-full max-w-[520px]">
+        <div className="mb-8 text-center">
+          <h1 className="text-[28px] font-medium text-carbon tracking-[-0.02em] mb-2">
+            Analizando colección
+          </h1>
+          <p className="text-[13px] text-carbon/55">
+            {totalSkus
+              ? `${totalSkus} SKUs · 4 escenarios comerciales · ${LOADING_PHASES.length} fases`
+              : 'Construyendo plan en vivo'}
+          </p>
+        </div>
+        <div className="mb-8">
+          <div className="h-1.5 bg-carbon/[0.06] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-carbon transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        <ul className="space-y-2">
+          {LOADING_PHASES.map((p, i) => {
+            const isDone = i < phase;
+            const isCurrent = i === phase;
+            const isPending = i > phase;
+            return (
+              <li
+                key={i}
+                className={`flex items-start gap-3 text-[13px] leading-[1.5] transition-opacity duration-200 ${
+                  isPending ? 'opacity-25' : 'opacity-100'
+                }`}
+              >
+                <span
+                  className={`shrink-0 mt-1 w-3 h-3 rounded-full transition-all ${
+                    isDone
+                      ? 'bg-carbon'
+                      : isCurrent
+                        ? 'bg-carbon/40 animate-pulse'
+                        : 'bg-carbon/15'
+                  }`}
+                />
+                <span
+                  className={`${
+                    isCurrent
+                      ? 'text-carbon font-medium'
+                      : isDone
+                        ? 'text-carbon/55'
+                        : 'text-carbon/40'
+                  }`}
+                >
+                  {p.text}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }
