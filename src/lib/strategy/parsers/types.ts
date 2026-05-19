@@ -75,6 +75,15 @@ export interface ParsedRecord {
   sell_through_bought_pct?: number | null;
   returns_pct?: number | null;
 
+  // Product image — only populated by parsers that have direct access to
+  // photo URLs (e.g. Shopify Products CSV via "Image Src", Shopify GraphQL
+  // via MediaImage.url). Zara PDF parser leaves this null; for Zara the
+  // image is extracted client-side from the rendered PDF canvas (see
+  // src/lib/strategy/sku-image-cropper.ts). When `product_image_url` is
+  // present, the Aimily Design flow skips PDF extraction and uses this
+  // URL directly as the reference for sketch + colorway generation.
+  product_image_url?: string | null;
+
   // Provenance
   row_index: number;
   page_coord?: { page: number; x?: number; y?: number } | null;

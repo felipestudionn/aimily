@@ -254,7 +254,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
               // (que el parser asigna 1, 2, 3... en orden de aparición).
               // Hacemos un nested select para obtenerlo y luego ordenamos
               // por ese campo en memoria.
-              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, activation_date, observation_date, created_at, raw_record_id, strategy_raw_records(row_index)'
+              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, activation_date, observation_date, created_at, raw_record_id, product_image_url, strategy_raw_records(row_index)'
             )
             .in('id', targetPids),
           supabaseAdmin
@@ -1147,6 +1147,10 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       stores_with_stock: baseInput?.stores_with_stock ?? null,
       stock_total: baseInput?.stock_total ?? null,
       days_in_store: daysInStore,
+      // Felipe 2026-05-19 sprint Shopify lane: si el parser populó la URL
+      // de la foto del producto (Shopify Products CSV), el frontend la usa
+      // directamente para Aimily Design sin recortar PDF. Null para Zara.
+      product_image_url: (p as { product_image_url?: string | null }).product_image_url ?? null,
       target_rotation_days: v?.target_rotation_days ?? 4,
       current_stock_days: v?.current_stock_days ?? null,
       // Legacy: keep `actions` pointing to balanceada (= toggle default)

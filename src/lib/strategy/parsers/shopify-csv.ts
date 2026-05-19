@@ -59,6 +59,27 @@ interface ReturnsRow {
   return_date?: string;
 }
 
+/** Felipe 2026-05-19 sprint Shopify lane · Products CSV (Shopify export
+ *  "Products by variant SKU") trae 1 fila por variant con metadata + URL
+ *  de la imagen (`Image Src`). Una imagen puede aplicar a varias variants
+ *  (`Variant Image` lookup) — la asignamos por SKU. */
+interface ProductRow {
+  variant_sku?: string;
+  product_title?: string;
+  vendor?: string;
+  product_type?: string;
+  tags?: string;
+  image_src?: string;       // URL del producto master (cdn.shopify.com)
+  variant_image?: string;   // URL específica de la variant (opcional, por color)
+  image_position?: number;
+  image_alt_text?: string;
+  published?: string;
+  status?: string;
+  cost_per_item?: number;
+  compare_at_price?: number;
+  variant_price?: number;
+}
+
 export interface ShopifyParserOptions {
   observation_date: string; // YYYY-MM-DD anchor
   season_tag: string;
@@ -76,6 +97,11 @@ export function parseShopifyCsvOrXlsx(
     workbook.SheetNames[0];
   const inventorySheet = findSheet(workbook, ['inventory', 'inventory levels']);
   const returnsSheet = findSheet(workbook, ['returns', 'returns by variant']);
+  // Felipe 2026-05-19 · Products sheet (con `Image Src`) — opcional, pero
+  // si está, Aimily Design usa esas fotos directamente sin recortar el PDF.
+  const productsSheet = findSheet(workbook, [
+    'products', 'product list', 'products by variant', 'product variants',
+  ]);
 
   const salesRows = sheetToObjects<SalesRow>(workbook, salesSheet);
   const inventoryRows = inventorySheet
@@ -83,6 +109,9 @@ export function parseShopifyCsvOrXlsx(
     : [];
   const returnsRows = returnsSheet
     ? sheetToObjects<ReturnsRow>(workbook, returnsSheet)
+    : [];
+  const productRows = productsSheet
+    ? sheetToObjects<ProductRow>(workbook, productsSheet)
     : [];
 
   // Pre-aggregate by variant_sku across time buckets.
@@ -185,15 +214,67 @@ export function parseShopifyCsvOrXlsx(
     returnsBySku.set(sku, (returnsBySku.get(sku) || 0) + toNumber(row.units));
   }
 
+  // Products index per SKU. Prefers `variant_image` (specific per color)
+  // over `image_src` (product master). Also captures cost + compare price
+  // which the Sales sheet doesn't carry.
+  const productsBySku = new Map<
+    string,
+    {
+      image_url: string | null;
+      cost_per_item: number | null;
+      compare_at_price: number | null;
+      variant_price: number | null;
+      product_type: string | null;
+      vendor: string | null;
+      published: string | null;
+    }
+  >();
+  for (const row of productRows) {
+    const sku = row.variant_sku?.trim();
+    if (!sku) continue;
+    // first-wins (Products CSV often has multiple image rows per SKU; the
+    // first row is the master image at position 1)
+    if (productsBySku.has(sku)) continue;
+    productsBySku.set(sku, {
+      image_url: (row.variant_image || row.image_src || null)?.toString().trim() || null,
+      cost_per_item: row.cost_per_item != null ? toNumber(row.cost_per_item) : null,
+      compare_at_price: row.compare_at_price != null ? toNumber(row.compare_at_price) : null,
+      variant_price: row.variant_price != null ? toNumber(row.variant_price) : null,
+      product_type: row.product_type?.toString() || null,
+      vendor: row.vendor?.toString() || null,
+      published: row.published?.toString() || null,
+    });
+  }
+
   const records: ParsedRecord[] = [];
   let rowIndex = 0;
   for (const [sku, bucket] of Array.from(byVariant.entries())) {
     rowIndex += 1;
 
     const inv = inventoryBySku.get(sku);
+    const product = productsBySku.get(sku);
     const returnsUnits = returnsBySku.get(sku) ?? bucket.lifetime_returns;
     const returnsPct =
       bucket.lifetime_units > 0 ? returnsUnits / Math.max(bucket.lifetime_units, 1) : null;
+
+    // Pricing prefers Products CSV explicit values over Sales-derived avg.
+    const pvp =
+      product?.variant_price != null
+        ? product.variant_price
+        : bucket.lifetime_units > 0
+          ? Math.round((bucket.lifetime_net_sales / bucket.lifetime_units) * 100) / 100
+          : null;
+    const pvpCompare = product?.compare_at_price ?? null;
+    const onPromo = pvpCompare != null && pvp != null && pvpCompare > pvp;
+    const costEstimate = product?.cost_per_item ?? null;
+    const marginPctList =
+      pvp != null && costEstimate != null && pvp > 0
+        ? Math.round(((pvp - costEstimate) / pvp) * 1000) / 1000
+        : null;
+    const markupPct =
+      pvp != null && costEstimate != null && costEstimate > 0
+        ? Math.round(((pvp - costEstimate) / costEstimate) * 1000) / 1000
+        : null;
 
     const windows: ParsedSalesWindow[] = (['d1', 'd2', '7d', '8_14d'] as const).map(
       (w) => ({
@@ -215,22 +296,19 @@ export function parseShopifyCsvOrXlsx(
       color_ref: colorRef,
       variant_ref: sizeRef,
       product_name: bucket.product_title,
-      family_code: bucket.product_type || null,
+      family_code: product?.product_type || bucket.product_type || null,
       subfamily_code: null,
       section_code: null,
       season_tag: opts.season_tag,
-      activation_date: null,
+      activation_date: product?.published || null,
       cluster_size: null,
       description_raw: [bucket.product_title, bucket.variant_title].filter(Boolean).join(' · '),
-      pvp:
-        bucket.lifetime_units > 0
-          ? Math.round((bucket.lifetime_net_sales / bucket.lifetime_units) * 100) / 100
-          : null,
-      pvp_compare: null,
-      markup_pct: null,
-      on_promo: false,
-      cost_estimate: null,
-      margin_pct_list: null,
+      pvp,
+      pvp_compare: pvpCompare,
+      markup_pct: markupPct,
+      on_promo: onPromo,
+      cost_estimate: costEstimate,
+      margin_pct_list: marginPctList,
       stock_store: inv?.stock_store ?? null,
       stock_warehouse: null,
       stock_available: inv ? inv.stock_store : null,
@@ -255,6 +333,9 @@ export function parseShopifyCsvOrXlsx(
       sell_through_shipped_pct: null,
       sell_through_bought_pct: null,
       returns_pct: returnsPct,
+      // Shopify product master image — alimenta directamente Aimily Design
+      // (extend_colors + amplify_next_season). Sin necesidad de recortar PDF.
+      product_image_url: product?.image_url ?? null,
       raw: {
         sku,
         product_title: bucket.product_title,
@@ -280,7 +361,10 @@ export function parseShopifyCsvOrXlsx(
 
   const coverage = {
     identity: records.length > 0,
-    pricing: records.some((r) => r.pvp != null),
+    // pricing flag ahora más rico: además de pvp, marca true si tenemos
+    // pvp_compare (compare-at-price) o cost (COGS via InventoryItem) —
+    // habilita markup_pct, margin_pct_list, on_promo en el motor.
+    pricing: records.some((r) => r.pvp != null || r.cost_estimate != null),
     inventory: inventoryRows.length > 0,
     velocity_d1: records.some((r) => (r.windows.find((w) => w.window === 'd1')?.units || 0) > 0),
     velocity_7d: records.some((r) => (r.windows.find((w) => w.window === '7d')?.units || 0) > 0),
@@ -308,6 +392,8 @@ export function parseShopifyCsvOrXlsx(
     warnings.push('No Inventory sheet — stock pipeline missing, classifier confidence reduced');
   if (returnsRows.length === 0)
     warnings.push('No Returns sheet — returns_pct derived from sales aggregate; effective margin imprecise');
+  if (productRows.length === 0)
+    warnings.push('No Products sheet — Aimily Design photo flow degraded, no compare-at-price, no COGS; classifier confidence reduced for pricing-dependent verbs');
 
   return {
     parser_version: PARSER_VERSION,
@@ -407,6 +493,28 @@ const HEADER_ALIASES: Record<string, string> = {
   return_reason: 'reason',
   return_date: 'return_date',
   date_of_return: 'return_date',
+
+  // Products CSV — Shopify standard export columns + variants
+  image_src: 'image_src',
+  image_url: 'image_src',
+  product_image_src: 'image_src',
+  product_image_url: 'image_src',
+  image: 'image_src',
+  variant_image: 'variant_image',
+  variant_image_src: 'variant_image',
+  variant_image_url: 'variant_image',
+  image_position: 'image_position',
+  image_alt_text: 'image_alt_text',
+  cost_per_item: 'cost_per_item',
+  variant_cost_per_item: 'cost_per_item',
+  cost: 'cost_per_item',
+  unit_cost: 'cost_per_item',
+  compare_at_price: 'compare_at_price',
+  variant_compare_at_price: 'compare_at_price',
+  variant_price: 'variant_price',
+  price: 'variant_price',
+  published: 'published',
+  status: 'status',
 };
 
 function normalizeKeys(row: Record<string, unknown>): Record<string, unknown> {

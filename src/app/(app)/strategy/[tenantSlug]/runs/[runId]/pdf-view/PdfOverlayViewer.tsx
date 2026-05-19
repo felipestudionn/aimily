@@ -166,6 +166,10 @@ interface SkuRow {
   days_in_store: number | null;
   target_rotation_days: number;
   current_stock_days: number | null;
+  /** Sprint Shopify lane 2026-05-19 · si el parser populó la URL de la foto
+   *  del producto (Shopify Products CSV), el flow Aimily Design la usa
+   *  directamente sin recortar PDF. Null para Zara (extracción client-side). */
+  product_image_url?: string | null;
   /** Legacy — apunta a `balanceada` para back-compat. La UI debería
    *  preferir `verdicts_by_scenario[activeScenario]` para el render. */
   actions: VerdictAction[];
@@ -1358,14 +1362,23 @@ function SkuDetailInline({
     if (launchingAction) return;
     setLaunchingAction(actionType);
     try {
-      // 1) Extraer la imagen referencia del PDF original. Prioridad:
-      //    extracción de objeto embebido (calidad nativa, match exacto por
-      //    orden de aparición); fallback a high-res crop si el PDF no
-      //    tiene imágenes embebidas. Forzamos replace en producción
-      //    actual porque los SKUs ya extraídos antes con la heurística
-      //    de bbox vieja apuntaban a fotos incorrectas.
+      // 1) Resolver imagen referencia. Dos modos según el origen del run:
+      //
+      //    A) Run Shopify (Products CSV ingerido): el parser ya populó
+      //       sku.product_image_url con la URL del Shopify CDN (2048×2048
+      //       master). No necesitamos recortar nada.
+      //
+      //    B) Run Zara (PDF RNK): recortamos client-side el canvas del PDF
+      //       ya renderizado vía sku-image-cropper. Imagen nativa 135×203
+      //       + upscale bicubic a 1024px lado mayor.
       let referenceImageUrl: string | undefined;
-      if (pdfSignedUrl) {
+      if (sku.product_image_url) {
+        // Modo Shopify · usa la URL directa, asegúrala persistida en
+        // strategy_product_facts (para que open-design la propague al
+        // SKU nuevo del Collection Builder).
+        referenceImageUrl = sku.product_image_url;
+      } else if (pdfSignedUrl) {
+        // Modo Zara · extracción client-side desde el canvas del PDF.
         const { getSkuReferenceImage, uploadCroppedSkuImage } = await import(
           '@/lib/strategy/sku-image-cropper'
         );

@@ -80,6 +80,11 @@ export async function persistParserResult(
     cost_estimate: r.cost_estimate ?? null,
     margin_pct_list: r.margin_pct_list ?? null,
     description_raw: r.description_raw ?? null,
+    // Felipe 2026-05-19 sprint Shopify lane: parsers with direct photo
+    // access (Shopify Products CSV, Shopify GraphQL) populate this field.
+    // Zara PDF parser leaves null — for Zara the image is extracted
+    // client-side from the rendered PDF canvas via sku-image-cropper.
+    product_image_url: r.product_image_url ?? null,
   }));
 
   // Build a marker we can use to match returned ids back to ParsedRecord
