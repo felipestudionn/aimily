@@ -524,8 +524,13 @@ function InSeasonSeedsBanner({ collectionId }: { collectionId: string }) {
       by_type: Record<string, number>;
       proposed_palette: Array<{ name: string; hex: string }>;
     };
-    seeds: Array<{ source_product_name: string | null; source_color_ref: string | null }>;
+    seeds: Array<{
+      source_product_name: string | null;
+      source_color_ref: string | null;
+      applied_to_moodboard_at?: string | null;
+    }>;
   } | null>(null);
+  const [applying, setApplying] = useState(false);
 
   useEffect(() => {
     if (!collectionId) return;
@@ -534,6 +539,21 @@ function InSeasonSeedsBanner({ collectionId }: { collectionId: string }) {
       .then(setData)
       .catch(() => {});
   }, [collectionId]);
+
+  const alreadyApplied = !!data?.seeds?.some((s) => s.applied_to_moodboard_at);
+
+  const handleApply = async () => {
+    if (applying) return;
+    setApplying(true);
+    try {
+      await fetch(`/api/collection-plans/${collectionId}/seeds/apply-to-moodboard`, {
+        method: 'POST',
+      });
+    } catch {
+      // Non-fatal — the moodboard step still opens.
+    }
+    router.push(`/collection/${collectionId}/creative?block=moodboard`);
+  };
 
   if (!data || data.summary.total === 0) return null;
 
@@ -589,10 +609,15 @@ function InSeasonSeedsBanner({ collectionId }: { collectionId: string }) {
         {palette.length > 0 && (
           <button
             type="button"
-            onClick={() => router.push(`/collection/${collectionId}/creative?block=moodboard`)}
-            className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors whitespace-nowrap"
+            disabled={applying}
+            onClick={handleApply}
+            className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors whitespace-nowrap disabled:opacity-60"
           >
-            Aplicar al Moodboard →
+            {applying
+              ? 'Aplicando…'
+              : alreadyApplied
+                ? 'Abrir Moodboard →'
+                : 'Aplicar al Moodboard →'}
           </button>
         )}
       </div>
