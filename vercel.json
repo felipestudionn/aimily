@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/strategy/inventory-snapshot",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/strategy/sales-sync",
+      "schedule": "0 7 * * *"
     }
   ]
 }
