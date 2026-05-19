@@ -106,12 +106,28 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
       <div className="mx-auto max-w-[2200px]">
         {/* Header */}
         <header className="mb-12">
-          <Link
-            href="/strategy"
-            className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em] mb-3 inline-block"
-          >
-            {t.strategy.hub.backToAllTenants}
-          </Link>
+          <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
+            <Link
+              href="/strategy"
+              className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
+            >
+              {t.strategy.hub.backToAllTenants}
+            </Link>
+            <nav className="flex items-center gap-1.5 text-[12px]">
+              <Link
+                href={`/strategy/${tenant.slug}/connections`}
+                className="px-3 py-1.5 rounded-full bg-white border border-carbon/[0.08] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+              >
+                Conexiones
+              </Link>
+              <Link
+                href={`/strategy/${tenant.slug}/seeds`}
+                className="px-3 py-1.5 rounded-full bg-white border border-carbon/[0.08] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+              >
+                Semillas In-Season
+              </Link>
+            </nav>
+          </div>
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
