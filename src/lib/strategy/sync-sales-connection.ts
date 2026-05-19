@@ -15,6 +15,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { parseShopifyGraphql } from '@/lib/strategy/parsers/shopify-graphql';
+import { parseStripeApi } from '@/lib/strategy/parsers/stripe-api';
 import { persistParserResult } from '@/lib/strategy/etl/persist';
 
 export type SyncTrigger = 'cron' | 'manual' | 'webhook';
@@ -47,7 +48,7 @@ export async function syncSalesConnection(
   if (conn.status !== 'active') {
     return { ok: false, connection_id: connectionId, duration_ms: Date.now() - startMs, error: `connection status=${conn.status}` };
   }
-  if (conn.provider !== 'shopify') {
+  if (conn.provider !== 'shopify' && conn.provider !== 'stripe') {
     return { ok: false, connection_id: connectionId, duration_ms: Date.now() - startMs, error: `provider ${conn.provider} not yet supported by sync helper` };
   }
   // Resolve access token: prefer vault-decrypted secret, fall back to plaintext
@@ -63,12 +64,20 @@ export async function syncSalesConnection(
   if (!accessToken && conn.access_token) {
     accessToken = conn.access_token;
   }
-  if (!conn.shop_domain || !accessToken) {
+  if (conn.provider === 'shopify' && !conn.shop_domain) {
     return {
       ok: false,
       connection_id: connectionId,
       duration_ms: Date.now() - startMs,
-      error: 'missing shop_domain or access_token',
+      error: 'shopify connection missing shop_domain',
+    };
+  }
+  if (!accessToken) {
+    return {
+      ok: false,
+      connection_id: connectionId,
+      duration_ms: Date.now() - startMs,
+      error: 'missing access_token (vault + plaintext both empty)',
     };
   }
 
@@ -89,6 +98,10 @@ export async function syncSalesConnection(
 
   try {
     // 3) Create source row
+    const sourceLabel =
+      conn.provider === 'shopify'
+        ? `Cron sync from ${conn.shop_domain} (connection ${conn.id})`
+        : `Cron sync from Stripe (connection ${conn.id})`;
     const { data: srcRow, error: srcErr } = await supabaseAdmin
       .from('strategy_sources')
       .insert({
@@ -98,7 +111,7 @@ export async function syncSalesConnection(
         source_type: 'api',
         observation_date: observationDate,
         uploaded_by: null,
-        notes: `Cron sync from ${conn.shop_domain} (connection ${conn.id})`,
+        notes: sourceLabel,
         coverage_dimensions: {},
         storage_path: '',
       })
@@ -107,13 +120,21 @@ export async function syncSalesConnection(
     if (srcErr || !srcRow) throw new Error(`create source: ${srcErr?.message}`);
     const sourceId = (srcRow as { id: string }).id;
 
-    // 4) Parse Shopify (using vault-decrypted token resolved above)
-    const parseResult = await parseShopifyGraphql({
-      shop_domain: conn.shop_domain,
-      access_token: accessToken,
-      observation_date: observationDate,
-      season_tag: 'current',
-    });
+    // 4) Parse: dispatch al adapter por provider. Ambos producen ParsedResult
+    // del mismo shape → mismo pipeline downstream.
+    const parseResult =
+      conn.provider === 'shopify'
+        ? await parseShopifyGraphql({
+            shop_domain: conn.shop_domain!,
+            access_token: accessToken,
+            observation_date: observationDate,
+            season_tag: 'current',
+          })
+        : await parseStripeApi({
+            api_key: accessToken,
+            observation_date: observationDate,
+            season_tag: 'current',
+          });
     if (parseResult.records.length === 0) {
       throw new Error('parser returned 0 records');
     }
