@@ -112,6 +112,7 @@ export function isValidShopDomain(shop: string | null | undefined): shop is stri
 export const SHOPIFY_OAUTH_SCOPES = [
   'read_products',
   'read_orders',
+  'read_returns',
   'read_inventory',
   'read_locations',
   'read_customers',
