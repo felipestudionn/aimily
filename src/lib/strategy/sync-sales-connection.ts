@@ -38,7 +38,7 @@ export async function syncSalesConnection(
   // 1) Load connection + tenant
   const { data: conn, error: connErr } = await supabaseAdmin
     .from('tenant_sales_connections')
-    .select('id, tenant_id, provider, shop_domain, access_token, access_token_secret_id, status')
+    .select('id, tenant_id, provider, shop_domain, access_token_secret_id, status')
     .eq('id', connectionId)
     .single();
 
@@ -51,19 +51,6 @@ export async function syncSalesConnection(
   if (conn.provider !== 'shopify' && conn.provider !== 'stripe') {
     return { ok: false, connection_id: connectionId, duration_ms: Date.now() - startMs, error: `provider ${conn.provider} not yet supported by sync helper` };
   }
-  // Resolve access token: prefer vault-decrypted secret, fall back to plaintext
-  // column for legacy rows. Migration 067 added the vault wiring.
-  let accessToken: string | null = null;
-  if ((conn as { access_token_secret_id?: string | null }).access_token_secret_id) {
-    const { data: tokenRow } = await supabaseAdmin.rpc(
-      'tenant_sales_connections_get_token',
-      { p_connection_id: conn.id }
-    );
-    accessToken = typeof tokenRow === 'string' ? tokenRow : null;
-  }
-  if (!accessToken && conn.access_token) {
-    accessToken = conn.access_token;
-  }
   if (conn.provider === 'shopify' && !conn.shop_domain) {
     return {
       ok: false,
@@ -72,12 +59,21 @@ export async function syncSalesConnection(
       error: 'shopify connection missing shop_domain',
     };
   }
+  // Tokens live in Supabase Vault only (migration 069 dropped the plaintext column).
+  let accessToken: string | null = null;
+  if ((conn as { access_token_secret_id?: string | null }).access_token_secret_id) {
+    const { data: tokenRow } = await supabaseAdmin.rpc(
+      'tenant_sales_connections_get_token',
+      { p_connection_id: conn.id }
+    );
+    accessToken = typeof tokenRow === 'string' ? tokenRow : null;
+  }
   if (!accessToken) {
     return {
       ok: false,
       connection_id: connectionId,
       duration_ms: Date.now() - startMs,
-      error: 'missing access_token (vault + plaintext both empty)',
+      error: 'missing access_token (vault secret not set)',
     };
   }
 

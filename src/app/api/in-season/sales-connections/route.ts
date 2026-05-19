@@ -70,16 +70,14 @@ export async function POST(req: NextRequest) {
     .eq('tenant_id', access.tenant.id)
     .eq('provider', provider);
 
-  // Insert with empty access_token plaintext — we move it to vault next.
-  // Migration 067 added access_token_secret_id (uuid) + helper functions
-  // tenant_sales_connections_store_token / _get_token. Service role only.
+  // Migration 069 dropped the plaintext access_token column. Tokens live
+  // only in vault via tenant_sales_connections_store_token below.
   const { data, error } = await supabaseAdmin
     .from('tenant_sales_connections')
     .insert({
       tenant_id: access.tenant.id,
       provider,
       shop_domain: shopDomain ?? null,
-      access_token: '', // moved to vault below
       scopes,
       status: 'active',
       next_sync_at: new Date().toISOString(),
