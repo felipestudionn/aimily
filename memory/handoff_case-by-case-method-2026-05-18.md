@@ -8,6 +8,8 @@ type: project
 
 **Para la siguiente ventana de contexto**: lee esto entero antes de hacer nada.
 
+> **Módulo Aimily Design (2026-05-19)** — La conexión In-Season ↔ fase Design del Collection Builder ya está vivo y verificado en producción. Si vas a tocar cualquier cosa relacionada con los botones "Abrir en Aimily Design" del demo, los prompts de variación/réplica, la extracción de imágenes del PDF, el endpoint `open-design` o el flow de colorways desde In-Season, **lee primero** [`aimily-design-architecture-2026-05-19.md`](aimily-design-architecture-2026-05-19.md). Tiene el detalle completo de schema, endpoints, prompts (réplica fiel vs variación 85/15), propagación del brief creative, flow end-to-end, debugging, persistencia y pending items.
+
 ---
 
 ## El problema que estamos resolviendo
