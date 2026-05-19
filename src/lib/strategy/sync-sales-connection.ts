@@ -6,7 +6,7 @@
  * outcome in tenant_sales_sync_runs.
  *
  * Reusable from:
- *   - Manual trigger endpoint POST /api/strategy/sales-connections/[id]/sync
+ *   - Manual trigger endpoint POST /api/in-season/sales-connections/[id]/sync
  *   - Cron endpoint GET /api/cron/strategy/sales-sync (iterates all due)
  *
  * Architecture: memory/architecture_in-season-feedback-loop.md §4 + Sprint 4

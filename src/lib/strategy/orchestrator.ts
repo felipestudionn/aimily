@@ -1,7 +1,7 @@
 /**
  * Run orchestrator — drives scoring + recommendation + scenarios end-to-end.
  *
- * Called by POST /api/strategy/runs/[runId]/execute. Synchronous in v1
+ * Called by POST /api/in-season/runs/[runId]/execute. Synchronous in v1
  * (target < 60s for typical tenant); v2 will background-queue per phase.
  *
  * Status state machine: pending → ingesting → scoring → recommending → complete.

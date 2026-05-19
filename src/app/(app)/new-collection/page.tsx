@@ -95,7 +95,7 @@ function NewCollectionFlow() {
   }>>([]);
   useEffect(() => {
     if (!user) return;
-    fetch('/api/strategy/seeds/summary')
+    fetch('/api/in-season/seeds/summary')
       .then((r) => r.json())
       .then((j) => setSeedsSummary(j))
       .catch(() => {});
@@ -174,7 +174,7 @@ function NewCollectionFlow() {
         }
         await Promise.all(
           Array.from(byTenant.entries()).map(([tenantSlug, seedIds]) =>
-            fetch('/api/strategy/seeds/bulk', {
+            fetch('/api/in-season/seeds/bulk', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -286,7 +286,7 @@ function NewCollectionFlow() {
                           // Lazy-fetch full seed list across tenants
                           const allSeeds = await Promise.all(
                             seedsSummary.tenants.map(async (t) => {
-                              const r = await fetch(`/api/strategy/seeds?tenant_slug=${t.tenant_slug}&status=live`);
+                              const r = await fetch(`/api/in-season/seeds?tenant_slug=${t.tenant_slug}&status=live`);
                               const j = await r.json();
                               return ((j.seeds ?? []) as Array<Record<string, unknown>>).map((s) => ({
                                 ...s,

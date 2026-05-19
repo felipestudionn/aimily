@@ -321,7 +321,7 @@ export function formatContextForPrompt(ctx: StrategyTenantContext): string {
     }
   } else {
     lines.push(`\n# Brand DNA`);
-    lines.push(`(not yet captured — run /api/strategy/briefs/discover to auto-discover)`);
+    lines.push(`(not yet captured — run /api/in-season/briefs/discover to auto-discover)`);
   }
 
   if (ctx.active_brief) {

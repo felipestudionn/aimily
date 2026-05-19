@@ -1,7 +1,7 @@
 /**
  * Strategy API route auth guard.
  *
- * Every `/api/strategy/*` route MUST call `requireStrategyAccess()` before
+ * Every `/api/in-season/*` route MUST call `requireStrategyAccess()` before
  * touching any strategy_* table. The guard:
  *
  *   1. Resolves the authenticated user via `@supabase/ssr` (the same pattern

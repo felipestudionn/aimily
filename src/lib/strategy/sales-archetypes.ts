@@ -2,16 +2,16 @@
  * Buy-strategy archetypes · static curated seed data
  *
  * The 4 retail-merchandising postures the user picks from in the Strategy
- * Setup workspace (`/strategy/[tenantSlug]/setup?block=buy-strategy`).
+ * Setup workspace (`/in-season/[tenantSlug]/setup?block=buy-strategy`).
  * Mirrors the shape of Block 4's sales-strategy/archetypes.ts but the
  * semantics are completely different — these are POST-SEASON BUYING
  * postures (replenish/new/extension/kill mix), not pre-launch channel
  * strategies.
  *
  * Used by:
- *   · POST /api/strategy/buy-strategy-archetypes (returns this list)
+ *   · POST /api/in-season/buy-strategy-archetypes (returns this list)
  *   · /strategy/[tenantSlug]/setup buy-strategy block (kickoff display)
- *   · POST /api/strategy/buy-strategy-prefill-editor (grounds Claude prompt)
+ *   · POST /api/in-season/buy-strategy-prefill-editor (grounds Claude prompt)
  *
  * Source: .planning/strategy/plan_strategy-restructure-v3-2026-05-16.md §3
  * Codex v3-patched: PASS — D is engine-backed (orchestrator dispatches

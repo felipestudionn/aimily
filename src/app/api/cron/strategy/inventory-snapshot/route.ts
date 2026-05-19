@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: 'No matching product_facts found for this tenant',
-        hint: 'Run /api/strategy/sources/shopify-ingest first to create product_facts',
+        hint: 'Run /api/in-season/sources/shopify-ingest first to create product_facts',
         skus_fetched: parseResult.records.length,
       },
       { status: 422 }

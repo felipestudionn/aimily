@@ -267,7 +267,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   // navigating from In-Season ("Abrir Aimily Design →"). Reads ?open_sku=
   // once after SKUs load and triggers openSkuDetail with that SKU. Cleans
   // the URL so refresh doesn't re-trigger.
-  // Ref: /api/strategy/sku-actions/open-design/route.ts
+  // Ref: /api/in-season/sku-actions/open-design/route.ts
   const [autoOpenSkuId, setAutoOpenSkuId] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window === 'undefined') return;

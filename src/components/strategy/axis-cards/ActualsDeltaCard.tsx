@@ -3,7 +3,7 @@
 /**
  * ActualsDeltaCard — the wedge axis.
  * Side-by-side last-season actuals vs recommended-now per family. Pulled
- * from /api/strategy/buy-strategy-deepen?axis=actuals_delta OR pre-hydrated
+ * from /api/in-season/buy-strategy-deepen?axis=actuals_delta OR pre-hydrated
  * from loadLastSeasonActuals in the run detail variant.
  */
 

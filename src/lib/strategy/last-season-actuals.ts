@@ -10,8 +10,8 @@
  * Materialized view deferred to v3.1 if 121-SKU dogfood query exceeds 500ms.
  *
  * Used by:
- *   · /api/strategy/buy-strategy-prefill-editor (when axis=actuals_delta)
- *   · /api/strategy/buy-strategy-deepen (when axis=actuals_delta)
+ *   · /api/in-season/buy-strategy-prefill-editor (when axis=actuals_delta)
+ *   · /api/in-season/buy-strategy-deepen (when axis=actuals_delta)
  *   · /strategy/[tenantSlug]/setup ActualsDeltaCard (initial hydration)
  *   · /strategy/[tenantSlug]/runs/[runId] RunScenariosEditor (per-scenario)
  */

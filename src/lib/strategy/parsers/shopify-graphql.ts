@@ -4,7 +4,7 @@
  * Fetches Products + Variants + InventoryLevels + Orders + Returns desde una
  * tienda Shopify y los normaliza al shape canónico `ParsedRecord` que el
  * resto del motor In-Season ya entiende. Plug-and-play con el dispatcher
- * en `/api/strategy/sources/[sourceId]/parse`.
+ * en `/api/in-season/sources/[sourceId]/parse`.
  *
  * Auth: Admin API Access Token (private app token que el cliente genera él
  * mismo desde Shopify admin → Apps → Develop apps → Configure Admin API

@@ -564,7 +564,7 @@ export async function uploadCroppedSkuImage(
   fd.append('product_fact_id', productFactId);
   fd.append('image', blob, 'sku.png');
   if (options?.forceReplace) fd.append('force_replace', '1');
-  const res = await fetch('/api/strategy/sku-image', { method: 'POST', body: fd });
+  const res = await fetch('/api/in-season/sku-image', { method: 'POST', body: fd });
   if (!res.ok) return null;
   const data = (await res.json()) as { url?: string };
   return data.url ?? null;

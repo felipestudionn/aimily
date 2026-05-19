@@ -2,9 +2,9 @@
  * Buy-strategy Claude prompts · prefill editor + per-axis deepen
  *
  * Used by:
- *   · POST /api/strategy/buy-strategy-prefill-editor (pre-fills the 5-axis editor
+ *   · POST /api/in-season/buy-strategy-prefill-editor (pre-fills the 5-axis editor
  *     when the user picks an archetype)
- *   · POST /api/strategy/buy-strategy-deepen (refines ONE axis based on user
+ *   · POST /api/in-season/buy-strategy-deepen (refines ONE axis based on user
  *     pressing "+ Más" on a card)
  *
  * Mirrors the prompt shape of /api/ai/scenarios-prefill-editor +
