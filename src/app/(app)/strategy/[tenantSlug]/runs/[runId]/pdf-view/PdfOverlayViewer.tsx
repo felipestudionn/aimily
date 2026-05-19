@@ -2050,14 +2050,20 @@ function ScenarioStackRow({
 
 /**
  * ShopifyProductGrid — render columna izquierda cuando la fuente NO es
- * Zara RNK. Usa `sku.product_image_url` (cdn.shopify.com / variant image
- * del Products CSV) y muestra un grid de thumbnails ordenados por
- * ranking. Click → expande el SKU en la columna derecha + scroll.
+ * Zara RNK. Aimily reconstruye un "ranking sintético" imitando la
+ * forma del PDF Zara RNK que el comprador ya conoce: una hoja vertical
+ * con #rank prominente · foto pequeña · model_ref · familia · color ·
+ * PVP · vendidos 7d · stock · tiendas. Click → expande SKU en panel
+ * derecho + scroll.
  *
- * Felipe sprint Shopify lane 2026-05-19. Simplicidad ante todo: grid de
- * 3 columnas con foto + #rank + nombre. Sin filtros, sin escenario
- * toggle (eso vive en el panel derecho). El comprador escanea con la
- * vista, clickea, lee verdict.
+ * Felipe sprint Shopify lane 2026-05-19. Objetivo explícito de Felipe:
+ * "cuando alguien sube info fea de CSV de Shopify, nosotros la
+ * mostramos lo más parecido posible al formato Zara". El comprador no
+ * debería notar la diferencia de fuente; el formato es universal.
+ *
+ * Diseño basado en la captura del Zara RNK: header de columnas en
+ * minúsculas tipo terminal, filas con cell-borders muy sutiles, datos
+ * tabulares alineados a la derecha, valores ausentes como "—".
  */
 function ShopifyProductGrid({
   skus,
@@ -2073,55 +2079,91 @@ function ShopifyProductGrid({
       </div>
     );
   }
-  const skusWithPhoto = skus.filter((s) => s.product_image_url);
-  if (skusWithPhoto.length === 0) {
-    return (
-      <div className="h-full flex items-center justify-center text-carbon/40 text-[13px] italic px-6 text-center">
-        {skus.length} SKUs analizados · ninguna foto de producto en la fuente · selecciona un SKU en la columna derecha
-      </div>
-    );
-  }
+  const fmtNum = (n: number | null | undefined) =>
+    n == null ? '—' : Math.round(n).toLocaleString('es-ES');
+  const fmtPvp = (n: number | null | undefined) =>
+    n == null ? '—' : `€${Number(n).toFixed(2)}`;
   return (
-    <div className="px-3 pt-3 pb-8">
-      <div className="text-[11px] uppercase tracking-[0.08em] text-carbon/40 mb-3 px-1">
-        {skus.length} SKUs · ordenados por ranking
+    <div className="bg-white max-w-[860px] mx-auto shadow-sm">
+      {/* Header tipo hoja Zara RNK */}
+      <div className="border-b border-carbon/10 px-6 py-4">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/45">
+              Ranking sintético · {skus.length} SKUs
+            </div>
+            <div className="text-[18px] font-semibold text-carbon tracking-[-0.02em] mt-1">
+              Top vendedores del run
+            </div>
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/35">
+            Reconstruido desde fuente externa
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+
+      {/* Column headers — sticky-style */}
+      <div className="grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px] gap-3 px-6 py-2 border-b border-carbon/10 bg-carbon/[0.015] text-[10px] uppercase tracking-[0.08em] text-carbon/45">
+        <span>#</span>
+        <span>Foto</span>
+        <span>Modelo · familia · color</span>
+        <span className="text-right">PVP</span>
+        <span className="text-right">Vend 7d</span>
+        <span className="text-right">Stock</span>
+        <span className="text-right">Tiendas</span>
+      </div>
+
+      {/* Filas */}
+      <div>
         {skus.map((sku) => (
           <button
             key={sku.product_fact_id}
             type="button"
             onClick={() => onClick(sku)}
-            className="group relative bg-white rounded-[10px] overflow-hidden border border-carbon/[0.06] hover:border-carbon/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all text-left"
+            className="group w-full grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px] gap-3 items-center px-6 py-3 border-b border-carbon/[0.06] hover:bg-carbon/[0.02] transition-colors text-left"
           >
-            <div className="aspect-square bg-carbon/[0.03] flex items-center justify-center overflow-hidden">
+            <span className="text-[18px] font-semibold text-carbon/30 tabular-nums">
+              {sku.rank}
+            </span>
+            <div className="w-[72px] h-[88px] bg-carbon/[0.03] rounded-[4px] overflow-hidden flex items-center justify-center">
               {sku.product_image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={sku.product_image_url}
                   alt={sku.product_name ?? sku.model_ref ?? ''}
-                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                  className="w-full h-full object-cover"
                   loading="lazy"
                 />
               ) : (
-                <span className="text-[10px] text-carbon/30">sin foto</span>
+                <span className="text-[9px] text-carbon/25 uppercase tracking-wider">
+                  sin foto
+                </span>
               )}
             </div>
-            <div className="p-2">
-              <div className="flex items-baseline gap-1">
-                <span className="text-[10px] font-medium text-carbon/40">
-                  #{sku.rank}
-                </span>
-                <span className="text-[11px] font-medium text-carbon truncate">
-                  {sku.product_name ?? sku.model_ref ?? '—'}
-                </span>
+            <div className="min-w-0">
+              <div className="text-[13px] font-medium text-carbon truncate">
+                {sku.product_name ?? sku.model_ref ?? '—'}
               </div>
-              {sku.model_ref && (
-                <div className="text-[10px] text-carbon/35 truncate mt-0.5">
-                  {sku.model_ref}
-                </div>
-              )}
+              <div className="text-[11px] text-carbon/45 truncate mt-0.5 font-mono">
+                {sku.model_ref ?? '—'}
+                {sku.family_code ? ` · ${sku.family_code}` : ''}
+                {sku.color_ref ? ` · ${sku.color_ref}` : ''}
+              </div>
             </div>
+            <span className="text-[12px] text-carbon/80 text-right tabular-nums font-mono">
+              {fmtPvp(sku.pvp)}
+            </span>
+            <span className="text-[12px] text-carbon/80 text-right tabular-nums font-mono">
+              {fmtNum(sku.velocity_7d)}
+            </span>
+            <span className="text-[12px] text-carbon/80 text-right tabular-nums font-mono">
+              {fmtNum(sku.stock_total)}
+            </span>
+            <span className="text-[12px] text-carbon/80 text-right tabular-nums font-mono">
+              {sku.stores_with_stock != null && sku.stores_active != null
+                ? `${sku.stores_with_stock}/${sku.stores_active}`
+                : fmtNum(sku.stores_active)}
+            </span>
           </button>
         ))}
       </div>
