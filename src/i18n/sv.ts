@@ -4126,7 +4126,7 @@ export const sv: Dictionary = {
     },
   },
 
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Tillbaka till {name}',
       backToAllTenants: '← Alla varumärken',

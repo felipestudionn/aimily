@@ -4289,7 +4289,7 @@ export const es: Dictionary = {
   },
 
   // ─── Strategy (capa B2B de inteligencia forense · /strategy/*) ───
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Volver a {name}',
       backToAllTenants: '← Todas las marcas',

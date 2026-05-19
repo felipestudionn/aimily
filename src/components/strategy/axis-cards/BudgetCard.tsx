@@ -33,7 +33,7 @@ function fmtEur(n: number | null): string {
 
 export function BudgetCard({ budget, onChange, onDeepen, deepening }: Props) {
   const t = useTranslation();
-  const b = t.strategy.axis.budget;
+  const b = t.inSeason.axis.budget;
   const roi =
     budget.target_buy_budget_eur != null &&
     budget.target_buy_budget_eur > 0 &&

@@ -66,13 +66,13 @@ export default async function RunDetailPage({ params }: PageProps) {
     Object.entries(STATUS_VISUAL).map(([k, v]) => [
       k,
       {
-        label: (dict.strategy.run.status as Record<string, string>)[k] ?? k,
+        label: (dict.inSeason.run.status as Record<string, string>)[k] ?? k,
         icon: v.icon,
         className: v.className,
       },
     ])
   ) as Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; className: string }>;
-  const ACTION_LABELS = dict.strategy.run.actions as Record<string, string>;
+  const ACTION_LABELS = dict.inSeason.run.actions as Record<string, string>;
 
   const { tenantSlug, runId } = await params;
 
@@ -309,14 +309,14 @@ export default async function RunDetailPage({ params }: PageProps) {
             {learningsNarrative && (
               <NarrativeCard
                 icon={Brain}
-                title={dict.strategy.run.sections.whatDataSays}
+                title={dict.inSeason.run.sections.whatDataSays}
                 markdown={learningsNarrative}
               />
             )}
             {creativeApplication && (
               <NarrativeCard
                 icon={FileSearch}
-                title={dict.strategy.run.sections.howCreativeModulated}
+                title={dict.inSeason.run.sections.howCreativeModulated}
                 markdown={creativeApplication}
               />
             )}
@@ -419,7 +419,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {generativeCandidates.map((c: any) => (
-                  <RecommendationCard actionLabels={ACTION_LABELS} evidenceLabels={dict.strategy.run.evidence}
+                  <RecommendationCard actionLabels={ACTION_LABELS} evidenceLabels={dict.inSeason.run.evidence}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -578,7 +578,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               </h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {deterministic.map((c: any) => (
-                  <RecommendationCard actionLabels={ACTION_LABELS} evidenceLabels={dict.strategy.run.evidence}
+                  <RecommendationCard actionLabels={ACTION_LABELS} evidenceLabels={dict.inSeason.run.evidence}
                     key={c.id}
                     candidate={c}
                     productById={productById}
@@ -598,7 +598,7 @@ export default async function RunDetailPage({ params }: PageProps) {
               <Activity className="h-5 w-5 text-carbon/60" />
               Backtest scorecard
             </h2>
-            <BacktestCard data={backtest.data} labels={dict.strategy.run.sections} />
+            <BacktestCard data={backtest.data} labels={dict.inSeason.run.sections} />
           </section>
         )}
       </div>

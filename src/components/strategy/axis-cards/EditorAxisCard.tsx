@@ -42,7 +42,7 @@ export function EditorAxisCard({ title, description, axis, onDeepen, deepening, 
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/60 hover:bg-carbon/[0.04] disabled:opacity-50 transition-colors shrink-0"
           >
             {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-            {t.strategy.axis.more}
+            {t.inSeason.axis.more}
           </button>
         )}
       </div>

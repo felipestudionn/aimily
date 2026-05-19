@@ -4222,7 +4222,7 @@ export const pt: Dictionary = {
     },
   },
 
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Voltar a {name}',
       backToAllTenants: '← Todas as marcas',

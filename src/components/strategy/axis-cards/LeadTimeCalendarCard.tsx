@@ -28,7 +28,7 @@ const DEFAULT_WAVE: BuyWave = { name: 'Wave', share_pct: 0, target_lead_time_day
 
 export function LeadTimeCalendarCard({ waves, onChange, onDeepen, deepening }: Props) {
   const t = useTranslation();
-  const lt = t.strategy.axis.leadTime;
+  const lt = t.inSeason.axis.leadTime;
   const sum = waves.reduce((acc, w) => acc + (w.share_pct ?? 0), 0);
   const sumValid = waves.length === 0 || Math.abs(sum - 100) <= 0.5;
 

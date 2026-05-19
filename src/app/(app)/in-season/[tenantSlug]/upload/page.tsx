@@ -39,10 +39,10 @@ export default async function UploadSourcePage({ params }: PageProps) {
           ← {tenant.display_name}
         </Link>
         <h1 className="text-[36px] md:text-[42px] font-medium text-carbon tracking-[-0.03em] leading-[1.1] mb-3">
-          {dict.strategy.surfaces.uploadTitle}
+          {dict.inSeason.surfaces.uploadTitle}
         </h1>
         <p className="text-[14px] text-carbon/50 leading-[1.6] mb-10 max-w-xl">
-          {dict.strategy.surfaces.uploadDescription}
+          {dict.inSeason.surfaces.uploadDescription}
         </p>
 
         <UploadSourceClient tenantSlug={tenant.slug} tenantId={tenant.id} />

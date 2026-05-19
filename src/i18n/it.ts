@@ -4241,7 +4241,7 @@ export const it: Dictionary = {
     },
   },
 
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Torna a {name}',
       backToAllTenants: '← Tutti i brand',

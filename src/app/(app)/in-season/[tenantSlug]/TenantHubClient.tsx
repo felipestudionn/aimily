@@ -70,7 +70,7 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
   };
 
   function renderStatus(status: HubCardData['status']): string {
-    const c = t.strategy.hub.cardStatus;
+    const c = t.inSeason.hub.cardStatus;
     switch (status.kind) {
       case 'sourcesNone':
         return c.sourcesNone;
@@ -98,7 +98,7 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
   }
 
   function renderCardLabel(kind: HubCardData['kind']) {
-    return t.strategy.hub.cards[kind];
+    return t.inSeason.hub.cards[kind];
   }
 
   return (
@@ -111,7 +111,7 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
               href="/in-season"
               className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
             >
-              {t.strategy.hub.backToAllTenants}
+              {t.inSeason.hub.backToAllTenants}
             </Link>
             <nav className="flex items-center gap-1.5 text-[12px]">
               <Link
@@ -152,7 +152,7 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
             </div>
             <div className="text-right">
               <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
-                {t.strategy.hub.progressLabel}
+                {t.inSeason.hub.progressLabel}
               </div>
               <div className="text-[28px] font-semibold text-carbon tabular-nums tracking-[-0.03em] mt-1">
                 {completedCount}/4
@@ -208,10 +208,10 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
                     }`}
                   >
                     {isComplete
-                      ? t.strategy.hub.cards.ctaCompleted
+                      ? t.inSeason.hub.cards.ctaCompleted
                       : isStarted
-                      ? t.strategy.hub.cards.ctaContinue
-                      : t.strategy.hub.cards.ctaStart}
+                      ? t.inSeason.hub.cards.ctaContinue
+                      : t.inSeason.hub.cards.ctaStart}
                     {!isComplete && (
                       <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                     )}
@@ -242,18 +242,18 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="h-4 w-4 text-carbon/55" />
                   <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
-                    {t.strategy.hub.output}
+                    {t.inSeason.hub.output}
                   </span>
                 </div>
                 <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-                  {t.strategy.hub.decisionPackReadyTitle}
+                  {t.inSeason.hub.decisionPackReadyTitle}
                 </h2>
                 <p className="text-[14px] text-carbon/55 mt-2 max-w-2xl leading-relaxed">
-                  {t.strategy.hub.decisionPackReadyDescription}
+                  {t.inSeason.hub.decisionPackReadyDescription}
                 </p>
               </div>
               <div className="inline-flex items-center gap-2 py-2.5 px-7 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
-                {t.strategy.hub.decisionPackOpen}
+                {t.inSeason.hub.decisionPackOpen}
                 <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>
@@ -265,22 +265,22 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="h-4 w-4 text-carbon/40" />
                   <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35">
-                    {t.strategy.hub.output}
+                    {t.inSeason.hub.output}
                   </span>
                 </div>
                 <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon/40 tracking-[-0.03em] leading-[1.15]">
-                  {t.strategy.hub.decisionPackLockedTitle}
+                  {t.inSeason.hub.decisionPackLockedTitle}
                 </h2>
                 <p className="text-[14px] text-carbon/45 mt-2 max-w-2xl leading-relaxed">
-                  {t.strategy.hub.decisionPackLockedDescription}
+                  {t.inSeason.hub.decisionPackLockedDescription}
                 </p>
               </div>
               <div className="text-right">
                 <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35">
-                  {t.strategy.hub.missingLabel}
+                  {t.inSeason.hub.missingLabel}
                 </div>
                 <div className="text-[20px] font-semibold text-carbon/50 tabular-nums tracking-[-0.02em] mt-1">
-                  {t.strategy.hub.missingOfFour.replace('{n}', String(4 - completedCount))}
+                  {t.inSeason.hub.missingOfFour.replace('{n}', String(4 - completedCount))}
                 </div>
               </div>
             </div>

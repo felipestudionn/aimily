@@ -4240,7 +4240,7 @@ export const nl: Dictionary = {
     },
   },
 
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Terug naar {name}',
       backToAllTenants: '← Alle merken',

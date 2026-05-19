@@ -83,12 +83,12 @@ export function SetupWorkspace({
   const headline =
     block === 'creative'
       ? {
-          title: t.strategy.setup.creative.title,
-          description: t.strategy.setup.creative.description,
+          title: t.inSeason.setup.creative.title,
+          description: t.inSeason.setup.creative.description,
         }
       : {
-          title: t.strategy.setup.buyStrategy.title,
-          description: t.strategy.setup.buyStrategy.description,
+          title: t.inSeason.setup.buyStrategy.title,
+          description: t.inSeason.setup.buyStrategy.description,
         };
 
   return (
@@ -98,7 +98,7 @@ export function SetupWorkspace({
         <a
           href={`/strategy/${tenant.slug}`}
           className="inline-flex items-center gap-1.5 text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
-          title={t.strategy.hub.back.replace('{name}', tenant.display_name)}
+          title={t.inSeason.hub.back.replace('{name}', tenant.display_name)}
         >
           ← {tenant.display_name}
         </a>
@@ -118,42 +118,42 @@ export function SetupWorkspace({
       {gating.processed_sources === 0 && gating.total_sources === 0 && (
         <div className="mx-auto max-w-2xl bg-carbon/[0.04] border border-carbon/[0.06] rounded-[14px] p-5">
           <p className="text-[14px] text-carbon font-medium mb-1">
-            {t.strategy.setup.gating.uploadFirstTitle}
+            {t.inSeason.setup.gating.uploadFirstTitle}
           </p>
           <p className="text-[13px] text-carbon/55 mb-3">
-            {t.strategy.setup.gating.uploadFirstBody}
+            {t.inSeason.setup.gating.uploadFirstBody}
           </p>
           <a
             href={`/strategy/${tenant.slug}/upload`}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-carbon hover:underline"
           >
-            {t.strategy.setup.gating.uploadNow}
+            {t.inSeason.setup.gating.uploadNow}
           </a>
         </div>
       )}
       {gating.processed_sources === 0 && gating.total_sources > 0 && (
         <div className="mx-auto max-w-2xl bg-amber-50 border border-amber-200 rounded-[14px] p-5">
           <p className="text-[14px] text-amber-900 font-medium mb-1">
-            {t.strategy.setup.gating.processingTitle}
+            {t.inSeason.setup.gating.processingTitle}
           </p>
           <p className="text-[13px] text-amber-800">
-            {t.strategy.setup.gating.processingBody.replace('{count}', String(gating.total_sources))}
+            {t.inSeason.setup.gating.processingBody.replace('{count}', String(gating.total_sources))}
           </p>
         </div>
       )}
       {block === 'buy-strategy' && gating.processed_sources > 0 && !gating.has_completed_run && (
         <div className="mx-auto max-w-2xl bg-amber-50 border border-amber-200 rounded-[14px] p-5">
           <p className="text-[14px] text-amber-900 font-medium mb-1">
-            {t.strategy.setup.gating.runBaselineTitle}
+            {t.inSeason.setup.gating.runBaselineTitle}
           </p>
           <p className="text-[13px] text-amber-800 mb-3">
-            {t.strategy.setup.gating.runBaselineBody}
+            {t.inSeason.setup.gating.runBaselineBody}
           </p>
           <a
             href={`/strategy/${tenant.slug}/runs/new`}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-amber-900 hover:underline"
           >
-            {t.strategy.setup.gating.startRun}
+            {t.inSeason.setup.gating.startRun}
           </a>
         </div>
       )}

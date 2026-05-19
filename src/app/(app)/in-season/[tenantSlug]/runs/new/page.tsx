@@ -54,10 +54,10 @@ export default async function NewRunPage({ params }: PageProps) {
           ← {tenant.display_name}
         </Link>
         <h1 className="text-[36px] md:text-[42px] font-medium text-carbon tracking-[-0.03em] leading-[1.1] mb-3">
-          {dict.strategy.surfaces.runsNewTitle}
+          {dict.inSeason.surfaces.runsNewTitle}
         </h1>
         <p className="text-[14px] text-carbon/50 leading-[1.6] mb-10 max-w-xl">
-          {dict.strategy.surfaces.runsNewDescription}
+          {dict.inSeason.surfaces.runsNewDescription}
         </p>
         <NewRunClient
           tenantSlug={tenant.slug}

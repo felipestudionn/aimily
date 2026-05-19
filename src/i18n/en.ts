@@ -4336,7 +4336,7 @@ export const en = {
   },
 
   // ─── Strategy (B2B forensic merchandising layer · /strategy/*) ───
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Back to {name}',
       backToAllTenants: '← All tenants',

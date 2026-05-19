@@ -25,7 +25,7 @@ interface Props {
 
 export function ActionMixCard({ mix, onChange, onDeepen, deepening }: Props) {
   const t = useTranslation();
-  const am = t.strategy.axis.actionMix;
+  const am = t.inSeason.axis.actionMix;
   const ROWS: Array<{ key: keyof ActionMix; label: string; color: string }> = [
     { key: 'replenish_pct', label: am.replenish, color: '#b6c8c7' },
     { key: 'new_sku_proposal_pct', label: am.newSkus, color: '#c5caa8' },

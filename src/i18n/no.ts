@@ -4126,7 +4126,7 @@ export const no: Dictionary = {
     },
   },
 
-  strategy: {
+  inSeason: {
     hub: {
       back: 'Tilbake til {name}',
       backToAllTenants: '← Alle merker',

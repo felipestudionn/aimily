@@ -55,7 +55,7 @@ function fmtEur(n: number | null): string {
 
 export function RunScenariosEditor({ tenantSlug: _tenantSlug, runId, scenarios, defaultMix }: Props) {
   const t = useTranslation();
-  const labels = t.strategy.run.sections;
+  const labels = t.inSeason.run.sections;
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMix, setEditMix] = useState<ActionMix>(defaultMix);

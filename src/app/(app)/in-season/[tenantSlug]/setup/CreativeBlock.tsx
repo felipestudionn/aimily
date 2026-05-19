@@ -85,11 +85,11 @@ function buildDimensionMeta(
   t: Dictionary
 ): Record<StrategyTrendDimension, { label: string; description: string; addLabel: string }> {
   return {
-    silhouette: t.strategy.creative.dimensions.silhouette,
-    pattern: t.strategy.creative.dimensions.pattern,
-    color: t.strategy.creative.dimensions.color,
-    material: t.strategy.creative.dimensions.material,
-    reference_brand: t.strategy.creative.dimensions.reference_brand,
+    silhouette: t.inSeason.creative.dimensions.silhouette,
+    pattern: t.inSeason.creative.dimensions.pattern,
+    color: t.inSeason.creative.dimensions.color,
+    material: t.inSeason.creative.dimensions.material,
+    reference_brand: t.inSeason.creative.dimensions.reference_brand,
   };
 }
 
@@ -104,7 +104,7 @@ const DIMENSION_ORDER: StrategyTrendDimension[] = [
 export function CreativeBlock({ tenant, existingBrief: _existingBrief, gatingBlocked, onSaved }: Props) {
   const router = useRouter();
   const t = useTranslation();
-  const tc = t.strategy.creative;
+  const tc = t.inSeason.creative;
   const DIMENSION_META = useMemo(() => buildDimensionMeta(t), [t]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const FILE_INPUT_ID = 'strategy-moodboard-file-input';

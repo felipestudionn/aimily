@@ -39,10 +39,10 @@ export default async function DecisionPackPage({ params }: PageProps) {
   if (!user) redirect('/');
 
   const dict = getStrategyDictForUser(user);
-  const ACTION_LABELS = dict.strategy.run.actions as Record<string, string>;
-  const evidenceLabels = dict.strategy.run.evidence;
-  const dp = dict.strategy.decisionPack;
-  const rs = dict.strategy.run.sections;
+  const ACTION_LABELS = dict.inSeason.run.actions as Record<string, string>;
+  const evidenceLabels = dict.inSeason.run.evidence;
+  const dp = dict.inSeason.decisionPack;
+  const rs = dict.inSeason.run.sections;
 
   const { tenantSlug, runId } = await params;
   const tenants = await listUserTenants(user.id);

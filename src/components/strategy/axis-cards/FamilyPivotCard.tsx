@@ -39,7 +39,7 @@ export function FamilyPivotCard({
   deepening,
 }: Props) {
   const t = useTranslation();
-  const fp = t.strategy.axis.familyPivot;
+  const fp = t.inSeason.axis.familyPivot;
   const [adjacentDraft, setAdjacentDraft] = useState('');
   const isD = archetypeId === 'D';
 
