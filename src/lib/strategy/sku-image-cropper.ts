@@ -44,6 +44,52 @@ type ImgObject = {
   kind?: number;
 };
 
+/** Auto-trim de bordes blancos: detecta el bounding box del contenido
+ *  NO blanco y recorta al mismo + un pequeño margen. Si la imagen es
+ *  uniforme, retorna sin cambios. */
+function autoTrimWhiteBorders(sourceCanvas: HTMLCanvasElement): HTMLCanvasElement {
+  const WHITE_THRESHOLD = 245;
+  const MARGIN_PX = 20;
+  const ctx = sourceCanvas.getContext('2d');
+  if (!ctx) return sourceCanvas;
+  const { width, height } = sourceCanvas;
+  if (width === 0 || height === 0) return sourceCanvas;
+  let imgData: ImageData;
+  try {
+    imgData = ctx.getImageData(0, 0, width, height);
+  } catch {
+    return sourceCanvas;
+  }
+  const data = imgData.data;
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      if (data[i] < WHITE_THRESHOLD || data[i + 1] < WHITE_THRESHOLD || data[i + 2] < WHITE_THRESHOLD) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (minX >= maxX || minY >= maxY) return sourceCanvas;
+  const trimX = Math.max(0, minX - MARGIN_PX);
+  const trimY = Math.max(0, minY - MARGIN_PX);
+  const trimW = Math.min(width - trimX, maxX - minX + MARGIN_PX * 2);
+  const trimH = Math.min(height - trimY, maxY - minY + MARGIN_PX * 2);
+  const trimmed = document.createElement('canvas');
+  trimmed.width = trimW;
+  trimmed.height = trimH;
+  const tctx = trimmed.getContext('2d');
+  if (!tctx) return sourceCanvas;
+  tctx.drawImage(sourceCanvas, trimX, trimY, trimW, trimH, 0, 0, trimW, trimH);
+  return trimmed;
+}
+
 /** Upscale a canvas con interpolación bicubic (imageSmoothingEnabled +
  *  imageSmoothingQuality='high') hasta target en lado mayor. Si la imagen
  *  ya es >= target, retorna sin cambios. */
@@ -301,11 +347,89 @@ export async function cropSkuFromPdfHighRes(
   }
 }
 
-/** Recorte por TEXTO: usa pdfjs.getTextContent() para localizar el
- *  `model_ref` (e.g. "4786 166 401") en la página y recortar el thumbnail
- *  adyacente — más fiable que heurística de orden o que extracción nativa
- *  cuando el orden de imágenes embebidas en el PDF no coincide con el
- *  orden visual de los SKUs. */
+/** EXTRACCIÓN NATIVA POR MODEL REF (preferido):
+ *  - Encuentra la coord Y del texto del modelRef en la página.
+ *  - Extrae TODAS las imágenes embebidas del page con sus Y CTM.
+ *  - Match: la imagen cuyo Y CTM esté más cerca del Y del modelRef.
+ *  - Devuelve la imagen NATIVA (limpia, sin texto/header) + upscale bicubic.
+ *
+ *  Si falla → fallback a cropSkuFromPdfByModelRef (crop del page render). */
+export async function extractSkuImageByModelRef(
+  pdfSignedUrl: string,
+  modelRef: string,
+  skuRank: number,
+  totalSkus: number,
+  numPagesHint: number
+): Promise<CropResult | null> {
+  try {
+    const pdfjs = await import('pdfjs-dist');
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+    const ops = pdfjs.OPS as unknown as { paintImageXObject: number; transform: number; save: number; restore: number };
+    const pdf = await pdfjs.getDocument(pdfSignedUrl).promise;
+
+    const numPages = numPagesHint > 0 ? numPagesHint : pdf.numPages;
+    const skusPerPage = Math.max(1, Math.ceil(totalSkus / numPages));
+    const guessedPageIdx = Math.min(numPages - 1, Math.floor((skuRank - 1) / skusPerPage));
+    const tryPages = [guessedPageIdx, guessedPageIdx + 1, guessedPageIdx - 1, guessedPageIdx + 2, guessedPageIdx - 2]
+      .filter((p) => p >= 0 && p < numPages);
+
+    const normRef = modelRef.replace(/\s+/g, '');
+
+    for (const pageIdx of tryPages) {
+      const page = await pdf.getPage(pageIdx + 1);
+      // 1) Buscar Y del modelRef
+      const text = await page.getTextContent();
+      let matchY: number | null = null;
+      for (const item of text.items as Array<{ str: string; transform: number[] }>) {
+        const norm = (item.str || '').replace(/\s+/g, '');
+        if (norm.includes(normRef)) {
+          matchY = item.transform[5];
+          break;
+        }
+      }
+      if (matchY == null) continue;
+
+      // 2) Extraer todas las imágenes con sus CTM
+      const images = await extractImagesFromPage(page as never, ops);
+      if (images.length === 0) continue;
+
+      // 3) Match: imagen cuyo Y CTM (en coords PDF, origin bottom-left)
+      //    esté más cerca del matchY del modelRef. Tolerancia generosa
+      //    porque la imagen y el texto del modelRef están a la misma
+      //    altura visual pero el origen de la imagen es bottom-left
+      //    (puede estar offset por la altura de la imagen).
+      const viewport = page.getViewport({ scale: 1 });
+      const pageH = viewport.height;
+      const matchYTopDown = pageH - matchY;
+      let bestImg: { canvas: HTMLCanvasElement; y: number } | null = null;
+      let bestDist = Infinity;
+      for (const img of images) {
+        // img.y ya es top-down (pageH - yPdf)
+        const dist = Math.abs(img.y - matchYTopDown);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestImg = img;
+        }
+      }
+      if (!bestImg) continue;
+
+      // 4) Upscale + emit
+      const upscaled = upscaleCanvasBicubic(bestImg.canvas, UPSCALE_TARGET_MAX_DIM);
+      const blob = await new Promise<Blob | null>((resolve) => {
+        upscaled.toBlob((b) => resolve(b), 'image/png');
+      });
+      if (!blob) continue;
+      return { blob, width: upscaled.width, height: upscaled.height };
+    }
+    return null;
+  } catch (err) {
+    console.warn('[sku-image-cropper] native extraction by modelRef failed', err);
+    return null;
+  }
+}
+
+/** Recorte del PAGE RENDER por modelRef · fallback cuando extractSkuImageByModelRef
+ *  no encuentra una imagen embebida cerca del texto del modelRef. */
 export async function cropSkuFromPdfByModelRef(
   pdfSignedUrl: string,
   modelRef: string,
@@ -335,14 +459,16 @@ export async function cropSkuFromPdfByModelRef(
       const viewport = page.getViewport({ scale: 1 });
 
       let matchY: number | null = null;
+      let matchX: number | null = null;
       for (const item of text.items as Array<{ str: string; transform: number[] }>) {
         const norm = (item.str || '').replace(/\s+/g, '');
         if (norm.includes(normRef)) {
           matchY = item.transform[5];
+          matchX = item.transform[4];
           break;
         }
       }
-      if (matchY == null) continue;
+      if (matchY == null || matchX == null) continue;
 
       const scale = FALLBACK_HIGH_RES_SCALE;
       const renderViewport = page.getViewport({ scale });
@@ -363,10 +489,21 @@ export async function cropSkuFromPdfByModelRef(
       const rowTop = Math.max(0, yTopDownNative - rowH / 2);
       const rowBottom = Math.min(pageH, yTopDownNative + rowH / 2);
 
+      // Ancho dinámico: desde un pequeño margen izquierdo hasta justo
+      // antes de la X donde aparece el texto del modelRef (que en el
+      // layout Zara RNK está a la derecha del thumbnail). Eso elimina
+      // el header ZARA + la tabla de datos del crop.
+      const SAFETY_MARGIN_X = 8; // pixels (en coords PDF native, antes de scale)
       const cropY = Math.round(rowTop * scale);
       const cropH = Math.round((rowBottom - rowTop) * scale);
       const cropX = Math.round(renderViewport.width * FALLBACK_THUMB_X_RATIO);
-      const cropW = Math.round(renderViewport.width * FALLBACK_THUMB_W_RATIO);
+      const dynamicRightX = Math.round((matchX - SAFETY_MARGIN_X) * scale);
+      let cropW = Math.max(0, dynamicRightX - cropX);
+      // Sanity: si la coord X del texto está fuera de rango o muy a la
+      // izquierda, fallback al 18% original.
+      if (cropW < renderViewport.width * 0.05) {
+        cropW = Math.round(renderViewport.width * FALLBACK_THUMB_W_RATIO);
+      }
       if (cropW <= 0 || cropH <= 0) continue;
 
       const crop = document.createElement('canvas');
@@ -376,11 +513,14 @@ export async function cropSkuFromPdfByModelRef(
       if (!cctx) continue;
       cctx.drawImage(pageCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
+      // Auto-trim de bordes blancos para centrar el thumbnail.
+      const trimmed = autoTrimWhiteBorders(crop);
+
       const blob = await new Promise<Blob | null>((resolve) => {
-        crop.toBlob((b) => resolve(b), 'image/png');
+        trimmed.toBlob((b) => resolve(b), 'image/png');
       });
       if (!blob) continue;
-      return { blob, width: cropW, height: cropH };
+      return { blob, width: trimmed.width, height: trimmed.height };
     }
     return null;
   } catch (err) {
@@ -389,9 +529,11 @@ export async function cropSkuFromPdfByModelRef(
   }
 }
 
-/** Entry point: prioriza recorte por modelRef (text-anchored, robusto)
- *  cuando se pasa, luego extracción de objeto embebido (fast pero orden
- *  arbitrario), luego high-res crop heurístico. */
+/** Entry point: prioridad
+ *    1) Extracción NATIVA por modelRef (imagen embebida limpia + upscale)
+ *    2) Crop del page render por modelRef (fallback con bbox text-anchored)
+ *    3) Extracción nativa por orden (fallback sin modelRef)
+ *    4) Crop heurístico high-res. */
 export async function getSkuReferenceImage(
   pdfSignedUrl: string,
   skuRank: number,
@@ -400,6 +542,8 @@ export async function getSkuReferenceImage(
   modelRef?: string | null
 ): Promise<CropResult | null> {
   if (modelRef) {
+    const native = await extractSkuImageByModelRef(pdfSignedUrl, modelRef, skuRank, totalSkus, numPagesHint);
+    if (native) return native;
     const byText = await cropSkuFromPdfByModelRef(pdfSignedUrl, modelRef, skuRank, totalSkus, numPagesHint);
     if (byText) return byText;
   }
