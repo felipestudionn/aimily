@@ -480,7 +480,7 @@ function visibleActions(actions: VerdictAction[]): VerdictAction[] {
   return list;
 }
 
-export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: string; tenantSlug: string }) {
+export function PdfOverlayViewer({ runId, tenantSlug }: { runId: string; tenantSlug: string }) {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -798,6 +798,7 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         comparisonScenario={comparisonScenario}
         setComparisonScenario={setComparisonScenario}
         runId={runId}
+        tenantSlug={tenantSlug}
         pdfContainerRef={pdfCanvasRef}
         totalSkus={data.summary.total_skus}
         pdfSignedUrl={data.pdf_signed_url ?? null}
@@ -826,6 +827,7 @@ function SkuPanel({
   comparisonScenario,
   setComparisonScenario,
   runId,
+  tenantSlug,
   pdfContainerRef,
   totalSkus,
   pdfSignedUrl,
@@ -849,6 +851,7 @@ function SkuPanel({
   comparisonScenario: ScenarioId | null;
   setComparisonScenario: (s: ScenarioId | null) => void;
   runId: string;
+  tenantSlug: string;
   pdfContainerRef: React.RefObject<HTMLDivElement | null>;
   totalSkus: number;
   pdfSignedUrl: string | null;
@@ -1154,6 +1157,7 @@ function SkuPanel({
                   <SkuDetailInline
                     sku={{ ...sku, actions: effectiveActions }}
                     runId={runId}
+                    tenantSlug={tenantSlug}
                     pdfContainerRef={pdfContainerRef}
                     totalSkus={totalSkus}
                     pdfSignedUrl={pdfSignedUrl}
@@ -1357,6 +1361,7 @@ function FilterChip({
 function SkuDetailInline({
   sku,
   runId,
+  tenantSlug,
   pdfContainerRef,
   totalSkus,
   pdfSignedUrl,
@@ -1364,6 +1369,7 @@ function SkuDetailInline({
 }: {
   sku: SkuRow;
   runId: string;
+  tenantSlug: string;
   pdfContainerRef: React.RefObject<HTMLDivElement | null>;
   totalSkus: number;
   pdfSignedUrl: string | null;
@@ -1380,6 +1386,44 @@ function SkuDetailInline({
   // sube + persiste en product_image_url. Siguientes invocaciones reusan.
   // Ref: src/lib/strategy/sku-image-cropper.ts
   const [launchingAction, setLaunchingAction] = useState<string | null>(null);
+
+  // Felipe 2026-05-19 noche · user-initiated seed model. Botón "+ A añadir a
+  // semillas" en cada verdict pill seed-producing (amplify_next_season,
+  // extend_colors, drop_color, kill). Single POST a /seeds/create.
+  // Tracks per-(sku, action) to soportar varios botones en la misma fila.
+  const [seedingKey, setSeedingKey] = useState<string | null>(null);
+  const [seededKeys, setSeededKeys] = useState<Set<string>>(new Set());
+  const addToSeeds = async (sku: SkuRow, action: VerdictAction) => {
+    const key = `${sku.product_fact_id}:${action.action}`;
+    if (seedingKey || seededKeys.has(key)) return;
+    setSeedingKey(key);
+    try {
+      const res = await fetch('/api/strategy/seeds/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_slug: tenantSlug,
+          run_id: runId,
+          product_fact_id: sku.product_fact_id,
+          action_type: action.action,
+          rationale: action.rationale,
+          evidence: action.evidence ?? {},
+          proposed_changes: {
+            new_colors: (action.evidence as Record<string, unknown> | undefined)?.proposed_colors ?? [],
+          },
+        }),
+      });
+      if (res.ok) {
+        setSeededKeys((prev) => {
+          const next = new Set(prev);
+          next.add(key);
+          return next;
+        });
+      }
+    } finally {
+      setSeedingKey(null);
+    }
+  };
   const launchDesign = async (actionType: 'extend_colors' | 'amplify_next_season') => {
     if (launchingAction) return;
     setLaunchingAction(actionType);
@@ -1521,26 +1565,60 @@ function SkuDetailInline({
                *  fase Design pre-cargada (mismo flow: concept → sketch →
                *  colorways → 3D, todos los pasos del Collection Builder
                *  reusados sin cambios). */}
-              {(a.action === 'extend_colors' || a.action === 'amplify_next_season') && (
-                <div className="mb-3">
-                  <button
-                    type="button"
-                    onClick={() => launchDesign(a.action as 'extend_colors' | 'amplify_next_season')}
-                    disabled={launchingAction === a.action}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon text-white text-[11px] font-medium hover:bg-carbon/90 transition-colors disabled:opacity-50"
-                  >
-                    {launchingAction === a.action ? (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Abriendo Aimily Design…
-                      </>
-                    ) : (
-                      <>
-                        Abrir en Aimily Design
-                        <ArrowRight className="h-3 w-3" />
-                      </>
-                    )}
-                  </button>
+              {(a.action === 'extend_colors' ||
+                a.action === 'amplify_next_season' ||
+                a.action === 'kill') && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {/* Primary CTA · Aimily Design (sigue solo para verbos creativos) */}
+                  {(a.action === 'extend_colors' || a.action === 'amplify_next_season') && (
+                    <button
+                      type="button"
+                      onClick={() => launchDesign(a.action as 'extend_colors' | 'amplify_next_season')}
+                      disabled={launchingAction === a.action}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon text-white text-[11px] font-medium hover:bg-carbon/90 transition-colors disabled:opacity-50"
+                    >
+                      {launchingAction === a.action ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Abriendo Aimily Design…
+                        </>
+                      ) : (
+                        <>
+                          Abrir en Aimily Design
+                          <ArrowRight className="h-3 w-3" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                  {/* Secondary CTA · Añadir a semillas (todos los seed-producing) */}
+                  {(() => {
+                    const key = `${sku.product_fact_id}:${a.action}`;
+                    const seeded = seededKeys.has(key);
+                    const loading = seedingKey === key;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => addToSeeds(sku, a)}
+                        disabled={loading || seeded}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors ${
+                          seeded
+                            ? 'bg-carbon/[0.06] text-carbon/50 cursor-default'
+                            : 'border border-carbon/15 text-carbon/70 hover:border-carbon/40 hover:text-carbon disabled:opacity-50'
+                        }`}
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Añadiendo…
+                          </>
+                        ) : seeded ? (
+                          <>✓ En semillas</>
+                        ) : (
+                          <>+ Añadir a semillas</>
+                        )}
+                      </button>
+                    );
+                  })()}
                 </div>
               )}
               {/* Detailed evidence (the data behind) — collapsed by default

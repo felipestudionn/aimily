@@ -93,7 +93,6 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 // Map (route) a la firma con v2 directa (módulo).
 import { applyExclusionRules as applyExclusionRulesCore } from '@/lib/strategy/exclusion-rules';
 import { neutralizeRationale } from '@/lib/strategy/neutralize-source-copy';
-import { materializeSkuSeedsForRun } from '@/lib/strategy/materialize-sku-seeds';
 function applyExclusionRules<V extends {
   actions: Array<{ action: string; evidence?: Record<string, unknown> }>;
   product_fact_id: string;
@@ -1220,28 +1219,13 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   // SKUs decididos = los que tienen lock activo.
   const lockedSkusCount = skus.filter((s) => s.user_lock != null).length;
 
-  // Felipe 2026-05-19 noche — In-Season feedback loop.
-  // Materialize SKU seeds for the seed-producing verbs (extend_colors,
-  // amplify_next_season, drop_color, kill→retire) so the next-collection
-  // gate can offer them. No-ops for tenants with surface_mode !== 'aimily_360'.
-  // Fire-and-forget: don't block the response on this.
-  try {
-    materializeSkuSeedsForRun(
-      runId,
-      run.tenant_id as string,
-      skus.map((s) => ({
-        product_fact_id: s.product_fact_id,
-        model_ref: s.model_ref,
-        color_ref: s.color_ref,
-        product_name: s.product_name,
-        family_code: s.family_code,
-        season_tag: null, // not in SkuRow currently — add later if needed for filtering
-        actions: s.actions,
-      }))
-    ).catch((e) => console.error('[skus route] seed materialization fire-forget error', e));
-  } catch (e) {
-    console.error('[skus route] seed materialization sync error', e);
-  }
+  // Felipe 2026-05-19 noche — User-initiated seed model (NOT auto-mat).
+  // The In-Season feedback loop materializes seeds only when the user
+  // explicitly clicks "Añadir a semillas" on a verdict pill (see
+  // POST /api/strategy/seeds). Auto-materialization was tried + rolled back
+  // because it filled the pool with the engine's permissive universe, not
+  // with what the merch actually wants to develop.
+  // See memory/architecture_in-season-feedback-loop.md §2 (revised).
 
   return NextResponse.json({
     run_id: runId,

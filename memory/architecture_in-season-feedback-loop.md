@@ -60,7 +60,21 @@ In-Season tiene **dos entry points** distintos. Comparten el motor (parsers + cl
 
 ## §2 · El bucle de retroalimentación · SKU seeds
 
-Esta es la pieza nueva que Felipe puntualiza. Hoy no existe.
+> **2026-05-19 noche · MODELO DEFINITIVO (user-initiated)**: las semillas
+> NO se auto-materializan al ejecutar un run. Sólo nacen cuando el merch
+> hace click explícito en "+ Añadir a semillas" en un verdict pill, o
+> cuando hace click en "Abrir en Aimily Design" (que también crea la
+> seed). El motor sigue produciendo el universo permisivo de verdicts
+> (eso no cambia), pero el pool de semillas es el subset que el usuario
+> decidió DESARROLLAR. Pool = decisión humana, no universo del motor.
+>
+> El intento previo de auto-materializar (commit 94ad874 hook fire-and-
+> forget) está rolled back en commit pendiente. Razón: confundía el
+> motor con la intención. El merch ve TODOS los verdicts en el run UI
+> con sus rationales y evidence; añade a semillas solo lo que va a
+> desarrollar para próxima colección.
+
+Esta es la pieza nueva que Felipe puntualiza.
 
 ### Concepto: "SKU seed"
 
