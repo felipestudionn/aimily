@@ -145,13 +145,21 @@ export async function GET(req: NextRequest) {
   const connectionId = (inserted as { id: string }).id;
 
   // 7) Store token in Vault. Failure → roll back the connection row.
+  // supabase-js `.rpc()` does NOT throw on a SQL error — it returns
+  // `{ error }`. We must inspect that explicitly; the surrounding try/catch
+  // only catches network/runtime failures.
   try {
-    await supabaseAdmin.rpc('tenant_sales_connections_store_token', {
-      p_connection_id: connectionId,
-      p_token: accessToken,
-    });
+    const { error: vaultErr } = await supabaseAdmin.rpc(
+      'tenant_sales_connections_store_token',
+      { p_connection_id: connectionId, p_token: accessToken }
+    );
+    if (vaultErr) {
+      console.error('[shopify oauth] vault store returned error', vaultErr);
+      await supabaseAdmin.from('tenant_sales_connections').delete().eq('id', connectionId);
+      return failRedirect(req, statePayload.tenant_slug, 'token_vault_failed');
+    }
   } catch (err) {
-    console.error('[shopify oauth] vault store failed', err);
+    console.error('[shopify oauth] vault store threw', err);
     await supabaseAdmin.from('tenant_sales_connections').delete().eq('id', connectionId);
     return failRedirect(req, statePayload.tenant_slug, 'token_vault_failed');
   }
