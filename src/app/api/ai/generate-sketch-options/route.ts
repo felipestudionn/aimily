@@ -338,7 +338,24 @@ export async function POST(req: NextRequest) {
       const replicaSuffix = typeof body.replicate_concept_brief === 'string' && body.replicate_concept_brief
         ? `\n\nMODO REPLICACIÓN INSPIRADA (brief: ${body.replicate_concept_brief}): Este sketch debe variar LIGERAMENTE del producto referente — silueta familiar pero con sutiles diferencias en proporciones, detalles, longitud, fit o tejido. Conserva el DNA conceptual del original (que es un hero comercial probado) pero introduce variación creativa para que sea un MODELO NUEVO inspirado, no una réplica idéntica. Inspírate ~85% en el original, varía ~15%.`
         : body.preserve_reference_exactly
-          ? `\n\nMODO RÉPLICA FIEL (preserve every detail): este sketch debe ser una traducción técnica EXACTA del producto en la imagen de referencia. NO añadas detalles que no están en el referente (no bolsillos extra, no botones nuevos, no costuras imaginadas). NO redibujes la silueta. NO estilices ni reinterpretes. Copia 1:1 el cuello, la línea de los botones (si los hay), el detalle del nudo si está presente, el largo de las mangas y la curva del bajo. El propósito es solo trazar el producto para luego cambiarle el color — NO es un rediseño.`
+          ? `\n\nMODO RÉPLICA FIEL — DIRECTIVAS CRÍTICAS (lee dos veces):
+
+OBJETIVO ÚNICO: trazar exactamente el producto en la imagen de referencia para luego cambiarle el color. NO es un rediseño, NO es una "interpretación de flat sketch típico" del tipo de prenda. Es una traducción 1:1 del producto específico que tienes delante.
+
+PROHIBICIONES ABSOLUTAS:
+- NO añadas bolsillos a menos que sean CLARAMENTE visibles en la foto de referencia. Una camisa, blusa, o jacket "típica" en flat sketch puede tener bolsillos por convención — IGNORA esa convención. Si el referente no muestra bolsillos, el sketch tampoco los tiene. Punto.
+- NO añadas botones tradicionales si el referente tiene otro tipo de cierre (nudo, lazo, cremallera oculta, sin cierre visible). Mira CUIDADOSAMENTE el centro frontal del referente y replica lo que ves.
+- NO añadas costuras decorativas, paneles, o construcciones que no veas en el referente.
+- NO completes "lo que falta" con detalles inventados. Si la referencia no muestra un detalle, ese detalle NO va.
+
+INSPECCIÓN OBLIGATORIA — antes de dibujar, mira la imagen y pregúntate:
+- ¿Tiene bolsillos visibles? (sí/no — si no estás 100% seguro, NO los dibujes)
+- ¿Cómo cierra? (botones / nudo / lazo / oculto / sin cierre)
+- ¿Cuello? (mao / camisero / volante / sin cuello)
+- ¿Bajo? (recto / curvo / asimétrico / con dobladillo visible)
+- ¿Mangas? (cortas / largas / 3/4 / sin mangas / con puños / sin puños)
+
+REGLA DE DUDA: si dudas, simplifica. Mejor un sketch que carezca de detalle que un sketch que invente detalle.`
           : '';
       const typeSuffix = `\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}${replicaSuffix}`;
       const frontPrompt = `${FRONT_PROMPT}${typeSuffix}`;
