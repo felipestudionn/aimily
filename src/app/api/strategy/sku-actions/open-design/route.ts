@@ -80,6 +80,28 @@ export async function POST(req: NextRequest) {
   const access = await requireStrategyAccess({ tenantId: product.tenant_id, minRole: 'analyst' });
   if (!access.ok) return access.response;
 
+  // Felipe 2026-05-19 · Propagar el brief creative del In-Season run para
+  // que la fase Color & Materials del Collection Builder use la paleta
+  // del moodboard (e.g. [rojo_terracota, verde_oliva, mostaza, lavanda])
+  // en lugar de proponer colores random. Lo persistimos en sku.notes que
+  // se pasa al prompt color-suggest como `concept`/`designDirection`.
+  const { data: run } = await supabaseAdmin
+    .from('strategy_analysis_runs')
+    .select('creative_brief_id')
+    .eq('id', body.run_id)
+    .maybeSingle();
+  let briefColorStory: string[] = [];
+  let briefArchetypes: string[] = [];
+  if (run?.creative_brief_id) {
+    const { data: brief } = await supabaseAdmin
+      .from('strategy_creative_briefs')
+      .select('color_story, archetypes_focus')
+      .eq('id', run.creative_brief_id)
+      .maybeSingle();
+    briefColorStory = Array.isArray(brief?.color_story) ? (brief!.color_story as string[]) : [];
+    briefArchetypes = Array.isArray(brief?.archetypes_focus) ? (brief!.archetypes_focus as string[]) : [];
+  }
+
   // 1) Find or create the "Aimily Design — In-Season" collection plan for this user.
   const { data: existingPlan } = await supabaseAdmin
     .from('collection_plans')
@@ -148,7 +170,13 @@ export async function POST(req: NextRequest) {
         `Origen: In-Season Sales Management`,
         `SKU referencia: ${product.model_ref}${product.color_ref ? ` · ${product.color_ref}` : ''}`,
         `Acción: ${body.action_type === 'extend_colors' ? 'Extender colores' : 'Replicar concepto en nuevo modelo'}`,
-      ].join('\n'),
+        briefColorStory.length > 0
+          ? `Paleta moodboard del brief In-Season (usar para proponer colorways): ${briefColorStory.join(', ')}`
+          : '',
+        briefArchetypes.length > 0
+          ? `Arquetipos creativos del brief: ${briefArchetypes.join(', ')}`
+          : '',
+      ].filter(Boolean).join('\n'),
     })
     .select('id')
     .single();
