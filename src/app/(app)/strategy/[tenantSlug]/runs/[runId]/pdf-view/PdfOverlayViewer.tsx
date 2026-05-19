@@ -503,6 +503,10 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
   // escenario activo, cada SKU muestra DOS stacks de pills.
   const [comparisonScenario, setComparisonScenario] = useState<ScenarioId | null>(null);
   const pdfCanvasRef = useRef<HTMLDivElement>(null);
+  // Felipe sprint Aimily Design 2026-05-19 · pasamos pdf_signed_url +
+  // numPages al SkuDetailInline para que pueda extraer imágenes
+  // embebidas del PDF directamente (sin recorte heurístico).
+  const [pdfNumPages, setPdfNumPages] = useState(0);
 
   // Fase 2 · al cambiar el escenario activo, calcular qué SKUs CAMBIAN
   // su verdict stack y resaltarlos por 1.5s. La comparación se hace
@@ -594,6 +598,7 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
         const loadingTask = pdfjs.getDocument(data.pdf_signed_url!);
         const pdf = await loadingTask.promise;
+        setPdfNumPages(pdf.numPages);
         // Crisp render on retina screens: combine a generous base scale
         // (2.0) with devicePixelRatio so the canvas is high-resolution
         // internally while the visual size matches the base viewport.
@@ -773,6 +778,8 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         runId={runId}
         pdfContainerRef={pdfCanvasRef}
         totalSkus={data.summary.total_skus}
+        pdfSignedUrl={data.pdf_signed_url ?? null}
+        pdfNumPages={pdfNumPages}
       />
     </div>
   );
@@ -799,6 +806,8 @@ function SkuPanel({
   runId,
   pdfContainerRef,
   totalSkus,
+  pdfSignedUrl,
+  pdfNumPages,
 }: {
   data: ApiResponse;
   actionFilter: Set<VerdictAction['action']>;
@@ -820,6 +829,8 @@ function SkuPanel({
   runId: string;
   pdfContainerRef: React.RefObject<HTMLDivElement | null>;
   totalSkus: number;
+  pdfSignedUrl: string | null;
+  pdfNumPages: number;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1119,6 +1130,8 @@ function SkuPanel({
                     runId={runId}
                     pdfContainerRef={pdfContainerRef}
                     totalSkus={totalSkus}
+                    pdfSignedUrl={pdfSignedUrl}
+                    pdfNumPages={pdfNumPages}
                   />
                 )}
               </li>
@@ -1320,11 +1333,15 @@ function SkuDetailInline({
   runId,
   pdfContainerRef,
   totalSkus,
+  pdfSignedUrl,
+  pdfNumPages,
 }: {
   sku: SkuRow;
   runId: string;
   pdfContainerRef: React.RefObject<HTMLDivElement | null>;
   totalSkus: number;
+  pdfSignedUrl: string | null;
+  pdfNumPages: number;
 }) {
   // Felipe sprint Aimily Design 2026-05-18 — botón "Abrir en Aimily Design"
   // en cada action card de extend_colors / amplify_next_season. Crea un
@@ -1341,20 +1358,27 @@ function SkuDetailInline({
     if (launchingAction) return;
     setLaunchingAction(actionType);
     try {
-      // 1) Recortar la imagen referencia del canvas del PDF (si no la
-      //    tenemos ya persistida en product_image_url).
+      // 1) Extraer la imagen referencia del PDF original. Prioridad:
+      //    extracción de objeto embebido (calidad nativa, match exacto por
+      //    orden de aparición); fallback a high-res crop si el PDF no
+      //    tiene imágenes embebidas. Forzamos replace en producción
+      //    actual porque los SKUs ya extraídos antes con la heurística
+      //    de bbox vieja apuntaban a fotos incorrectas.
       let referenceImageUrl: string | undefined;
-      if (pdfContainerRef.current) {
-        const { cropSkuFromPdfCanvas, uploadCroppedSkuImage } = await import(
+      if (pdfSignedUrl) {
+        const { getSkuReferenceImage, uploadCroppedSkuImage } = await import(
           '@/lib/strategy/sku-image-cropper'
         );
-        const crop = await cropSkuFromPdfCanvas(
-          pdfContainerRef.current,
+        const result = await getSkuReferenceImage(
+          pdfSignedUrl,
           sku.rank,
-          totalSkus
+          totalSkus,
+          pdfNumPages
         );
-        if (crop) {
-          const url = await uploadCroppedSkuImage(crop.blob, sku.product_fact_id);
+        if (result) {
+          const url = await uploadCroppedSkuImage(result.blob, sku.product_fact_id, {
+            forceReplace: true,
+          });
           if (url) referenceImageUrl = url;
         }
       }

@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const productFactId = formData.get('product_fact_id');
   const image = formData.get('image');
+  const forceReplace = formData.get('force_replace') === '1';
 
   if (typeof productFactId !== 'string' || !productFactId) {
     return NextResponse.json({ error: 'product_fact_id required' }, { status: 400 });
@@ -43,8 +44,10 @@ export async function POST(req: NextRequest) {
   const access = await requireStrategyAccess({ tenantId: product.tenant_id, minRole: 'analyst' });
   if (!access.ok) return access.response;
 
-  // Si ya hay una imagen, devolvemos esa — no re-extraer.
-  if (product.product_image_url) {
+  // Reusa la imagen previa salvo que el cliente pida re-extracción
+  // (force_replace=1 — útil cuando mejoramos el algoritmo y queremos
+  // sustituir la imagen vieja).
+  if (product.product_image_url && !forceReplace) {
     return NextResponse.json({
       url: product.product_image_url,
       reused: true,
