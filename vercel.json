@@ -13,7 +13,6 @@
       "schedule": "0 3 * * *"
     },
     {
-      "_comment": "Felipe sprint Shopify lane 2026-05-19 · daily inventory + price snapshots. Disparado a las 06:00 UTC (07:00 Madrid). Noop por ahora hasta que persistamos tenant connector credentials.",
       "path": "/api/cron/strategy/inventory-snapshot",
       "schedule": "0 6 * * *"
     }
