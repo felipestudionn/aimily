@@ -615,13 +615,13 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
                       base64 = btoa(binary);
                     }
-                    // Felipe sprint Aimily Design 2026-05-19 · si el SKU
-                    // viene de In-Season con acción "Replicar concepto en
-                    // nuevo modelo", el generador inyecta directiva de
-                    // variación sutil para crear MODELO NUEVO inspirado
-                    // (no réplica). Lo detectamos desde sku.notes que el
-                    // endpoint open-design pre-rellena.
-                    const isConceptReplica = /Replicar concepto en nuevo modelo/i.test(sku.notes || '');
+                    // Felipe sprint Aimily Design 2026-05-19 · dos modos
+                    // opuestos según el origen In-Season:
+                    // - "Replicar concepto en nuevo modelo" → variación 85/15
+                    // - "Extender colores" → réplica fiel (solo cambia color)
+                    const skuNotes = sku.notes || '';
+                    const isConceptReplica = /Replicar concepto en nuevo modelo/i.test(skuNotes);
+                    const isExtendColors = /Acción: Extender colores/i.test(skuNotes);
                     const replicateBrief = isConceptReplica
                       ? `Modelo inspirado en hero comercial del In-Season — ${sku.name}`
                       : undefined;
@@ -636,6 +636,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         additionalNotes: sku.notes || '',
                         collectionPlanId,
                         ...(replicateBrief ? { replicate_concept_brief: replicateBrief } : {}),
+                        ...(isExtendColors ? { preserve_reference_exactly: true } : {}),
                       }),
                     });
                     if (res.ok) {

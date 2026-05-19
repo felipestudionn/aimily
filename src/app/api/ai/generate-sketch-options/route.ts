@@ -329,14 +329,17 @@ export async function POST(req: NextRequest) {
       // headroom, defeating the anti-crop guardrail. Both go through
       // generateUncropped which enforces ≥8% margin on every side.
       //
-      // Felipe sprint Aimily Design 2026-05-19 · cuando el SKU viene del
-      // In-Season con acción "Replicar concepto en nuevo modelo", el
-      // body trae `replicate_concept_brief`. Inyectamos directiva extra
-      // para que el sketch sea un MODELO NUEVO inspirado en el hero —
-      // silueta familiar pero con variación sutil — no una réplica.
+      // Felipe sprint Aimily Design 2026-05-19 · dos modos opuestos:
+      // - replicate_concept_brief: variación creativa 85/15 (modelo nuevo
+      //   inspirado en hero, para amplify_next_season del In-Season).
+      // - preserve_reference_exactly: réplica FIEL del producto referente,
+      //   con todos los detalles 1:1 (para extend_colors del In-Season —
+      //   el objetivo es solo cambiar el color, no redibujar el producto).
       const replicaSuffix = typeof body.replicate_concept_brief === 'string' && body.replicate_concept_brief
         ? `\n\nMODO REPLICACIÓN INSPIRADA (brief: ${body.replicate_concept_brief}): Este sketch debe variar LIGERAMENTE del producto referente — silueta familiar pero con sutiles diferencias en proporciones, detalles, longitud, fit o tejido. Conserva el DNA conceptual del original (que es un hero comercial probado) pero introduce variación creativa para que sea un MODELO NUEVO inspirado, no una réplica idéntica. Inspírate ~85% en el original, varía ~15%.`
-        : '';
+        : body.preserve_reference_exactly
+          ? `\n\nMODO RÉPLICA FIEL (preserve every detail): este sketch debe ser una traducción técnica EXACTA del producto en la imagen de referencia. NO añadas detalles que no están en el referente (no bolsillos extra, no botones nuevos, no costuras imaginadas). NO redibujes la silueta. NO estilices ni reinterpretes. Copia 1:1 el cuello, la línea de los botones (si los hay), el detalle del nudo si está presente, el largo de las mangas y la curva del bajo. El propósito es solo trazar el producto para luego cambiarle el color — NO es un rediseño.`
+          : '';
       const typeSuffix = `\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}${replicaSuffix}`;
       const frontPrompt = `${FRONT_PROMPT}${typeSuffix}`;
       const backPrompt = `${BACK_APPAREL_PROMPT}${typeSuffix}`;
