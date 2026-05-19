@@ -321,7 +321,11 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
             animating ? 'opacity-0 scale-[0.96] translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}>
             {!expandedBlock ? (
-              /* ═══ TOP LEVEL — 4 block cards, full-card colored per phase accent ═══ */
+              <>
+              {/* Sprint E · Felipe 2026-05-19 noche — In-Season seeds banner.
+                  Surface seeds consumed when this collection was created. */}
+              <InSeasonSeedsBanner collectionId={collectionId} />
+              {/* ═══ TOP LEVEL — 4 block cards, full-card colored per phase accent ═══ */}
               <LayoutGroup>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {BLOCK_DEFS.map((block) => {
@@ -390,6 +394,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 })}
               </div>
               </LayoutGroup>
+              </>
             ) : activeBlock ? (
               /* ═══ SUB-LEVEL — 5 mini-block cards inside a block (matches sidebar 4×5) ═══ */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
@@ -495,6 +500,101 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               </div>
             ) : null}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * In-Season seeds banner · Felipe 2026-05-19 noche · Sprint E surface.
+ *
+ * Fetches /api/collection-plans/[id]/seeds and surfaces the consumed seeds
+ * (if any) as a banner above the 4 block cards. Shows the proposed palette
+ * agregada + count by type + CTA to apply colors to the moodboard.
+ *
+ * The DEEP ingestion (moodboard auto-injects the palette into the actual
+ * brief data structure) is deferred — this banner makes the seed↔collection
+ * link visible to the merch so they know the loop closed.
+ */
+function InSeasonSeedsBanner({ collectionId }: { collectionId: string }) {
+  const router = useRouter();
+  const [data, setData] = useState<{
+    summary: {
+      total: number;
+      by_type: Record<string, number>;
+      proposed_palette: Array<{ name: string; hex: string }>;
+    };
+    seeds: Array<{ source_product_name: string | null; source_color_ref: string | null }>;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!collectionId) return;
+    fetch(`/api/collection-plans/${collectionId}/seeds`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setData)
+      .catch(() => {});
+  }, [collectionId]);
+
+  if (!data || data.summary.total === 0) return null;
+
+  const palette = data.summary.proposed_palette ?? [];
+  const byType = data.summary.by_type ?? {};
+  const typeLabels: Record<string, string> = {
+    amplify_next_season: 'Replica · próxima',
+    extend_colors: 'Extender colores',
+    drop_color: 'Drop color',
+    retire: 'Retirar',
+  };
+
+  return (
+    <div className="mb-6 bg-white rounded-[20px] p-6 md:p-8 border border-carbon/[0.06]">
+      <div className="flex items-start gap-6 flex-wrap">
+        <div className="flex-1 min-w-[260px]">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/40 mb-1.5 font-medium">
+            Semillas In-Season aplicadas a esta colección
+          </div>
+          <div className="text-[18px] font-semibold text-carbon tracking-[-0.02em] mb-2">
+            {data.summary.total} semilla{data.summary.total === 1 ? '' : 's'} consumida{data.summary.total === 1 ? '' : 's'}
+          </div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {Object.entries(byType).map(([type, count]) => (
+              <span
+                key={type}
+                className="text-[11px] text-carbon/55 bg-carbon/[0.04] px-2.5 py-1 rounded-full"
+              >
+                {typeLabels[type] ?? type}
+                <span className="text-carbon/35 ml-1">{count}</span>
+              </span>
+            ))}
+          </div>
+          {palette.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] uppercase tracking-[0.08em] text-carbon/40">
+                Paleta propuesta:
+              </span>
+              {palette.slice(0, 10).map((c, i) => (
+                <span
+                  key={`${c.hex}-${i}`}
+                  title={c.name}
+                  className="w-6 h-6 rounded-full border border-carbon/10"
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+              {palette.length > 10 && (
+                <span className="text-[11px] text-carbon/40">+{palette.length - 10}</span>
+              )}
+            </div>
+          )}
+        </div>
+        {palette.length > 0 && (
+          <button
+            type="button"
+            onClick={() => router.push(`/collection/${collectionId}/creative?block=moodboard`)}
+            className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors whitespace-nowrap"
+          >
+            Aplicar al Moodboard →
+          </button>
+        )}
       </div>
     </div>
   );
