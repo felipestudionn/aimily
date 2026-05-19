@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Connection {
   id: string;
@@ -46,6 +46,7 @@ export function ConnectionsClient({
   syncRuns: SyncRun[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showForm, setShowForm] = useState(connections.length === 0);
   const [provider, setProvider] = useState<'shopify' | 'stripe'>('shopify');
   const [shopDomain, setShopDomain] = useState('');
@@ -53,6 +54,36 @@ export function ConnectionsClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [oauthShop, setOauthShop] = useState('');
+  const [oauthBusy, setOauthBusy] = useState(false);
+
+  const oauthSuccess = searchParams?.get('oauth_success');
+  const oauthError = searchParams?.get('oauth_error');
+  const oauthSuccessShop = searchParams?.get('shop');
+
+  // Strip ?oauth_* query params from the URL after first paint so reload
+  // doesn't keep showing the banner.
+  useEffect(() => {
+    if (oauthSuccess || oauthError) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('oauth_success');
+      url.searchParams.delete('oauth_error');
+      url.searchParams.delete('shop');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [oauthSuccess, oauthError]);
+
+  const startShopifyOAuth = () => {
+    const shop = oauthShop.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9-]{0,59}\.myshopify\.com$/.test(shop)) {
+      setError('El dominio debe ser <tu-tienda>.myshopify.com');
+      return;
+    }
+    setOauthBusy(true);
+    setError(null);
+    const installUrl = `/api/in-season/oauth/shopify/install?shop=${encodeURIComponent(shop)}&tenant_slug=${encodeURIComponent(tenantSlug)}`;
+    window.location.href = installUrl;
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +138,18 @@ export function ConnectionsClient({
 
   return (
     <div className="space-y-6">
+      {/* OAuth result banner */}
+      {oauthSuccess === 'shopify' && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-[16px] p-4 text-[13px] text-emerald-900">
+          Tienda <span className="font-mono">{oauthSuccessShop}</span> conectada vía Shopify Partner App. La primera sincronización ya está encolada.
+        </div>
+      )}
+      {oauthError && (
+        <div className="bg-rose-50 border border-rose-200 rounded-[16px] p-4 text-[13px] text-rose-900">
+          La instalación OAuth de Shopify falló: <span className="font-mono">{oauthError}</span>. Reintenta o usa el formulario de token manual abajo.
+        </div>
+      )}
+
       {/* Connection list */}
       {connections.map((conn) => {
         const tone = STATUS_TONE[conn.status];
@@ -200,77 +243,118 @@ export function ConnectionsClient({
 
       {/* Add connection */}
       {showForm ? (
-        <form onSubmit={onSubmit} className="bg-white rounded-[20px] p-8 border border-carbon/[0.06] space-y-4">
-          <h3 className="text-[18px] font-semibold text-carbon">Conectar nuevo proveedor</h3>
-          <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-carbon/45 block mb-2">Proveedor</label>
-            <div className="flex gap-2">
-              {(['shopify', 'stripe'] as const).map((p) => (
-                <button
-                  type="button"
-                  key={p}
-                  onClick={() => setProvider(p)}
-                  className={`px-5 py-2 rounded-full text-[12px] font-medium border capitalize transition-colors ${
-                    provider === p
-                      ? 'bg-carbon text-white border-carbon'
-                      : 'bg-white text-carbon/60 border-carbon/[0.12] hover:border-carbon/30'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
-          {provider === 'shopify' && (
+        <div className="space-y-4">
+          {/* Shopify OAuth — recommended path */}
+          <div className="bg-white rounded-[20px] p-8 border border-carbon/[0.06] space-y-4">
             <div>
-              <label className="text-[11px] uppercase tracking-[0.1em] text-carbon/45 block mb-2">Dominio Shopify</label>
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-[18px] font-semibold text-carbon">Conectar Shopify</h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-carbon text-white uppercase tracking-wider">
+                  Recomendado
+                </span>
+              </div>
+              <p className="text-[13px] text-carbon/55 leading-relaxed">
+                Instala aimily In-Season en tu tienda Shopify. Te llevamos a Shopify, apruebas los
+                permisos de lectura (products, orders, inventory, locations, customers, price rules,
+                discounts, publications) y vuelves aquí con la conexión activa.
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="text"
-                value={shopDomain}
-                onChange={(e) => setShopDomain(e.target.value)}
-                placeholder="ejemplo.myshopify.com"
+                value={oauthShop}
+                onChange={(e) => setOauthShop(e.target.value)}
+                placeholder="tu-tienda.myshopify.com"
+                className="flex-1 min-w-[260px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 font-mono"
+              />
+              <button
+                type="button"
+                onClick={startShopifyOAuth}
+                disabled={oauthBusy || !oauthShop.trim()}
+                className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold disabled:opacity-50 whitespace-nowrap"
+              >
+                {oauthBusy ? 'Redirigiendo…' : 'Conectar con Shopify →'}
+              </button>
+            </div>
+            <p className="text-[11px] text-carbon/40 leading-relaxed">
+              Tu access token se almacena cifrado en Supabase Vault. Nunca pasa por nuestro frontend
+              ni se guarda en texto plano.
+            </p>
+          </div>
+
+          {/* Manual token paste — fallback for Stripe + edge cases */}
+          <form onSubmit={onSubmit} className="bg-white rounded-[20px] p-8 border border-carbon/[0.06] space-y-4">
+            <h3 className="text-[18px] font-semibold text-carbon">Pegar token manual</h3>
+            <p className="text-[13px] text-carbon/55 leading-relaxed">
+              Para Stripe Connect o para tiendas Shopify configuradas como Custom App (un único shop,
+              sin instalación pública).
+            </p>
+            <div>
+              <label className="text-[11px] uppercase tracking-[0.1em] text-carbon/45 block mb-2">Proveedor</label>
+              <div className="flex gap-2">
+                {(['shopify', 'stripe'] as const).map((p) => (
+                  <button
+                    type="button"
+                    key={p}
+                    onClick={() => setProvider(p)}
+                    className={`px-5 py-2 rounded-full text-[12px] font-medium border capitalize transition-colors ${
+                      provider === p
+                        ? 'bg-carbon text-white border-carbon'
+                        : 'bg-white text-carbon/60 border-carbon/[0.12] hover:border-carbon/30'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {provider === 'shopify' && (
+              <div>
+                <label className="text-[11px] uppercase tracking-[0.1em] text-carbon/45 block mb-2">Dominio Shopify</label>
+                <input
+                  type="text"
+                  value={shopDomain}
+                  onChange={(e) => setShopDomain(e.target.value)}
+                  placeholder="ejemplo.myshopify.com"
+                  className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 font-mono"
+                  required
+                />
+              </div>
+            )}
+            <div>
+              <label className="text-[11px] uppercase tracking-[0.1em] text-carbon/45 block mb-2">Admin API access token</label>
+              <input
+                type="password"
+                value={accessToken}
+                onChange={(e) => setAccessToken(e.target.value)}
+                placeholder={provider === 'shopify' ? 'shpat_xxxxxxxx' : 'sk_live_xxx'}
                 className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 font-mono"
                 required
               />
             </div>
-          )}
-          <div>
-            <label className="text-[11px] uppercase tracking-[0.1em] text-carbon/45 block mb-2">Admin API access token</label>
-            <input
-              type="password"
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
-              placeholder={provider === 'shopify' ? 'shpat_xxxxxxxx' : 'sk_live_xxx'}
-              className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 font-mono"
-              required
-            />
-            <p className="text-[11px] text-carbon/40 mt-2 leading-relaxed">
-              MVP: pegado manual del token. La integración OAuth completa (Shopify Partner App
-              handshake + Stripe Connect) llega en una iteración futura.
-            </p>
-          </div>
-          {error && (
-            <div className="bg-rose-50 border border-rose-200 rounded-[12px] p-3 text-[12px] text-rose-700">{error}</div>
-          )}
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold disabled:opacity-50"
-            >
-              {submitting ? 'Guardando…' : 'Conectar'}
-            </button>
-            {connections.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-5 py-2.5 rounded-full border border-carbon/[0.12] text-carbon/60 text-[13px]"
-              >
-                Cancelar
-              </button>
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 rounded-[12px] p-3 text-[12px] text-rose-700">{error}</div>
             )}
-          </div>
-        </form>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold disabled:opacity-50"
+              >
+                {submitting ? 'Guardando…' : 'Conectar'}
+              </button>
+              {connections.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-5 py-2.5 rounded-full border border-carbon/[0.12] text-carbon/60 text-[13px]"
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       ) : (
         <button
           onClick={() => setShowForm(true)}
