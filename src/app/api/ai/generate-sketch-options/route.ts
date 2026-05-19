@@ -286,10 +286,18 @@ export async function POST(req: NextRequest) {
       // All go through generateUncropped which retries up to 3x if the
       // silhouette touches a canvas edge — structural guarantee against
       // cropped flat sketches.
+      // Felipe sprint Aimily Design 2026-05-19: misma directiva de
+      // variación para footwear cuando viene del In-Season.
+      const replicaSuffix = typeof body.replicate_concept_brief === 'string' && body.replicate_concept_brief
+        ? `\n\nMODO REPLICACIÓN INSPIRADA (brief: ${body.replicate_concept_brief}): variación sutil del referente — 85% inspiración / 15% variación creativa. MODELO NUEVO inspirado en el hero, no una réplica.`
+        : '';
+      const sidePrompt = SIDE_PROMPT + replicaSuffix;
+      const topPrompt = TOP_PROMPT + replicaSuffix;
+      const backPrompt = BACK_FOOTWEAR_PROMPT + replicaSuffix;
       const [sideResult, topResult, backResult] = await Promise.allSettled([
-        generateUncropped('side', SIDE_PROMPT, photoBase64, '1024x1024'),
-        generateUncropped('top', TOP_PROMPT, photoBase64, '1024x1536'),
-        generateUncropped('back', BACK_FOOTWEAR_PROMPT, photoBase64, '1024x1024'),
+        generateUncropped('side', sidePrompt, photoBase64, '1024x1024'),
+        generateUncropped('top', topPrompt, photoBase64, '1024x1536'),
+        generateUncropped('back', backPrompt, photoBase64, '1024x1024'),
       ]);
 
       const sideImage = sideResult.status === 'fulfilled' ? sideResult.value : null;
@@ -320,7 +328,16 @@ export async function POST(req: NextRequest) {
       // forcing the model to stretch dresses/tops edge-to-edge with no
       // headroom, defeating the anti-crop guardrail. Both go through
       // generateUncropped which enforces ≥8% margin on every side.
-      const typeSuffix = `\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}`;
+      //
+      // Felipe sprint Aimily Design 2026-05-19 · cuando el SKU viene del
+      // In-Season con acción "Replicar concepto en nuevo modelo", el
+      // body trae `replicate_concept_brief`. Inyectamos directiva extra
+      // para que el sketch sea un MODELO NUEVO inspirado en el hero —
+      // silueta familiar pero con variación sutil — no una réplica.
+      const replicaSuffix = typeof body.replicate_concept_brief === 'string' && body.replicate_concept_brief
+        ? `\n\nMODO REPLICACIÓN INSPIRADA (brief: ${body.replicate_concept_brief}): Este sketch debe variar LIGERAMENTE del producto referente — silueta familiar pero con sutiles diferencias en proporciones, detalles, longitud, fit o tejido. Conserva el DNA conceptual del original (que es un hero comercial probado) pero introduce variación creativa para que sea un MODELO NUEVO inspirado, no una réplica idéntica. Inspírate ~85% en el original, varía ~15%.`
+        : '';
+      const typeSuffix = `\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}${replicaSuffix}`;
       const frontPrompt = `${FRONT_PROMPT}${typeSuffix}`;
       const backPrompt = `${BACK_APPAREL_PROMPT}${typeSuffix}`;
 

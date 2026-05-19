@@ -771,6 +771,8 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         comparisonScenario={comparisonScenario}
         setComparisonScenario={setComparisonScenario}
         runId={runId}
+        pdfContainerRef={pdfCanvasRef}
+        totalSkus={data.summary.total_skus}
       />
     </div>
   );
@@ -795,6 +797,8 @@ function SkuPanel({
   comparisonScenario,
   setComparisonScenario,
   runId,
+  pdfContainerRef,
+  totalSkus,
 }: {
   data: ApiResponse;
   actionFilter: Set<VerdictAction['action']>;
@@ -814,6 +818,8 @@ function SkuPanel({
   comparisonScenario: ScenarioId | null;
   setComparisonScenario: (s: ScenarioId | null) => void;
   runId: string;
+  pdfContainerRef: React.RefObject<HTMLDivElement | null>;
+  totalSkus: number;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1107,7 +1113,14 @@ function SkuPanel({
                     />
                   </div>
                 </button>
-                {isExpanded && <SkuDetailInline sku={{ ...sku, actions: effectiveActions }} runId={runId} />}
+                {isExpanded && (
+                  <SkuDetailInline
+                    sku={{ ...sku, actions: effectiveActions }}
+                    runId={runId}
+                    pdfContainerRef={pdfContainerRef}
+                    totalSkus={totalSkus}
+                  />
+                )}
               </li>
             );
           })}
@@ -1302,18 +1315,52 @@ function FilterChip({
  * button. Same headline KPIs, operational stats, modulator notes,
  * action stack with full detail.
  */
-function SkuDetailInline({ sku, runId }: { sku: SkuRow; runId: string }) {
-  // Felipe sprint Aimily Design 2026-05-18 — botón "Abrir Aimily Design →"
+function SkuDetailInline({
+  sku,
+  runId,
+  pdfContainerRef,
+  totalSkus,
+}: {
+  sku: SkuRow;
+  runId: string;
+  pdfContainerRef: React.RefObject<HTMLDivElement | null>;
+  totalSkus: number;
+}) {
+  // Felipe sprint Aimily Design 2026-05-18 — botón "Abrir en Aimily Design"
   // en cada action card de extend_colors / amplify_next_season. Crea un
   // SKU en el plan "Aimily Design — In-Season" del usuario y lo abre en
   // el Collection Builder. MISMO flow Design (concept → sketch → colorways
   // → 3D), reusado tal cual del Collection Builder.
-  // Ref: /api/strategy/sku-actions/open-design/route.ts
+  //
+  // 2026-05-19 · recorte automático de la foto referencia del SKU desde
+  // el canvas del PDF Zara ya renderizado. Primera invocación recorta +
+  // sube + persiste en product_image_url. Siguientes invocaciones reusan.
+  // Ref: src/lib/strategy/sku-image-cropper.ts
   const [launchingAction, setLaunchingAction] = useState<string | null>(null);
   const launchDesign = async (actionType: 'extend_colors' | 'amplify_next_season') => {
     if (launchingAction) return;
     setLaunchingAction(actionType);
     try {
+      // 1) Recortar la imagen referencia del canvas del PDF (si no la
+      //    tenemos ya persistida en product_image_url).
+      let referenceImageUrl: string | undefined;
+      if (pdfContainerRef.current) {
+        const { cropSkuFromPdfCanvas, uploadCroppedSkuImage } = await import(
+          '@/lib/strategy/sku-image-cropper'
+        );
+        const crop = await cropSkuFromPdfCanvas(
+          pdfContainerRef.current,
+          sku.rank,
+          totalSkus
+        );
+        if (crop) {
+          const url = await uploadCroppedSkuImage(crop.blob, sku.product_fact_id);
+          if (url) referenceImageUrl = url;
+        }
+      }
+
+      // 2) Crear SKU en la colección "Aimily Design — In-Season" + abrir
+      //    Collection Builder con la fase Design pre-cargada.
       const res = await fetch('/api/strategy/sku-actions/open-design', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -1321,10 +1368,7 @@ function SkuDetailInline({ sku, runId }: { sku: SkuRow; runId: string }) {
           product_fact_id: sku.product_fact_id,
           run_id: runId,
           action_type: actionType,
-          // reference_image_url opcional · si product_image_url existe en
-          // strategy_product_facts (extraído del PDF), se pre-carga; si no,
-          // el usuario sube la foto en la fase concept del Design.
-          reference_image_url: undefined,
+          reference_image_url: referenceImageUrl,
         }),
       });
       if (!res.ok) {
@@ -1332,7 +1376,7 @@ function SkuDetailInline({ sku, runId }: { sku: SkuRow; runId: string }) {
         alert(`No se pudo abrir Aimily Design: ${err.error || res.statusText}`);
         return;
       }
-      const { url } = await res.json() as { url: string };
+      const { url } = (await res.json()) as { url: string };
       window.open(url, '_blank');
     } catch (err) {
       alert(`Error: ${err instanceof Error ? err.message : String(err)}`);

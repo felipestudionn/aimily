@@ -615,9 +615,28 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
                       base64 = btoa(binary);
                     }
+                    // Felipe sprint Aimily Design 2026-05-19 · si el SKU
+                    // viene de In-Season con acción "Replicar concepto en
+                    // nuevo modelo", el generador inyecta directiva de
+                    // variación sutil para crear MODELO NUEVO inspirado
+                    // (no réplica). Lo detectamos desde sku.notes que el
+                    // endpoint open-design pre-rellena.
+                    const isConceptReplica = /Replicar concepto en nuevo modelo/i.test(sku.notes || '');
+                    const replicateBrief = isConceptReplica
+                      ? `Modelo inspirado en hero comercial del In-Season — ${sku.name}`
+                      : undefined;
                     const res = await fetch('/api/ai/generate-sketch-options', {
                       method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ images: [{ base64, mimeType: 'image/png', instructions: '' }], garmentType: sku.category, season: '', styleName: sku.name, fabric: '', additionalNotes: sku.notes || '', collectionPlanId }),
+                      body: JSON.stringify({
+                        images: [{ base64, mimeType: 'image/png', instructions: '' }],
+                        garmentType: sku.category,
+                        season: '',
+                        styleName: sku.name,
+                        fabric: '',
+                        additionalNotes: sku.notes || '',
+                        collectionPlanId,
+                        ...(replicateBrief ? { replicate_concept_brief: replicateBrief } : {}),
+                      }),
                     });
                     if (res.ok) {
                       const data = await res.json();
