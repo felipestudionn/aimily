@@ -26,6 +26,7 @@ const FALLBACK_THUMB_W_RATIO = 0.18;
 const FALLBACK_HEADER_RATIO = 0.07;
 const FALLBACK_ROW_PADDING_RATIO = 0.03;
 const FALLBACK_HIGH_RES_SCALE = 4.0;
+const UPSCALE_TARGET_MAX_DIM = 1024; // imágenes < 1024 en lado mayor se escalan bicubic
 
 export type CropResult = {
   blob: Blob;
@@ -42,6 +43,26 @@ type ImgObject = {
   height: number;
   kind?: number;
 };
+
+/** Upscale a canvas con interpolación bicubic (imageSmoothingEnabled +
+ *  imageSmoothingQuality='high') hasta target en lado mayor. Si la imagen
+ *  ya es >= target, retorna sin cambios. */
+function upscaleCanvasBicubic(source: HTMLCanvasElement, targetMaxDim: number): HTMLCanvasElement {
+  const maxDim = Math.max(source.width, source.height);
+  if (maxDim >= targetMaxDim) return source;
+  const scale = targetMaxDim / maxDim;
+  const w = Math.round(source.width * scale);
+  const h = Math.round(source.height * scale);
+  const dst = document.createElement('canvas');
+  dst.width = w;
+  dst.height = h;
+  const ctx = dst.getContext('2d');
+  if (!ctx) return source;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(source, 0, 0, w, h);
+  return dst;
+}
 
 /** Convierte un objeto imagen de pdfjs a un canvas (cualquier formato). */
 function imgObjectToCanvas(obj: ImgObject): HTMLCanvasElement | null {
@@ -191,15 +212,22 @@ export async function extractSkuImageFromPdf(
     const candidate = images[rowInPage] ?? images[images.length - 1];
     if (!candidate?.canvas) return null;
 
+    // Felipe sprint Aimily Design 2026-05-19 · upscale a 1024px en lado
+    // mayor con interpolación bicubic para que la referencia se vea
+    // grande y nítida en el Collection Builder. Los thumbnails nativos
+    // del PDF Zara RNK son ~135×203px — bien para match correcto, pero
+    // visualmente muy pequeños. AI generation funciona con cualquier
+    // resolución; este upscale es para UX visual del comprador.
+    const upscaled = upscaleCanvasBicubic(candidate.canvas, UPSCALE_TARGET_MAX_DIM);
     const blob = await new Promise<Blob | null>((resolve) => {
-      candidate.canvas.toBlob((b) => resolve(b), 'image/png');
+      upscaled.toBlob((b) => resolve(b), 'image/png');
     });
     if (!blob) return null;
 
     return {
       blob,
-      width: candidate.canvas.width,
-      height: candidate.canvas.height,
+      width: upscaled.width,
+      height: upscaled.height,
     };
   } catch (err) {
     console.warn('[sku-image-cropper] extraction failed', err);
