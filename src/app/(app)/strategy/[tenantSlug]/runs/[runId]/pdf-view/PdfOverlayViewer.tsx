@@ -517,6 +517,27 @@ export function PdfOverlayViewer({ runId, tenantSlug }: { runId: string; tenantS
   // embebidas del PDF directamente (sin recorte heurístico).
   const [pdfNumPages, setPdfNumPages] = useState(0);
 
+  // Felipe 2026-05-19 noche · auto-trigger desarrollo desde pool de semillas.
+  // Cuando el merch hace click en "Desarrollar →" en /strategy/<tenant>/seeds,
+  // navega aquí con ?develop_pfid=...&develop_action=... — leemos los params,
+  // expandimos el SKU correspondiente, y pasamos los datos a SkuDetailInline
+  // para que dispare launchDesign automáticamente al montar.
+  const [autoDevelop, setAutoDevelop] = useState<{ pfid: string; actionType: string } | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const pfid = params.get('develop_pfid');
+    const actionType = params.get('develop_action');
+    if (pfid && actionType) {
+      setAutoDevelop({ pfid, actionType });
+      setExpandedSkuIds((prev) => {
+        const next = new Set(prev);
+        next.add(pfid);
+        return next;
+      });
+    }
+  }, []);
+
   // Fase 2 · al cambiar el escenario activo, calcular qué SKUs CAMBIAN
   // su verdict stack y resaltarlos por 1.5s. La comparación se hace
   // entre el escenario anterior y el nuevo, ignorando SKUs con lock
@@ -803,6 +824,8 @@ export function PdfOverlayViewer({ runId, tenantSlug }: { runId: string; tenantS
         totalSkus={data.summary.total_skus}
         pdfSignedUrl={data.pdf_signed_url ?? null}
         pdfNumPages={pdfNumPages}
+        autoDevelop={autoDevelop}
+        clearAutoDevelop={() => setAutoDevelop(null)}
       />
     </div>
   );
@@ -832,6 +855,8 @@ function SkuPanel({
   totalSkus,
   pdfSignedUrl,
   pdfNumPages,
+  autoDevelop,
+  clearAutoDevelop,
 }: {
   data: ApiResponse;
   actionFilter: Set<VerdictAction['action']>;
@@ -856,6 +881,8 @@ function SkuPanel({
   totalSkus: number;
   pdfSignedUrl: string | null;
   pdfNumPages: number;
+  autoDevelop: { pfid: string; actionType: string } | null;
+  clearAutoDevelop: () => void;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1162,6 +1189,10 @@ function SkuPanel({
                     totalSkus={totalSkus}
                     pdfSignedUrl={pdfSignedUrl}
                     pdfNumPages={pdfNumPages}
+                    autoDevelopActionType={
+                      autoDevelop?.pfid === sku.product_fact_id ? autoDevelop.actionType : null
+                    }
+                    onAutoDevelopHandled={clearAutoDevelop}
                   />
                 )}
               </li>
@@ -1366,6 +1397,8 @@ function SkuDetailInline({
   totalSkus,
   pdfSignedUrl,
   pdfNumPages,
+  autoDevelopActionType,
+  onAutoDevelopHandled,
 }: {
   sku: SkuRow;
   runId: string;
@@ -1374,6 +1407,8 @@ function SkuDetailInline({
   totalSkus: number;
   pdfSignedUrl: string | null;
   pdfNumPages: number;
+  autoDevelopActionType: string | null;
+  onAutoDevelopHandled: () => void;
 }) {
   // Felipe sprint Aimily Design 2026-05-18 — botón "Abrir en Aimily Design"
   // en cada action card de extend_colors / amplify_next_season. Crea un
@@ -1424,10 +1459,71 @@ function SkuDetailInline({
       setSeedingKey(null);
     }
   };
-  const launchDesign = async (actionType: 'extend_colors' | 'amplify_next_season') => {
+  // Felipe 2026-05-19 noche · auto-fire desde pool de semillas. Cuando
+  // el merch viene desde /seeds con ?develop_pfid=...&develop_action=...,
+  // este efecto se dispara una vez y abre Aimily Design para la action
+  // matching (sin requerir un segundo click).
+  const autoDevelopFiredRef = useRef(false);
+  useEffect(() => {
+    if (autoDevelopFiredRef.current) return;
+    if (!autoDevelopActionType) return;
+    const matching = sku.actions.find((a) => a.action === autoDevelopActionType);
+    if (!matching) return;
+    if (matching.action !== 'extend_colors' && matching.action !== 'amplify_next_season') return;
+    autoDevelopFiredRef.current = true;
+    onAutoDevelopHandled();
+    // Defer one tick so the panel can finish mounting + scroll into view.
+    setTimeout(() => {
+      void launchDesign(matching);
+    }, 200);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDevelopActionType, sku.actions]);
+
+  const launchDesign = async (
+    action: VerdictAction,
+  ) => {
+    const actionType = action.action as 'extend_colors' | 'amplify_next_season';
     if (launchingAction) return;
     setLaunchingAction(actionType);
     try {
+      // Felipe 2026-05-19 noche · "Desarrollar ahora" = crear seed +
+      // abrir Builder en un solo click. ANTES de cortar la foto y crear
+      // el SKU en el plan de Design, materializamos la seed asociada
+      // (idempotente — si el merch ya había añadido a semillas, el endpoint
+      // devuelve already_existed=true y seguimos abriendo Builder).
+      const seedKey = `${sku.product_fact_id}:${action.action}`;
+      if (!seededKeys.has(seedKey)) {
+        try {
+          const seedRes = await fetch('/api/strategy/seeds/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tenant_slug: tenantSlug,
+              run_id: runId,
+              product_fact_id: sku.product_fact_id,
+              action_type: action.action,
+              rationale: action.rationale,
+              evidence: action.evidence ?? {},
+              proposed_changes: {
+                new_colors:
+                  (action.evidence as Record<string, unknown> | undefined)?.proposed_colors ?? [],
+              },
+            }),
+          });
+          if (seedRes.ok) {
+            setSeededKeys((prev) => {
+              const next = new Set(prev);
+              next.add(seedKey);
+              return next;
+            });
+          }
+        } catch (e) {
+          // Non-blocking — seed creation failure shouldn't prevent the
+          // user from developing now. We log + continue.
+          console.warn('[launchDesign] seed create failed (non-blocking):', e);
+        }
+      }
+
       // 1) Resolver imagen referencia. Dos modos según el origen del run:
       //
       //    A) Run Shopify (Products CSV ingerido): el parser ya populó
@@ -1573,18 +1669,18 @@ function SkuDetailInline({
                   {(a.action === 'extend_colors' || a.action === 'amplify_next_season') && (
                     <button
                       type="button"
-                      onClick={() => launchDesign(a.action as 'extend_colors' | 'amplify_next_season')}
+                      onClick={() => launchDesign(a)}
                       disabled={launchingAction === a.action}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon text-white text-[11px] font-medium hover:bg-carbon/90 transition-colors disabled:opacity-50"
                     >
                       {launchingAction === a.action ? (
                         <>
                           <Loader2 className="h-3 w-3 animate-spin" />
-                          Abriendo Aimily Design…
+                          Desarrollando…
                         </>
                       ) : (
                         <>
-                          Abrir en Aimily Design
+                          Desarrollar ahora
                           <ArrowRight className="h-3 w-3" />
                         </>
                       )}

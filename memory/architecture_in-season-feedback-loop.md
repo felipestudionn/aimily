@@ -74,6 +74,15 @@ In-Season tiene **dos entry points** distintos. Comparten el motor (parsers + cl
 > con sus rationales y evidence; añade a semillas solo lo que va a
 > desarrollar para próxima colección.
 
+**Dos botones, mismo flow** (Felipe 2026-05-19):
+
+| Botón en verdict pill | Crea seed | Abre Builder | Cuándo usarlo |
+|---|---|---|---|
+| **"+ Añadir a semillas"** | ✅ | ❌ | Decidir ahora, desarrollar luego desde el pool |
+| **"Desarrollar ahora"** | ✅ | ✅ | Decisión + ejecución inmediata |
+
+Y en el pool `/strategy/<tenant>/seeds`, cada SKU card tiene un botón **"Desarrollar →"** que abre el run de origen con auto-trigger del Aimily Design — equivalente a "Desarrollar ahora" pero desde la cola.
+
 Esta es la pieza nueva que Felipe puntualiza.
 
 ### Concepto: "SKU seed"

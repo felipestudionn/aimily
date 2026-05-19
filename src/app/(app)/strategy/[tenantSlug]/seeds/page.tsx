@@ -329,11 +329,24 @@ function SeedCard({
         </div>
       )}
 
-      {/* CTA pill — carbon palette, like SKU cards */}
-      <div className={`flex items-center justify-between gap-3 ${proposedColors && proposedColors.length > 0 ? 'mt-3' : 'mt-auto pt-4'}`}>
+      {/* CTAs — Develop (primary) + Source run (secondary).
+       *  "Desarrollar →" lleva al run con auto-trigger del launchDesign para
+       *  esta seed, idéntico al click "Desarrollar ahora" del verdict pill
+       *  pero arrancando desde el pool. */}
+      <div className={`flex items-center gap-3 ${proposedColors && proposedColors.length > 0 ? 'mt-3' : 'mt-auto pt-4'}`}>
+        {(seed.seed_type === 'extend_colors' || seed.seed_type === 'amplify_next_season') &&
+          seed.status === 'live' && (
+            <Link
+              href={`/strategy/${tenantSlug}/runs/${seed.source_run_id}/pdf-view?develop_pfid=${seed.source_product_fact_id}&develop_action=${seed.source_action_type}#sku-row-${seed.source_product_fact_id}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
+            >
+              Desarrollar
+              <span className="text-[12px]">→</span>
+            </Link>
+          )}
         <Link
           href={`/strategy/${tenantSlug}/runs/${seed.source_run_id}/pdf-view#sku-row-${seed.source_product_fact_id}`}
-          className="text-[11px] text-carbon/45 hover:text-carbon transition-colors uppercase tracking-[0.08em]"
+          className="text-[11px] text-carbon/45 hover:text-carbon transition-colors uppercase tracking-[0.08em] ml-auto"
         >
           Ver run origen →
         </Link>
