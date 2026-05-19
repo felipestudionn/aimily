@@ -70,13 +70,16 @@ export async function POST(req: NextRequest) {
     .eq('tenant_id', access.tenant.id)
     .eq('provider', provider);
 
+  // Insert with empty access_token plaintext — we move it to vault next.
+  // Migration 067 added access_token_secret_id (uuid) + helper functions
+  // tenant_sales_connections_store_token / _get_token. Service role only.
   const { data, error } = await supabaseAdmin
     .from('tenant_sales_connections')
     .insert({
       tenant_id: access.tenant.id,
       provider,
       shop_domain: shopDomain ?? null,
-      access_token: accessToken,
+      access_token: '', // moved to vault below
       scopes,
       status: 'active',
       next_sync_at: new Date().toISOString(),
@@ -88,5 +91,25 @@ export async function POST(req: NextRequest) {
   if (error || !data) {
     return NextResponse.json({ error: error?.message ?? 'insert failed' }, { status: 500 });
   }
-  return NextResponse.json({ connection_id: (data as { id: string }).id, status: 'active' });
+  const newConnectionId = (data as { id: string }).id;
+
+  // Store token in vault via SECURITY DEFINER helper. Returns the secret id
+  // and as a side effect updates the row's access_token_secret_id + nulls
+  // out the plaintext column.
+  try {
+    await supabaseAdmin.rpc('tenant_sales_connections_store_token', {
+      p_connection_id: newConnectionId,
+      p_token: accessToken,
+    });
+  } catch (e) {
+    // If vault store fails, roll back the connection row so we don't leave
+    // a half-configured record. Keep error surface user-friendly.
+    await supabaseAdmin.from('tenant_sales_connections').delete().eq('id', newConnectionId);
+    return NextResponse.json(
+      { error: 'failed to securely store token', detail: e instanceof Error ? e.message : String(e) },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ connection_id: newConnectionId, status: 'active' });
 }

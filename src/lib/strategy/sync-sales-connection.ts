@@ -37,7 +37,7 @@ export async function syncSalesConnection(
   // 1) Load connection + tenant
   const { data: conn, error: connErr } = await supabaseAdmin
     .from('tenant_sales_connections')
-    .select('id, tenant_id, provider, shop_domain, access_token, status')
+    .select('id, tenant_id, provider, shop_domain, access_token, access_token_secret_id, status')
     .eq('id', connectionId)
     .single();
 
@@ -50,8 +50,26 @@ export async function syncSalesConnection(
   if (conn.provider !== 'shopify') {
     return { ok: false, connection_id: connectionId, duration_ms: Date.now() - startMs, error: `provider ${conn.provider} not yet supported by sync helper` };
   }
-  if (!conn.shop_domain || !conn.access_token) {
-    return { ok: false, connection_id: connectionId, duration_ms: Date.now() - startMs, error: 'missing shop_domain or access_token' };
+  // Resolve access token: prefer vault-decrypted secret, fall back to plaintext
+  // column for legacy rows. Migration 067 added the vault wiring.
+  let accessToken: string | null = null;
+  if ((conn as { access_token_secret_id?: string | null }).access_token_secret_id) {
+    const { data: tokenRow } = await supabaseAdmin.rpc(
+      'tenant_sales_connections_get_token',
+      { p_connection_id: conn.id }
+    );
+    accessToken = typeof tokenRow === 'string' ? tokenRow : null;
+  }
+  if (!accessToken && conn.access_token) {
+    accessToken = conn.access_token;
+  }
+  if (!conn.shop_domain || !accessToken) {
+    return {
+      ok: false,
+      connection_id: connectionId,
+      duration_ms: Date.now() - startMs,
+      error: 'missing shop_domain or access_token',
+    };
   }
 
   // 2) Open audit row
@@ -89,10 +107,10 @@ export async function syncSalesConnection(
     if (srcErr || !srcRow) throw new Error(`create source: ${srcErr?.message}`);
     const sourceId = (srcRow as { id: string }).id;
 
-    // 4) Parse Shopify
+    // 4) Parse Shopify (using vault-decrypted token resolved above)
     const parseResult = await parseShopifyGraphql({
       shop_domain: conn.shop_domain,
-      access_token: conn.access_token,
+      access_token: accessToken,
       observation_date: observationDate,
       season_tag: 'current',
     });
