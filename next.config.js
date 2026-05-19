@@ -31,6 +31,18 @@ const nextConfig = {
       { source: '/categories/:path*', destination: '/my-collections', permanent: true },
     ];
   },
+  // Felipe 2026-05-19 noche · Sprint A rename Strategy → In-Season.
+  // /in-season/* is the canonical URL going forward. /strategy/* keeps
+  // working via the existing source files; new UI Links should use
+  // /in-season/* (which rewrites server-side to the same handler).
+  // Source files + DB tables stay at strategy_* during this transition;
+  // full file/DB rename is a separate dedicated sprint.
+  async rewrites() {
+    return [
+      { source: '/in-season/:path*', destination: '/strategy/:path*' },
+      { source: '/api/in-season/:path*', destination: '/api/strategy/:path*' },
+    ];
+  },
   async headers() {
     return [
       {

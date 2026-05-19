@@ -55,16 +55,21 @@ export function StudioSwitcher() {
   if (!shouldRender) return null;
 
   const currentlyStudio = pathname?.startsWith('/studio');
-  const currentlyStrategy = pathname?.startsWith('/strategy');
+  // Felipe 2026-05-19 noche · Sprint A rename — detect both /in-season/ (canonical)
+  // and /strategy/ (legacy, rewritten server-side). Both URLs serve the same
+  // pages until the source files are physically moved in a future sprint.
+  const currentlyStrategy = pathname?.startsWith('/strategy') || pathname?.startsWith('/in-season');
   const currentlyAimily = !currentlyStudio && !currentlyStrategy;
 
   const studioHref = products.activeStudioId ? `/studio/${products.activeStudioId}` : '/studio';
   const collectionHref = products.active360Id
     ? `/collection/${products.active360Id}`
     : '/my-collections';
+  // Canonical href uses /in-season/ (server-side rewrite to /strategy/* keeps
+  // legacy URLs working). New users see In-Season everywhere.
   const strategyHref = products.activeStrategyTenantSlug
-    ? `/strategy/${products.activeStrategyTenantSlug}`
-    : '/strategy';
+    ? `/in-season/${products.activeStrategyTenantSlug}`
+    : '/in-season';
 
   // Admins always see all 3 pills; non-admins only see the ones they have.
   const showAimily = products.isAdmin || products.has360;
@@ -103,7 +108,7 @@ export function StudioSwitcher() {
           }`}
         >
           <LineChart className="h-3.5 w-3.5" />
-          Strategy
+          In-Season
         </Link>
       )}
     </div>

@@ -66,7 +66,7 @@ export default async function ConnectionsPage({ params }: PageProps) {
       <div className="max-w-5xl mx-auto">
         <div className="mb-10">
           <div className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-1">
-            <Link href={`/strategy/${tenantSlug}`} className="hover:text-carbon transition-colors">
+            <Link href={`/in-season/${tenantSlug}`} className="hover:text-carbon transition-colors">
               {tenant.display_name}
             </Link>
             {' · '}

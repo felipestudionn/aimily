@@ -138,7 +138,7 @@ export default async function SeedsPoolPage({ params, searchParams }: PageProps)
         {/* Header */}
         <div className="mb-10">
           <div className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-1">
-            <Link href={`/strategy/${tenantSlug}`} className="hover:text-carbon transition-colors">
+            <Link href={`/in-season/${tenantSlug}`} className="hover:text-carbon transition-colors">
               {tenant.display_name}
             </Link>
             {' · '}
@@ -162,7 +162,7 @@ export default async function SeedsPoolPage({ params, searchParams }: PageProps)
             return (
               <Link
                 key={s}
-                href={{ pathname: `/strategy/${tenantSlug}/seeds`, query: s === 'live' ? {} : { status: s } }}
+                href={{ pathname: `/in-season/${tenantSlug}/seeds`, query: s === 'live' ? {} : { status: s } }}
                 className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
                   active
                     ? 'bg-carbon text-white'
@@ -180,7 +180,7 @@ export default async function SeedsPoolPage({ params, searchParams }: PageProps)
                 <Link
                   key={type}
                   href={{
-                    pathname: `/strategy/${tenantSlug}/seeds`,
+                    pathname: `/in-season/${tenantSlug}/seeds`,
                     query: filterSeedType === type ? { status: statusToFilter } : { status: statusToFilter, seed_type: type },
                   }}
                   className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors ${
@@ -337,7 +337,7 @@ function SeedCard({
         {(seed.seed_type === 'extend_colors' || seed.seed_type === 'amplify_next_season') &&
           seed.status === 'live' && (
             <Link
-              href={`/strategy/${tenantSlug}/runs/${seed.source_run_id}/pdf-view?develop_pfid=${seed.source_product_fact_id}&develop_action=${seed.source_action_type}#sku-row-${seed.source_product_fact_id}`}
+              href={`/in-season/${tenantSlug}/runs/${seed.source_run_id}/pdf-view?develop_pfid=${seed.source_product_fact_id}&develop_action=${seed.source_action_type}#sku-row-${seed.source_product_fact_id}`}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
             >
               Desarrollar
@@ -345,7 +345,7 @@ function SeedCard({
             </Link>
           )}
         <Link
-          href={`/strategy/${tenantSlug}/runs/${seed.source_run_id}/pdf-view#sku-row-${seed.source_product_fact_id}`}
+          href={`/in-season/${tenantSlug}/runs/${seed.source_run_id}/pdf-view#sku-row-${seed.source_product_fact_id}`}
           className="text-[11px] text-carbon/45 hover:text-carbon transition-colors uppercase tracking-[0.08em] ml-auto"
         >
           Ver run origen →
