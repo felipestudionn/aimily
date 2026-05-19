@@ -981,9 +981,15 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     return next;
   });
 
-  // Find the most likely PDF among the sources (zara_rnk_pdf is the
-  // primary case). Generate a 1h signed URL for the client to render.
-  const pdfSource = sources.find((s) => s.source_format === 'zara_rnk_pdf') ?? sources[0];
+  // Find a Zara RNK PDF among the sources. ONLY emit pdf_signed_url when
+  // the source is actually a PDF — for Shopify XLSX bundles or CSV
+  // uploads we leave it null and the viewer falls back to the SKU panel
+  // without trying to render anything as PDF (else pdfjs throws
+  // "Invalid PDF structure"). Felipe 2026-05-19 bug fix.
+  const pdfSource = sources.find(
+    (s) =>
+      s.source_format === 'zara_rnk_pdf' && s.storage_path && s.storage_path.length > 0
+  );
   let pdfSignedUrl: string | null = null;
   if (pdfSource?.storage_path) {
     const { data: signed } = await supabaseAdmin.storage
