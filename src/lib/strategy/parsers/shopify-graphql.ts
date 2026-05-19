@@ -359,6 +359,7 @@ export async function parseShopifyGraphql(opts: ShopifyGraphqlOptions): Promise<
     {
       windows: Record<'d1' | 'd2' | '7d' | '8_14d', { units: number; importe: number }>;
       lifetime_units: number;
+      lifetime_net_sales: number;
       lifetime_returns: number;
     }
   >();
@@ -381,11 +382,13 @@ export async function parseShopifyGraphql(opts: ShopifyGraphqlOptions): Promise<
             '8_14d': { units: 0, importe: 0 },
           },
           lifetime_units: 0,
+          lifetime_net_sales: 0,
           lifetime_returns: 0,
         };
         salesBySku.set(sku, bucket);
       }
       bucket.lifetime_units += units;
+      bucket.lifetime_net_sales += importe;
       if (dt >= d1Cutoff && dt <= anchor) {
         bucket.windows.d1.units += units;
         bucket.windows.d1.importe += importe;
@@ -526,6 +529,7 @@ export async function parseShopifyGraphql(opts: ShopifyGraphqlOptions): Promise<
             quantities: l.node.quantities,
           })),
           lifetime_units: lifetimeUnits,
+          lifetime_net_sales: bucket?.lifetime_net_sales ?? 0,
           lifetime_returns: lifetimeReturns,
         },
         original_labels: product.productType
