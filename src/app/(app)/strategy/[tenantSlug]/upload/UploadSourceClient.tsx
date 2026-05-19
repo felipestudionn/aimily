@@ -33,6 +33,10 @@ interface ParseSummary {
 
 export function UploadSourceClient({ tenantSlug, tenantId: _tenantId }: Props) {
   const router = useRouter();
+  // Felipe 2026-05-19 sprint Shopify lane: dos vías de ingesta. "file"
+  // = upload de PDF Zara / CSV / XLSX (corporate ad-hoc reports).
+  // "shopify" = conectar Shopify store vía Admin API (GraphQL).
+  const [inputMode, setInputMode] = useState<'file' | 'shopify'>('file');
   const [file, setFile] = useState<File | null>(null);
   const [season, setSeason] = useState('V26');
   const [market, setMarket] = useState('');
@@ -46,6 +50,48 @@ export function UploadSourceClient({ tenantSlug, tenantId: _tenantId }: Props) {
   const [parseSummary, setParseSummary] = useState<ParseSummary | null>(null);
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Shopify mode state
+  const [shopDomain, setShopDomain] = useState('');
+  const [accessToken, setAccessToken] = useState('');
+
+  const handleShopifyConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shopDomain || !accessToken) {
+      setError('shop_domain and access_token required');
+      return;
+    }
+    setError('');
+    setPhase('uploading');
+    setProgress('Conectando a Shopify y descargando productos…');
+    try {
+      const res = await fetch('/api/strategy/sources/shopify-ingest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_slug: tenantSlug,
+          shop_domain: shopDomain.trim(),
+          access_token: accessToken.trim(),
+          observation_date: observationDate,
+          season_tag: season,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || `Shopify ingest failed (${res.status})`);
+      }
+      setParseSummary({ source_id: json.source_id });
+      setProgress(
+        `${json.records_count} SKUs · confidence ${(json.parse_confidence * 100).toFixed(0)}%`
+      );
+      setPhase('complete');
+      // Redirect a la lista de sources
+      setTimeout(() => router.push(`/strategy/${tenantSlug}`), 1200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setPhase('error');
+    }
+  };
 
   const handleFile = useCallback((f: File | null) => {
     setFile(f);
@@ -128,11 +174,136 @@ export function UploadSourceClient({ tenantSlug, tenantId: _tenantId }: Props) {
     }
   };
 
+  // Toggle UI · choice between "subir archivo" y "conectar Shopify"
+  const modeToggle = (
+    <div className="flex gap-2 mb-6 p-1 bg-carbon/[0.04] rounded-full w-fit">
+      <button
+        type="button"
+        onClick={() => setInputMode('file')}
+        className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors ${
+          inputMode === 'file'
+            ? 'bg-carbon text-white shadow-[0_2px_6px_rgba(0,0,0,0.12)]'
+            : 'text-carbon/55 hover:text-carbon'
+        }`}
+      >
+        Subir reporte (PDF / CSV / XLSX)
+      </button>
+      <button
+        type="button"
+        onClick={() => setInputMode('shopify')}
+        className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors ${
+          inputMode === 'shopify'
+            ? 'bg-carbon text-white shadow-[0_2px_6px_rgba(0,0,0,0.12)]'
+            : 'text-carbon/55 hover:text-carbon'
+        }`}
+      >
+        Conectar Shopify
+      </button>
+    </div>
+  );
+
+  if (inputMode === 'shopify') {
+    return (
+      <form
+        onSubmit={handleShopifyConnect}
+        className="bg-white rounded-[20px] p-8 md:p-10 space-y-6"
+      >
+        {modeToggle}
+
+        <div className="bg-carbon/[0.02] rounded-[12px] p-5 border border-carbon/[0.06] text-[12px] text-carbon/65 leading-[1.6]">
+          <p className="font-medium text-carbon mb-2">Cómo obtener tu Admin API access token</p>
+          <ol className="list-decimal list-inside space-y-1 text-carbon/55">
+            <li>Tu tienda Shopify → <span className="font-mono text-[11px]">Apps</span> → <span className="font-mono text-[11px]">Develop apps</span></li>
+            <li>Create an app → nombre "aimily In-Season"</li>
+            <li>Configure Admin API scopes: <span className="font-mono text-[11px]">read_products, read_inventory, read_locations, read_orders, read_returns, read_fulfillments, read_inventory_item_unit_costs</span></li>
+            <li>Install app → reveal Admin API access token (empieza por <span className="font-mono text-[11px]">shpat_…</span>)</li>
+          </ol>
+          <p className="mt-3 text-carbon/45 text-[11px]">
+            El token NO se persiste en aimily — sólo se usa para esta carga. Para steady-state (cron diario, webhooks) la conexión la guardamos encriptada en un panel aparte.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          <Field label="Shop domain">
+            <input
+              type="text"
+              value={shopDomain}
+              onChange={(e) => setShopDomain(e.target.value)}
+              placeholder="ejemplo.myshopify.com"
+              className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 font-mono"
+              required
+            />
+          </Field>
+          <Field label="Admin API access token">
+            <input
+              type="password"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="shpat_..."
+              className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 font-mono"
+              required
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Season tag">
+              <input
+                type="text"
+                value={season}
+                onChange={(e) => setSeason(e.target.value)}
+                placeholder="V26 | SS26"
+                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+                required
+              />
+            </Field>
+            <Field label="Observation date">
+              <input
+                type="date"
+                value={observationDate}
+                onChange={(e) => setObservationDate(e.target.value)}
+                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
+                required
+              />
+            </Field>
+          </div>
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-3 text-[13px] text-red-700 bg-red-50 rounded-[12px] p-4">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {phase !== 'idle' && phase !== 'error' && (
+          <div className="flex items-center gap-3 text-[13px] text-carbon/65">
+            {phase === 'complete' ? (
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+            ) : (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            )}
+            <span>{progress}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={phase === 'uploading' || phase === 'parsing'}
+            className="px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-50"
+          >
+            {phase === 'uploading' || phase === 'parsing' ? 'Conectando…' : 'Conectar y analizar'}
+          </button>
+        </div>
+      </form>
+    );
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
       className="bg-white rounded-[20px] p-8 md:p-10 space-y-6"
     >
+      {modeToggle}
       {/* Drop zone */}
       <div
         onDrop={handleDrop}
