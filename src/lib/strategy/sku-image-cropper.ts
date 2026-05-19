@@ -387,12 +387,10 @@ export async function extractSkuImageByModelRef(
           break;
         }
       }
-      console.log(`[sku-extract] page=${pageIdx + 1} modelRef=${normRef} matchY=${matchY}`);
       if (matchY == null) continue;
 
       // 2) Extraer todas las imágenes con sus CTM
       const images = await extractImagesFromPage(page as never, ops);
-      console.log(`[sku-extract] page=${pageIdx + 1} images_extracted=${images.length} dims=${images.map(i => `${i.canvas.width}×${i.canvas.height}@y=${Math.round(i.y)}`).join(',')}`);
       if (images.length === 0) continue;
 
       // 3) Match: imagen cuyo Y CTM (en coords PDF, origin bottom-left)
