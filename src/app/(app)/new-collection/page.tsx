@@ -66,6 +66,41 @@ function NewCollectionFlow() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  // Felipe 2026-05-19 noche · Sprint D · "Bring forward seeds" gate.
+  // Si el merch tiene semillas activas de runs In-Season previos, le
+  // ofrecemos traerlas a esta colección. Fetch del summary endpoint
+  // agrega seeds across all aimily_360 tenants del user.
+  const [seedsSummary, setSeedsSummary] = useState<{
+    total_live: number;
+    tenants: Array<{
+      tenant_id: string;
+      tenant_slug: string;
+      display_name: string;
+      live_count: number;
+      by_type: Record<string, number>;
+    }>;
+  } | null>(null);
+  const [showSeedsPicker, setShowSeedsPicker] = useState(false);
+  const [selectedSeedIds, setSelectedSeedIds] = useState<Set<string>>(new Set());
+  const [seedsForPicker, setSeedsForPicker] = useState<Array<{
+    id: string;
+    seed_type: string;
+    source_model_ref: string | null;
+    source_color_ref: string | null;
+    source_product_name: string | null;
+    source_family_code: string | null;
+    tenant_slug: string;
+    rationale: string;
+    proposed_changes: Record<string, unknown>;
+  }>>([]);
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/strategy/seeds/summary')
+      .then((r) => r.json())
+      .then((j) => setSeedsSummary(j))
+      .catch(() => {});
+  }, [user]);
+
   const season = useMemo(() => deriveSeason(launchDate), [launchDate]);
   const trimmedName = name.trim();
   const canStart = trimmedName.length > 0 || skipNaming;
@@ -124,6 +159,35 @@ function NewCollectionFlow() {
 
       const plan = await res.json();
 
+      // Sprint D · consume seeds bulk con el collection_id de la nueva colección.
+      // Si el merch seleccionó N semillas, las marcamos status='consumed' +
+      // consumed_in_collection_id=plan.id. El bloque Moodboard / Brief leerá
+      // de aquí para pre-poblar (Sprint E ingestion).
+      if (selectedSeedIds.size > 0 && seedsForPicker.length > 0) {
+        // Group seed ids by tenant_slug for the bulk endpoint (1 call per tenant).
+        const byTenant = new Map<string, string[]>();
+        for (const s of seedsForPicker) {
+          if (!selectedSeedIds.has(s.id)) continue;
+          const arr = byTenant.get(s.tenant_slug) ?? [];
+          arr.push(s.id);
+          byTenant.set(s.tenant_slug, arr);
+        }
+        await Promise.all(
+          Array.from(byTenant.entries()).map(([tenantSlug, seedIds]) =>
+            fetch('/api/strategy/seeds/bulk', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tenant_slug: tenantSlug,
+                seed_ids: seedIds,
+                action: 'consume',
+                collection_id: plan.id,
+              }),
+            }).catch(() => {})
+          )
+        );
+      }
+
       // Fade the canvas out, then navigate. Plain transition.
       setView('leaving');
       setTimeout(() => {
@@ -174,6 +238,80 @@ function NewCollectionFlow() {
                   {subheadline}
                 </p>
               </div>
+
+              {/* Seeds gate — Sprint D · Felipe 2026-05-19 noche.
+                  Si hay semillas activas de runs In-Season, ofrecemos
+                  traerlas como inputs base de la nueva colección. */}
+              {seedsSummary && seedsSummary.total_live > 0 && (
+                <div className="max-w-[800px] mx-auto mb-10 bg-white rounded-[20px] p-6 md:p-8 border border-carbon/[0.06]">
+                  <div className="flex items-start gap-5 flex-wrap">
+                    <div className="flex-1 min-w-[260px]">
+                      <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/40 mb-1 font-medium">
+                        Semillas In-Season
+                      </div>
+                      <div className="text-[18px] font-semibold text-carbon tracking-[-0.02em] mb-1.5">
+                        Tienes {seedsSummary.total_live} semilla{seedsSummary.total_live === 1 ? '' : 's'} activa{seedsSummary.total_live === 1 ? '' : 's'}
+                      </div>
+                      <p className="text-[13px] text-carbon/55 leading-[1.6]">
+                        Propuestas del motor In-Season de tus runs previos. Tráelas a esta colección como SKUs base — el moodboard y el brief heredarán sus colores y rationale.
+                      </p>
+                      {Object.keys(seedsSummary.tenants[0]?.by_type ?? {}).length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {seedsSummary.tenants.flatMap((t) =>
+                            Object.entries(t.by_type).map(([type, count]) => (
+                              <span
+                                key={`${t.tenant_slug}-${type}`}
+                                className="text-[11px] text-carbon/55 bg-carbon/[0.04] px-2.5 py-1 rounded-full"
+                              >
+                                {type === 'amplify_next_season'
+                                  ? 'Replica · próxima'
+                                  : type === 'extend_colors'
+                                    ? 'Extender colores'
+                                    : type === 'drop_color'
+                                      ? 'Drop color'
+                                      : type === 'retire'
+                                        ? 'Retirar'
+                                        : type}
+                                <span className="text-carbon/35 ml-1">{count}</span>
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 items-stretch">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // Lazy-fetch full seed list across tenants
+                          const allSeeds = await Promise.all(
+                            seedsSummary.tenants.map(async (t) => {
+                              const r = await fetch(`/api/strategy/seeds?tenant_slug=${t.tenant_slug}&status=live`);
+                              const j = await r.json();
+                              return ((j.seeds ?? []) as Array<Record<string, unknown>>).map((s) => ({
+                                ...s,
+                                tenant_slug: t.tenant_slug,
+                              }));
+                            })
+                          );
+                          setSeedsForPicker(allSeeds.flat() as typeof seedsForPicker);
+                          setShowSeedsPicker(true);
+                        }}
+                        className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                      >
+                        Elegir cuáles traer →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSeedsSummary(null)}
+                        className="text-[11px] text-carbon/40 hover:text-carbon/70 transition-colors"
+                      >
+                        Empezar sin semillas
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Name field — first creative moment. The user writes a
                   title before doing anything else; if they truly don't
@@ -283,6 +421,137 @@ function NewCollectionFlow() {
         onClose={() => setShowAuth(false)}
         onSuccess={() => setShowAuth(false)}
       />
+
+      {/* Seeds picker modal — Sprint D Felipe 2026-05-19 noche.
+          Checkboxes para que el merch elija qué semillas traer a la
+          colección. Al confirmar, se cierra; selectedSeedIds queda en
+          state. El consume bulk ocurre en handleStart después de crear
+          la colección (necesita plan.id). */}
+      {showSeedsPicker && (
+        <div
+          className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowSeedsPicker(false)}
+        >
+          <div
+            className="bg-white rounded-[24px] max-w-[860px] w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 md:p-8 border-b border-carbon/[0.06] flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.12em] text-carbon/40 mb-1 font-medium">
+                  Semillas In-Season
+                </div>
+                <h2 className="text-[24px] font-semibold text-carbon tracking-[-0.02em]">
+                  Elige cuáles traer a {season}
+                </h2>
+                <p className="text-[13px] text-carbon/55 mt-1">
+                  {selectedSeedIds.size === 0
+                    ? `${seedsForPicker.length} semillas disponibles`
+                    : `${selectedSeedIds.size} de ${seedsForPicker.length} seleccionadas`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSeedsPicker(false)}
+                className="text-carbon/40 hover:text-carbon transition-colors p-2"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-2">
+              {seedsForPicker.length === 0 ? (
+                <p className="text-[13px] text-carbon/45 text-center py-8">Cargando semillas…</p>
+              ) : (
+                seedsForPicker.map((s) => {
+                  const checked = selectedSeedIds.has(s.id);
+                  const typeLabel =
+                    s.seed_type === 'amplify_next_season'
+                      ? 'Replica el concepto'
+                      : s.seed_type === 'extend_colors'
+                        ? 'Extender colores'
+                        : s.seed_type === 'drop_color'
+                          ? 'Retirar color'
+                          : s.seed_type === 'retire'
+                            ? 'Decontinuar'
+                            : s.seed_type;
+                  return (
+                    <label
+                      key={s.id}
+                      className={`flex items-start gap-3 p-3 rounded-[12px] cursor-pointer transition-colors ${
+                        checked ? 'bg-carbon/[0.04]' : 'hover:bg-carbon/[0.02]'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedSeedIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(s.id)) next.delete(s.id);
+                            else next.add(s.id);
+                            return next;
+                          });
+                        }}
+                        className="mt-1 w-4 h-4 accent-carbon"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <span className="text-[10px] uppercase tracking-[0.1em] text-carbon/45 font-medium">
+                            {typeLabel}
+                          </span>
+                        </div>
+                        <div className="text-[14px] font-medium text-carbon truncate">
+                          {s.source_product_name ?? s.source_model_ref ?? '—'}
+                        </div>
+                        <div className="text-[11px] text-carbon/45 font-mono">
+                          {s.source_model_ref}
+                          {s.source_family_code ? ` · ${s.source_family_code}` : ''}
+                          {s.source_color_ref ? ` · ${s.source_color_ref}` : ''}
+                        </div>
+                        {s.rationale && (
+                          <p className="text-[11px] text-carbon/55 leading-[1.5] mt-1 line-clamp-2">
+                            {s.rationale}
+                          </p>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="p-6 md:p-8 border-t border-carbon/[0.06] flex items-center justify-between gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSeedIds(new Set(seedsForPicker.map((s) => s.id)));
+                }}
+                className="text-[12px] text-carbon/50 hover:text-carbon transition-colors underline underline-offset-4"
+              >
+                Seleccionar todas
+              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSeedsPicker(false)}
+                  className="px-5 py-2 rounded-full text-[12px] font-medium text-carbon/60 border border-carbon/[0.12]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSeedsPicker(false)}
+                  disabled={selectedSeedIds.size === 0}
+                  className="px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold disabled:opacity-40"
+                >
+                  Confirmar {selectedSeedIds.size > 0 ? `(${selectedSeedIds.size})` : ''}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
