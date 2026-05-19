@@ -359,24 +359,37 @@ export function parseShopifyCsvOrXlsx(
     });
   }
 
+  // Felipe 2026-05-19 · sprint Shopify lane — Agregación model+color.
+  //
+  // Shopify exporta 1 fila por (model+color+talla). Para decisiones de
+  // merchandising "talla" no aporta señal (un buyer decide qué hacer
+  // con el modelo y el color, no con la M vs la L). Aimily-SKU = modelo
+  // + calidad + color, consistente con Zara. Aquí colapsamos los rows
+  // por (product_name + color_ref) y sumamos numéricos. Las tallas
+  // individuales se preservan en `raw.size_breakdown` para drill-down.
+  const aggregatedRecords = aggregateBySkuModelColor(records);
+  // Re-asignar índices secuenciales tras el collapse — los downstream
+  // (UI ranking + identity graph) usan row_index para orden determinista.
+  aggregatedRecords.forEach((r, i) => (r.row_index = i + 1));
+
   const coverage = {
-    identity: records.length > 0,
+    identity: aggregatedRecords.length > 0,
     // pricing flag ahora más rico: además de pvp, marca true si tenemos
     // pvp_compare (compare-at-price) o cost (COGS via InventoryItem) —
     // habilita markup_pct, margin_pct_list, on_promo en el motor.
-    pricing: records.some((r) => r.pvp != null || r.cost_estimate != null),
+    pricing: aggregatedRecords.some((r) => r.pvp != null || r.cost_estimate != null),
     inventory: inventoryRows.length > 0,
-    velocity_d1: records.some((r) => (r.windows.find((w) => w.window === 'd1')?.units || 0) > 0),
-    velocity_7d: records.some((r) => (r.windows.find((w) => w.window === '7d')?.units || 0) > 0),
-    velocity_8_14d: records.some(
+    velocity_d1: aggregatedRecords.some((r) => (r.windows.find((w) => w.window === 'd1')?.units || 0) > 0),
+    velocity_7d: aggregatedRecords.some((r) => (r.windows.find((w) => w.window === '7d')?.units || 0) > 0),
+    velocity_8_14d: aggregatedRecords.some(
       (r) => (r.windows.find((w) => w.window === '8_14d')?.units || 0) > 0
     ),
     efficiency: false,
-    returns: returnsRows.length > 0 || records.some((r) => r.returns_pct != null),
+    returns: returnsRows.length > 0 || aggregatedRecords.some((r) => r.returns_pct != null),
     distribution: false,
     geographic: false,
     channel: false,
-    size_curve: records.some((r) => r.variant_ref != null),
+    size_curve: aggregatedRecords.some((r) => Array.isArray((r.raw as { size_breakdown?: unknown[] })?.size_breakdown) && ((r.raw as { size_breakdown: unknown[] }).size_breakdown.length > 0)),
     weather: false,
     marketing_exposure: false,
     page_traffic: false,
@@ -397,11 +410,184 @@ export function parseShopifyCsvOrXlsx(
 
   return {
     parser_version: PARSER_VERSION,
-    records,
+    records: aggregatedRecords,
     coverage_dimensions: coverage,
     parser_warnings: warnings,
-    parse_confidence: records.length > 0 ? 0.85 : 0,
+    parse_confidence: aggregatedRecords.length > 0 ? 0.85 : 0,
   };
+}
+
+/**
+ * Colapsa variantes Shopify a aimily-SKU (model + color). Las talla-only
+ * variantes (Option1=Size) se aggregan TODAS en una sola fila; las
+ * color+size se aggregan POR color.
+ *
+ * Aggregation rules:
+ *   - lifetime_units (total_sold), windows.{d1,d2,7d,8_14d}.units → SUM
+ *   - stock_store, stock_in_transit, stock_pending, pipeline_total → SUM
+ *   - returns_pct → SUM(returns_units) / SUM(units_sold) recalculado
+ *   - pvp → revenue-weighted average (sum(net_sales) / sum(units))
+ *   - pvp_compare, cost_estimate, margin_pct_list, markup_pct → first non-null
+ *   - product_image_url → first non-null
+ *   - model_ref → primer variant_sku del grupo (alfabético) — keep como
+ *     "representative SKU" del aimily-SKU
+ *   - color_ref → constante por grupo (key)
+ *   - variant_ref → null (talla agregada)
+ *   - raw.size_breakdown → array { sku, size, lifetime_units, stock }
+ */
+function aggregateBySkuModelColor(records: ParsedRecord[]): ParsedRecord[] {
+  const groups = new Map<string, ParsedRecord[]>();
+  for (const r of records) {
+    // Clave de agrupación. Usamos product_name (= product_title) + color_ref.
+    // Si product_name está vacío, fallback a model_ref (single-row group).
+    const productKey = (r.product_name ?? r.model_ref ?? '').trim().toLowerCase();
+    const colorKey = (r.color_ref ?? '_no_color_').trim().toLowerCase();
+    const key = `${productKey}::${colorKey}`;
+    const arr = groups.get(key) ?? [];
+    arr.push(r);
+    groups.set(key, arr);
+  }
+
+  const aggregated: ParsedRecord[] = [];
+  for (const [, variantsRaw] of Array.from(groups.entries())) {
+    // Sort variants by model_ref para determinismo (talla "S" antes que "XL"
+    // por orden alfabético del SKU, no por orden semántico de talla — el
+    // representative_sku se toma del primer alfabético).
+    const variants = [...variantsRaw].sort((a, b) =>
+      (a.model_ref ?? '').localeCompare(b.model_ref ?? '')
+    );
+    if (variants.length === 1) {
+      // Producto sin tallas (ya está en granularidad model+color). Aún
+      // así emitimos `variant_ref = null` y un size_breakdown mínimo
+      // para consistencia downstream.
+      const v = variants[0];
+      const sizeFromVariant =
+        (v.raw as { variant_title?: string })?.variant_title
+          ? inferSizeFromVariant((v.raw as { variant_title?: string }).variant_title)
+          : null;
+      aggregated.push({
+        ...v,
+        variant_ref: null,
+        raw: {
+          ...v.raw,
+          size_breakdown: [
+            {
+              sku: v.model_ref,
+              size: sizeFromVariant,
+              lifetime_units: v.total_sold ?? 0,
+              stock_store: v.stock_store ?? 0,
+            },
+          ],
+          variants_aggregated: 1,
+        },
+      });
+      continue;
+    }
+    // 2+ variantes (multi-size). Aggregate.
+    const sumUnits = (key: 'd1' | 'd2' | '7d' | '8_14d'): number =>
+      variants.reduce((acc, v) => acc + (v.windows.find((w) => w.window === key)?.units ?? 0), 0);
+    const sumImporte = (key: 'd1' | 'd2' | '7d' | '8_14d'): number =>
+      variants.reduce((acc, v) => acc + (v.windows.find((w) => w.window === key)?.importe ?? 0), 0);
+    const lifetimeUnits = variants.reduce(
+      (acc, v) => acc + ((v.raw as { lifetime_units?: number })?.lifetime_units ?? v.total_sold ?? 0),
+      0
+    );
+    const lifetimeNetSales = variants.reduce(
+      (acc, v) => acc + ((v.raw as { lifetime_net_sales?: number })?.lifetime_net_sales ?? 0),
+      0
+    );
+    const totalReturnsUnits = variants.reduce(
+      (acc, v) => acc + ((v.raw as { returns_units?: number })?.returns_units ?? 0),
+      0
+    );
+    const aggregatePvp =
+      lifetimeUnits > 0
+        ? Math.round((lifetimeNetSales / lifetimeUnits) * 100) / 100
+        : variants.find((v) => v.pvp != null)?.pvp ?? null;
+    const firstNonNull = <T>(getter: (r: ParsedRecord) => T | null | undefined): T | null => {
+      for (const v of variants) {
+        const x = getter(v);
+        if (x != null) return x as T;
+      }
+      return null;
+    };
+    const stockStore = variants.reduce((acc, v) => acc + (v.stock_store ?? 0), 0);
+    const stockInTransit = variants.reduce((acc, v) => acc + (v.stock_in_transit ?? 0), 0);
+    const stockPending = variants.reduce((acc, v) => acc + (v.stock_pending ?? 0), 0);
+    const head = variants[0];
+    aggregated.push({
+      row_index: 0, // se reasigna fuera del aggregate
+      page_coord: null,
+      model_ref: head.model_ref, // primer variant_sku como representante
+      color_ref: head.color_ref,
+      variant_ref: null, // talla colapsada
+      product_name: head.product_name,
+      family_code: head.family_code,
+      subfamily_code: head.subfamily_code,
+      section_code: head.section_code,
+      season_tag: head.season_tag,
+      activation_date: head.activation_date,
+      cluster_size: head.cluster_size,
+      description_raw: head.description_raw,
+      pvp: aggregatePvp,
+      pvp_compare: firstNonNull((r) => r.pvp_compare),
+      markup_pct: firstNonNull((r) => r.markup_pct),
+      on_promo: variants.some((v) => v.on_promo),
+      cost_estimate: firstNonNull((r) => r.cost_estimate),
+      margin_pct_list: firstNonNull((r) => r.margin_pct_list),
+      stock_store: stockStore,
+      stock_warehouse: null,
+      stock_available: stockStore,
+      stock_in_transit: stockInTransit,
+      stock_pending: stockPending,
+      stock_pending_date: null,
+      stock_adjusted: null,
+      stock_blocked: null,
+      stock_fabric: null,
+      days_in_store: null,
+      stores_with_stock: null,
+      stores_active: null,
+      stores_total: null,
+      pipeline_total: stockStore + stockInTransit + stockPending,
+      cd2_available: null,
+      blocked_per_store: null,
+      windows: (['d1', 'd2', '7d', '8_14d'] as const).map((w) => ({
+        window: w,
+        units: sumUnits(w),
+        importe: sumImporte(w) || null,
+        gross_commission: null,
+        share_net_sales: null,
+      })),
+      total_bought: null,
+      total_sold: lifetimeUnits || null,
+      total_shipped: null,
+      sell_through_shipped_pct: null,
+      sell_through_bought_pct: null,
+      returns_pct: lifetimeUnits > 0 ? totalReturnsUnits / lifetimeUnits : null,
+      product_image_url: firstNonNull((r) => r.product_image_url),
+      raw: {
+        aimily_sku_unit: 'model+color',
+        representative_sku: head.model_ref,
+        variants_aggregated: variants.length,
+        size_breakdown: variants.map((v) => ({
+          sku: v.model_ref,
+          size:
+            (v.raw as { variant_title?: string })?.variant_title
+              ? inferSizeFromVariant((v.raw as { variant_title?: string }).variant_title)
+              : null,
+          lifetime_units: (v.raw as { lifetime_units?: number })?.lifetime_units ?? v.total_sold ?? 0,
+          stock_store: v.stock_store ?? 0,
+        })),
+        lifetime_units: lifetimeUnits,
+        lifetime_net_sales: lifetimeNetSales,
+        returns_units: totalReturnsUnits,
+      },
+      original_labels: head.original_labels,
+      extraction_confidence: head.extraction_confidence,
+      parser_warnings: head.parser_warnings,
+    });
+  }
+  return aggregated;
 }
 
 function findSheet(workbook: XLSX.WorkBook, candidates: string[]): string | undefined {
@@ -555,15 +741,44 @@ function addDays(d: Date, days: number): Date {
   return next;
 }
 
+/** Detecta si un token de variant_title parece talla (XS/S/M/L/XL/2XL,
+ *  small/medium/large/x-large/extra large, valores numéricos 28/30/36
+ *  típicos de jeans, etc.). Felipe 2026-05-19 — necesario para
+ *  distinguir productos mono-color con variantes solo de talla
+ *  ("S / M / L / XL") de productos con color + talla
+ *  ("Indigo / S"). En el primer caso color_ref = null y la talla NO va
+ *  a parts[0] como color. */
+const SIZE_TOKEN_RE = new RegExp(
+  '^(' +
+    'x{0,3}s|x{0,3}l|m|xxxl|' +
+    'small|medium|large|x-?small|xs-?small|x-?large|extra ?large|xx-?large|xxx-?large|' +
+    'one ?size|os|onesize|tall|petite|' +
+    '\\d{1,2}(\\.\\d)?|' + // numeric sizes 28, 30, 36, 5.5
+    '\\d{1,2}-\\d{1,2}' + // ranges 4-6, 12-14
+    ')$',
+  'i'
+);
+
+function isSizeToken(s: string | undefined | null): boolean {
+  if (!s) return false;
+  return SIZE_TOKEN_RE.test(s.trim());
+}
+
 function inferColorFromVariant(variantTitle?: string): string | null {
   if (!variantTitle) return null;
-  // Shopify variant titles like "Black / S" or "Beige / Medium"
-  const parts = variantTitle.split(/\s*\/\s*/);
-  return parts[0]?.trim().toLowerCase() || null;
+  // Si la 1ª parte parece talla, no es color (producto mono-color con
+  // solo variantes de talla). Si NO parece talla, es el color.
+  const parts = variantTitle.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  if (isSizeToken(parts[0])) return null; // producto solo con tallas
+  return parts[0]?.toLowerCase() || null;
 }
 
 function inferSizeFromVariant(variantTitle?: string): string | null {
   if (!variantTitle) return null;
-  const parts = variantTitle.split(/\s*\/\s*/);
-  return parts[1]?.trim() || null;
+  const parts = variantTitle.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return null;
+  // Si la 1ª parte ES talla, esa es la talla. Si NO, la talla está en parts[1].
+  if (isSizeToken(parts[0])) return parts[0];
+  return parts[1] ?? null;
 }
