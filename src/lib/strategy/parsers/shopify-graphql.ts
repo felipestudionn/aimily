@@ -49,7 +49,7 @@ const PRODUCTS_QUERY = /* GraphQL */ `
           media(first: 1) {
             edges { node { ... on MediaImage { image { url } } } }
           }
-          variants(first: 100) {
+          variants(first: 30) {
             edges {
               node {
                 id
@@ -64,7 +64,7 @@ const PRODUCTS_QUERY = /* GraphQL */ `
                 inventoryItem {
                   id
                   unitCost { amount }
-                  inventoryLevels(first: 50) {
+                  inventoryLevels(first: 10) {
                     edges {
                       node {
                         location { id name isActive fulfillsOnlineOrders }
@@ -97,7 +97,7 @@ const ORDERS_QUERY = /* GraphQL */ `
           cancelledAt
           displayFinancialStatus
           displayFulfillmentStatus
-          lineItems(first: 100) {
+          lineItems(first: 30) {
             edges {
               node {
                 sku
@@ -107,11 +107,11 @@ const ORDERS_QUERY = /* GraphQL */ `
               }
             }
           }
-          returns(first: 10) {
+          returns(first: 5) {
             edges {
               node {
                 totalQuantity
-                returnLineItems(first: 50) {
+                returnLineItems(first: 10) {
                   edges {
                     node {
                       ... on ReturnLineItem {
@@ -253,7 +253,9 @@ async function fetchAllProducts(
 ): Promise<ProductNode[]> {
   const all: ProductNode[] = [];
   let cursor: string | null = null;
-  const pageSize = 50; // 50 products × 5pt ≈ 250pt = budget cómodo en Basic
+  // Page size 20 keeps single-query cost below Shopify's 1000-pt hard limit.
+  // Cost: 20 products × (30 variants × (1 + 10 inventoryLevels)) ≈ 660 pts.
+  const pageSize = 20;
   while (all.length < maxProducts) {
     const data: ProductsPageResponse = await shopifyFetch<ProductsPageResponse>(
       shopDomain,
@@ -288,7 +290,9 @@ async function fetchOrdersLastDays(
 ): Promise<OrderNode[]> {
   const all: OrderNode[] = [];
   let cursor: string | null = null;
-  const pageSize = 100;
+  // Orders query cost: 50 × (1 + 30 lineItems + 5 returns × 10 returnLineItems) ≈ 4050.
+  // Drop to 25 per page to stay below 1000-pt cap with returns expansion.
+  const pageSize = 25;
   while (true) {
     const data: OrdersPageResponse = await shopifyFetch<OrdersPageResponse>(
       shopDomain,
