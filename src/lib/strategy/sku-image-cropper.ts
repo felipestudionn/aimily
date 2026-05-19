@@ -301,13 +301,108 @@ export async function cropSkuFromPdfHighRes(
   }
 }
 
-/** Entry point: intenta extracción real primero, fallback a crop. */
-export async function getSkuReferenceImage(
+/** Recorte por TEXTO: usa pdfjs.getTextContent() para localizar el
+ *  `model_ref` (e.g. "4786 166 401") en la página y recortar el thumbnail
+ *  adyacente — más fiable que heurística de orden o que extracción nativa
+ *  cuando el orden de imágenes embebidas en el PDF no coincide con el
+ *  orden visual de los SKUs. */
+export async function cropSkuFromPdfByModelRef(
   pdfSignedUrl: string,
+  modelRef: string,
   skuRank: number,
   totalSkus: number,
   numPagesHint: number
 ): Promise<CropResult | null> {
+  try {
+    const pdfjs = await import('pdfjs-dist');
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+    const pdf = await pdfjs.getDocument(pdfSignedUrl).promise;
+
+    const numPages = numPagesHint > 0 ? numPagesHint : pdf.numPages;
+    const skusPerPage = Math.max(1, Math.ceil(totalSkus / numPages));
+    const guessedPageIdx = Math.min(numPages - 1, Math.floor((skuRank - 1) / skusPerPage));
+
+    // Probamos la página estimada y vecinas (±2) por si el rank/created_at
+    // no mapea 1:1 al PDF.
+    const tryPages = [guessedPageIdx, guessedPageIdx + 1, guessedPageIdx - 1, guessedPageIdx + 2, guessedPageIdx - 2]
+      .filter((p) => p >= 0 && p < numPages);
+
+    const normRef = modelRef.replace(/\s+/g, '');
+
+    for (const pageIdx of tryPages) {
+      const page = await pdf.getPage(pageIdx + 1);
+      const text = await page.getTextContent();
+      const viewport = page.getViewport({ scale: 1 });
+
+      let matchY: number | null = null;
+      for (const item of text.items as Array<{ str: string; transform: number[] }>) {
+        const norm = (item.str || '').replace(/\s+/g, '');
+        if (norm.includes(normRef)) {
+          matchY = item.transform[5];
+          break;
+        }
+      }
+      if (matchY == null) continue;
+
+      const scale = FALLBACK_HIGH_RES_SCALE;
+      const renderViewport = page.getViewport({ scale });
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = Math.floor(renderViewport.width);
+      pageCanvas.height = Math.floor(renderViewport.height);
+      const pctx = pageCanvas.getContext('2d');
+      if (!pctx) return null;
+      await page.render({
+        canvasContext: pctx,
+        viewport: renderViewport,
+      } as Parameters<typeof page.render>[0]).promise;
+
+      // Y nativa → Y top-down en coords del canvas escalado.
+      const pageH = viewport.height;
+      const yTopDownNative = pageH - matchY;
+      const rowH = pageH / Math.max(skusPerPage, 1);
+      const rowTop = Math.max(0, yTopDownNative - rowH / 2);
+      const rowBottom = Math.min(pageH, yTopDownNative + rowH / 2);
+
+      const cropY = Math.round(rowTop * scale);
+      const cropH = Math.round((rowBottom - rowTop) * scale);
+      const cropX = Math.round(renderViewport.width * FALLBACK_THUMB_X_RATIO);
+      const cropW = Math.round(renderViewport.width * FALLBACK_THUMB_W_RATIO);
+      if (cropW <= 0 || cropH <= 0) continue;
+
+      const crop = document.createElement('canvas');
+      crop.width = cropW;
+      crop.height = cropH;
+      const cctx = crop.getContext('2d');
+      if (!cctx) continue;
+      cctx.drawImage(pageCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+        crop.toBlob((b) => resolve(b), 'image/png');
+      });
+      if (!blob) continue;
+      return { blob, width: cropW, height: cropH };
+    }
+    return null;
+  } catch (err) {
+    console.warn('[sku-image-cropper] text-based crop failed', err);
+    return null;
+  }
+}
+
+/** Entry point: prioriza recorte por modelRef (text-anchored, robusto)
+ *  cuando se pasa, luego extracción de objeto embebido (fast pero orden
+ *  arbitrario), luego high-res crop heurístico. */
+export async function getSkuReferenceImage(
+  pdfSignedUrl: string,
+  skuRank: number,
+  totalSkus: number,
+  numPagesHint: number,
+  modelRef?: string | null
+): Promise<CropResult | null> {
+  if (modelRef) {
+    const byText = await cropSkuFromPdfByModelRef(pdfSignedUrl, modelRef, skuRank, totalSkus, numPagesHint);
+    if (byText) return byText;
+  }
   const extracted = await extractSkuImageFromPdf(pdfSignedUrl, skuRank, totalSkus, numPagesHint);
   if (extracted) return extracted;
   return await cropSkuFromPdfHighRes(pdfSignedUrl, skuRank, totalSkus, numPagesHint);

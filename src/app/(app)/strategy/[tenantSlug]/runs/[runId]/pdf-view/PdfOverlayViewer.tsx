@@ -1373,7 +1373,8 @@ function SkuDetailInline({
           pdfSignedUrl,
           sku.rank,
           totalSkus,
-          pdfNumPages
+          pdfNumPages,
+          sku.model_ref,
         );
         if (result) {
           const url = await uploadCroppedSkuImage(result.blob, sku.product_fact_id, {
