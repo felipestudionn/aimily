@@ -41,45 +41,59 @@ The token is committed only to `.env.local` (gitignored). Treat it as a shared s
 
 ---
 
-## §3 · API scopes (17 granted)
+## §3 · API scopes (32 granted: 13 read + 19 write)
 
-Listed in the order they're enabled in the custom-app config:
+Felipe explicitly granted broad scope set in one go so we never have to repeat the save dance. Listed by group:
 
-**Read (13)** — minimum set for the GraphQL adapter:
+**Read (13)** — for the GraphQL adapter:
 - `read_analytics`, `read_customers`, `read_discounts`, `read_fulfillments`, `read_inventory`, `read_locations`, `read_orders`, `read_price_rules`, `read_products`, `read_publications`, `read_reports`, `read_returns`, `read_markets`
 
-**Write (4)** — for seeding:
-- `write_orders` — `orderCreate`, `refundCreate`
-- `write_customers` — `customer.toUpsert` inside orderCreate
-- `write_products` — `productSet`, `productDelete`
-- `write_inventory` — `inventoryQuantities` in `productSet.variants`
+**Write (19)** — for full lane manipulation:
+- `write_orders`, `write_customers`, `write_products`, `write_inventory` — base seeding
+- `write_locations`, `write_discounts`, `write_price_rules` — multi-location + markdown
+- `write_draft_orders`, `write_files`, `write_fulfillments`, `write_marketing_events`
+- `write_metaobjects`, `write_order_edits`, `write_publications`, `write_reports`
+- `write_returns`, `write_shipping`, `write_markets`, `write_content`
 
-**NOT granted** (intentionally — not needed for current scope):
-- `read_all_orders` (gated behind app review; default cap = last 60d is enough — our parser only reads last 21d anyway)
-- `read_inventory_item_unit_costs` — turns out `inventoryItem.unitCost` is readable with `read_inventory` for custom apps on dev stores; reserved for prod app submission
+**Intentionally NOT granted** (privacy / dangerous / unused):
+- `read_all_orders` (gated behind Shopify app review; default cap = 60d is enough)
+- `write_themes` / `write_theme_code` (touches live storefront)
+- `write_shopify_payments_disputes` (fraud)
+- `write_customer_data_erasure` / `write_customer_merge` (GDPR)
+- `write_validations` / `write_cart_transforms` / `write_payment_customizations` / `write_delivery_customizations` (Shopify Functions, not needed)
+- See exclusion list in `setup-shopify-apparel-store.mjs` for the full skip set
 
 ---
 
-## §4 · Data state as of 2026-05-19
+## §4 · Data state as of 2026-05-19 (post enrichment)
 
 | Asset | Count | Notes |
 |---|---|---|
-| Products | 25 | United By Blue apparel imported via productSet |
-| Variants | 96 | All with SKU (100%) |
-| Locations | 1 | Toronto only — distribution verbs degrade |
-| Orders | 149 | Backdated last 14d, power-law SKU distribution |
-| Refunds | 31 | ~20% of orders, all with "today" processedAt (Shopify limitation) |
-| Failed seed | 1 | `FIELDREPORT2` ($0 price — SALE transaction rejected) |
+| Products | 50 | Cool indie brands curated via /products.json from each brand's storefront |
+| Shopify variants | 266 | All with SKU + real cdn.shopify.com images |
+| aimily-SKUs (after aggregation) | 58 | model+color granularity per Felipe's cardinal rule (sizes collapsed into raw.size_breakdown) |
+| Locations | 5 | Toronto (default) + NYC + LA + Madrid + Barcelona |
+| Inventory levels | 1064 + Toronto | All 266 variants × 4 new locations all activated |
+| Orders | ~150 | Backdated last 14d, power-law SKU distribution |
+| Refunds | ~30 | ~20% of orders, processedAt="now" (Shopify limitation) |
+| Last verified run | `b2ff2788-4c05-4fc4-baa2-6610bd3f2266` | 58 SKU scores, 18 family scores, 22 candidates, 3 scenarios. All PVPs render correctly. |
 
-**Product source**: `https://raw.githubusercontent.com/shopifypartners/shopify-product-csvs-and-images/master/csv-files/apparel.csv` (the canonical Shopify sample apparel CSV, public since 2014, 25 unique handles, 104 raw rows of which 8 were ghost image-only rows).
+**Product source** (cool brands · 10 products each via public `/products.json`):
+- **HEREU** — `hereustudio.com` (Spanish leather goods, woven bags, sandals)
+- **Filling Pieces** — `fillingpieces.com` (Dutch streetwear sneakers)
+- **GIMAGUAS** — `gimaguas.com` (Spanish accessories)
+- **Shon Mott** — `shonmott.com`
+- **NUDE PROJECT** — `nude-project.com` (Spanish streetwear)
 
-**Per-variant images**: NOT yet set. All variants under a Handle share the product master image. The CSV has `Variant Image` URLs populated for color-specific shots; the setup script does NOT yet wire them up. Open gap — see §10.
+Previous catalogues tried + dropped: shopifypartners `apparel.csv` (United By Blue — too 2014-eco-DTC for Felipe's "cool brand" criterion); `fashion.csv` (Hannes Roether, Marsell, By Malene Birger — too European avant-garde).
+
+**Image freshness**: full gallery per product (avg 3-5 images each) + per-variant images where the brand storefront populates them. All hosted on cdn.shopify.com from the live brand stores.
 
 ---
 
 ## §5 · Scripts
 
-Two scripts in `scripts/` reproduce the harness from scratch:
+Three scripts in `scripts/` reproduce the harness from scratch:
 
 ### `setup-shopify-apparel-store.mjs`
 
@@ -113,6 +127,22 @@ Flags:
 - `--refunds-only` — skip Phase 3, run only Phase 4 (useful for retrying refunds after a bug fix without re-seeding 32 min of orders)
 
 Orders are tagged `aimily-seed-2026-05-19` for cleanup or re-targeting.
+
+### `enrich-shopify-locations.mjs`
+
+Adds 4 retail locations alongside the default Toronto location (NYC, LA, Madrid, Barcelona) via `locationAdd` and activates inventory for every variant at each new location via `inventoryActivate`. Idempotent: re-runs detect existing locations by name and only add inventory for new variants.
+
+```bash
+SHOPIFY_DEMO_SHOP=aimily-mlyel0nm.myshopify.com \
+SHOPIFY_DEMO_TOKEN=shpat_xxx \
+node scripts/enrich-shopify-locations.mjs
+```
+
+Stockout chance per location (so the demo shows realistic "stores_with_stock" diversity):
+- NYC: 8% stockout
+- LA: 12%
+- Madrid: 15%
+- Barcelona: 20%
 
 ---
 
@@ -175,6 +205,8 @@ Logged for future maintainers. Each bug below caused a real failure during this 
 |---|---|---|---|
 | 11 | Query cost 1752 > 1000 pt cap | `Query cost exceeds limit (1000)` | Reduced nested `first:N` (products 50→20, variants 100→30, inventoryLevels 50→10, orders 100→25, lineItems 100→30, returns 10→5, returnLineItems 50→10) |
 | 12 | `LineItem.refundedQuantity` removed from 2026-01 API | `Field doesn't exist on type 'LineItem'` | Removed field — parser never used it (returns come from `order.returns`) |
+| 13 | Ranking showed 1 row per Shopify variant (per size) | Felipe's cardinal rule violation — aimily-SKU = model+color, never size | Exported `aggregateBySkuModelColor` from `shopify-csv.ts` and applied it at the end of `parseShopifyGraphql`. 266 variants → 58 aimily-SKUs. PARSER_VERSION bumped 1.0.0 → 1.1.0. |
+| 14 | Aggregated rows showed €0.00 PVP for products with orders | `aggregatePvp = lifetimeNetSales / lifetimeUnits` divided 0/N because GraphQL parser never populated `raw.lifetime_net_sales` | Added `lifetime_net_sales` accumulator in salesBySku, propagated to `record.raw`. Aggregator now computes revenue-weighted PVP correctly. |
 
 ---
 
