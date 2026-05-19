@@ -92,6 +92,7 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 // contradictorios. Esta función es un wrapper que adapta la firma con
 // Map (route) a la firma con v2 directa (módulo).
 import { applyExclusionRules as applyExclusionRulesCore } from '@/lib/strategy/exclusion-rules';
+import { neutralizeRationale } from '@/lib/strategy/neutralize-source-copy';
 function applyExclusionRules<V extends {
   actions: Array<{ action: string; evidence?: Record<string, unknown> }>;
   product_fact_id: string;
@@ -990,6 +991,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     (s) =>
       s.source_format === 'zara_rnk_pdf' && s.storage_path && s.storage_path.length > 0
   );
+  // El source_format primario manda el copy: si es zara_rnk_pdf, dejamos
+  // "del RNK Zara" / "filosofía Zara" intactos. Para cualquier otro
+  // (shopify_csv_xlsx, erp_csv, etc.) los neutralizamos.
+  const primarySourceFormat: string | null =
+    pdfSource?.source_format ?? sources[0]?.source_format ?? null;
   let pdfSignedUrl: string | null = null;
   if (pdfSource?.storage_path) {
     const { data: signed } = await supabaseAdmin.storage
@@ -1130,12 +1136,22 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     // se mantiene como compatibilidad — apunta a la 'balanceada' (default
     // del toggle global al cargar).
     const scenarioStacks = scenarioStacksByPid.get(p.id);
+    // Felipe sprint Shopify lane 2026-05-19 · neutralizar rationale strings
+    // que mencionan "Zara"/"RNK" cuando la fuente NO es zara_rnk_pdf. Esto
+    // mantiene el copy retailer-agnostic (Shopify, ERP, etc.) sin tocar el
+    // resolver. Ver lib/strategy/neutralize-source-copy.ts.
+    const sourceFmt = primarySourceFormat;
+    const neutralizeActions = (actions: any[]) =>
+      actions.map((a) => ({
+        ...a,
+        rationale: neutralizeRationale(a?.rationale ?? '', sourceFmt),
+      }));
     const verdictsByScenario = scenarioStacks
       ? {
-          conservar_margen: scenarioStacks.conservar_margen.actions ?? [],
-          balanceada: scenarioStacks.balanceada.actions ?? [],
-          maximizar_venta: scenarioStacks.maximizar_venta.actions ?? [],
-          tu_mezcla: scenarioStacks.tu_mezcla.actions ?? [],
+          conservar_margen: neutralizeActions(scenarioStacks.conservar_margen.actions ?? []),
+          balanceada: neutralizeActions(scenarioStacks.balanceada.actions ?? []),
+          maximizar_venta: neutralizeActions(scenarioStacks.maximizar_venta.actions ?? []),
+          tu_mezcla: neutralizeActions(scenarioStacks.tu_mezcla.actions ?? []),
         }
       : null;
     const userLock = userLocksByPid.get(p.id) ?? null;
@@ -1204,6 +1220,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     source_id: pdfSource?.id ?? null,
     pdf_storage_path: pdfSource?.storage_path ?? null,
     pdf_signed_url: pdfSignedUrl,
+    source_format: primarySourceFormat,
     target_rotation_days_default: DEFAULT_TARGET_ROTATION_DAYS,
     archetype_id: archetype.archetype_id,
     target_buy_budget_eur: budget.target_buy_budget_eur,

@@ -188,6 +188,10 @@ interface SkuRow {
 interface ApiResponse {
   run_id: string;
   pdf_signed_url: string | null;
+  /** Felipe sprint Shopify lane 2026-05-19 · cuando no hay PDF (fuente
+   *  CSV/XLSX Shopify, ERP), la columna izquierda renderiza el grid de
+   *  product_image_url en su lugar. Source format lo dice. */
+  source_format?: string | null;
   target_rotation_days_default: number;
   archetype_id: string | null;
   target_buy_budget_eur: number | null;
@@ -750,9 +754,21 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
         {data.pdf_signed_url ? (
           <div ref={pdfCanvasRef} />
         ) : (
-          <div className="h-full flex items-center justify-center text-carbon/40 text-[13px] italic">
-            Sin PDF disponible para este run · {data.summary.total_skus} SKUs analizados
-          </div>
+          // Shopify lane (no PDF): grid de product_image_url en orden de
+          // ranking. Click en una foto expande el SKU correspondiente en
+          // la columna derecha (delega en toggleSkuExpansion + scroll).
+          <ShopifyProductGrid
+            skus={data.skus}
+            onClick={(sku) => {
+              setExpandedSkuIds((prev) => {
+                const next = new Set(prev);
+                next.add(sku.product_fact_id);
+                return next;
+              });
+              const el = document.getElementById(`sku-row-${sku.product_fact_id}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+          />
         )}
       </div>
 
@@ -1034,7 +1050,11 @@ function SkuPanel({
               ? visibleActions(comparisonActions)
               : null;
             return (
-              <li key={sku.product_fact_id} className="border-b border-carbon/[0.04]">
+              <li
+                key={sku.product_fact_id}
+                id={`sku-row-${sku.product_fact_id}`}
+                className="border-b border-carbon/[0.04]"
+              >
                 <button
                   type="button"
                   onClick={() => onToggleExpand(sku.product_fact_id)}
@@ -2023,6 +2043,87 @@ function ScenarioStackRow({
             );
           })
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * ShopifyProductGrid — render columna izquierda cuando la fuente NO es
+ * Zara RNK. Usa `sku.product_image_url` (cdn.shopify.com / variant image
+ * del Products CSV) y muestra un grid de thumbnails ordenados por
+ * ranking. Click → expande el SKU en la columna derecha + scroll.
+ *
+ * Felipe sprint Shopify lane 2026-05-19. Simplicidad ante todo: grid de
+ * 3 columnas con foto + #rank + nombre. Sin filtros, sin escenario
+ * toggle (eso vive en el panel derecho). El comprador escanea con la
+ * vista, clickea, lee verdict.
+ */
+function ShopifyProductGrid({
+  skus,
+  onClick,
+}: {
+  skus: SkuRow[];
+  onClick: (sku: SkuRow) => void;
+}) {
+  if (skus.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center text-carbon/40 text-[13px] italic">
+        Sin SKUs persistidos para este run.
+      </div>
+    );
+  }
+  const skusWithPhoto = skus.filter((s) => s.product_image_url);
+  if (skusWithPhoto.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center text-carbon/40 text-[13px] italic px-6 text-center">
+        {skus.length} SKUs analizados · ninguna foto de producto en la fuente · selecciona un SKU en la columna derecha
+      </div>
+    );
+  }
+  return (
+    <div className="px-3 pt-3 pb-8">
+      <div className="text-[11px] uppercase tracking-[0.08em] text-carbon/40 mb-3 px-1">
+        {skus.length} SKUs · ordenados por ranking
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {skus.map((sku) => (
+          <button
+            key={sku.product_fact_id}
+            type="button"
+            onClick={() => onClick(sku)}
+            className="group relative bg-white rounded-[10px] overflow-hidden border border-carbon/[0.06] hover:border-carbon/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all text-left"
+          >
+            <div className="aspect-square bg-carbon/[0.03] flex items-center justify-center overflow-hidden">
+              {sku.product_image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={sku.product_image_url}
+                  alt={sku.product_name ?? sku.model_ref ?? ''}
+                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="text-[10px] text-carbon/30">sin foto</span>
+              )}
+            </div>
+            <div className="p-2">
+              <div className="flex items-baseline gap-1">
+                <span className="text-[10px] font-medium text-carbon/40">
+                  #{sku.rank}
+                </span>
+                <span className="text-[11px] font-medium text-carbon truncate">
+                  {sku.product_name ?? sku.model_ref ?? '—'}
+                </span>
+              </div>
+              {sku.model_ref && (
+                <div className="text-[10px] text-carbon/35 truncate mt-0.5">
+                  {sku.model_ref}
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );
