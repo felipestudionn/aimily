@@ -1169,6 +1169,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       stores_with_stock: baseInput?.stores_with_stock ?? null,
       stock_total: baseInput?.stock_total ?? null,
       days_in_store: daysInStore,
+      // Felipe 2026-05-19 noche — Surface returns_pct directly on the SKU row
+      // so the ranking table can colour-code the "Devol." column. Was being
+      // computed and threaded into headline_kpis but the actual % was lost
+      // to the renderer.
+      returns_pct: score?.returns_pct ?? null,
       // Felipe 2026-05-19 sprint Shopify lane: si el parser populó la URL
       // de la foto del producto (Shopify Products CSV), el frontend la usa
       // directamente para Aimily Design sin recortar PDF. Null para Zara.

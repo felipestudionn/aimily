@@ -164,6 +164,7 @@ interface SkuRow {
   stores_with_stock: number | null;
   stock_total: number | null;
   days_in_store: number | null;
+  returns_pct: number | null;
   target_rotation_days: number;
   current_stock_days: number | null;
   /** Sprint Shopify lane 2026-05-19 · si el parser populó la URL de la foto
@@ -759,6 +760,7 @@ export function PdfOverlayViewer({ runId, tenantSlug: _tenantSlug }: { runId: st
           // la columna derecha (delega en toggleSkuExpansion + scroll).
           <ShopifyProductGrid
             skus={data.skus}
+            pdfSignedUrl={data.pdf_signed_url ?? null}
             onClick={(sku) => {
               setExpandedSkuIds((prev) => {
                 const next = new Set(prev);
@@ -2068,9 +2070,11 @@ function ScenarioStackRow({
 function ShopifyProductGrid({
   skus,
   onClick,
+  pdfSignedUrl,
 }: {
   skus: SkuRow[];
   onClick: (sku: SkuRow) => void;
+  pdfSignedUrl: string | null;
 }) {
   if (skus.length === 0) {
     return (
@@ -2083,6 +2087,12 @@ function ShopifyProductGrid({
     n == null ? '—' : Math.round(n).toLocaleString('es-ES');
   const fmtPvp = (n: number | null | undefined) =>
     n == null ? '—' : `€${Number(n).toFixed(2)}`;
+  // Felipe 2026-05-19 noche: when no PDF source (= Shopify lane) sort by
+  // velocity_7d desc so the merchandiser sees real top vendedores first,
+  // not arbitrary ingest order. Zara runs keep PDF row order intact.
+  const sortedSkus = pdfSignedUrl
+    ? skus
+    : [...skus].sort((a, b) => (b.velocity_7d ?? 0) - (a.velocity_7d ?? 0));
   return (
     <div className="bg-white max-w-[860px] mx-auto shadow-sm">
       {/* Header tipo hoja Zara RNK */}
@@ -2102,8 +2112,13 @@ function ShopifyProductGrid({
         </div>
       </div>
 
-      {/* Column headers — sticky-style */}
-      <div className="grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px] gap-3 px-6 py-2 border-b border-carbon/10 bg-carbon/[0.015] text-[10px] uppercase tracking-[0.08em] text-carbon/45">
+      {/* Column headers — sticky-style.
+       *  Felipe 2026-05-19 noche: la fila tenía sólo PVP·Vend·Stock·Tiendas y
+       *  el merch no podía "ver" la metodología. Añadimos las KPIs que
+       *  diferencian arquetipos: rotación (productividad), días en tienda
+       *  (lifecycle stage) y returns% (red flag).
+       */}
+      <div className="grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px_56px_56px_56px] gap-3 px-6 py-2 border-b border-carbon/10 bg-carbon/[0.015] text-[10px] uppercase tracking-[0.08em] text-carbon/45">
         <span>#</span>
         <span>Foto</span>
         <span>Modelo · familia · color</span>
@@ -2111,19 +2126,41 @@ function ShopifyProductGrid({
         <span className="text-right">Vend 7d</span>
         <span className="text-right">Stock</span>
         <span className="text-right">Tiendas</span>
+        <span className="text-right">Rotac.</span>
+        <span className="text-right">Días</span>
+        <span className="text-right">Devol.</span>
       </div>
 
-      {/* Filas */}
+      {/* Filas — sort by velocity_7d desc when no PDF source (Shopify lane).
+       *  When pdf_signed_url is present (Zara) keep PDF row order intact. */}
       <div>
-        {skus.map((sku) => (
+        {sortedSkus.map((sku, idx) => {
+          const rot = sku.commercial_kpis?.rotation_aj_7d ?? null;
+          const rotColor = rot == null
+            ? 'text-carbon/30'
+            : rot >= 1.0
+              ? 'text-emerald-600 font-semibold'
+              : rot >= 0.5
+                ? 'text-carbon/80'
+                : 'text-amber-600 font-semibold';
+          const returnsPct = sku.returns_pct ?? null;
+          const returnsColor = returnsPct == null
+            ? 'text-carbon/30'
+            : returnsPct >= 0.25
+              ? 'text-red-600 font-semibold'
+              : returnsPct >= 0.15
+                ? 'text-amber-600'
+                : 'text-carbon/80';
+          const displayRank = pdfSignedUrl ? sku.rank : idx + 1;
+          return (
           <button
             key={sku.product_fact_id}
             type="button"
             onClick={() => onClick(sku)}
-            className="group w-full grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px] gap-3 items-center px-6 py-3 border-b border-carbon/[0.06] hover:bg-carbon/[0.02] transition-colors text-left"
+            className="group w-full grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px_56px_56px_56px] gap-3 items-center px-6 py-3 border-b border-carbon/[0.06] hover:bg-carbon/[0.02] transition-colors text-left"
           >
             <span className="text-[18px] font-semibold text-carbon/30 tabular-nums">
-              {sku.rank}
+              {displayRank}
             </span>
             <div className="w-[72px] h-[88px] bg-carbon/[0.03] rounded-[4px] overflow-hidden flex items-center justify-center">
               {sku.product_image_url ? (
@@ -2164,8 +2201,18 @@ function ShopifyProductGrid({
                 ? `${sku.stores_with_stock}/${sku.stores_active}`
                 : fmtNum(sku.stores_active)}
             </span>
+            <span className={`text-[12px] text-right tabular-nums font-mono ${rotColor}`}>
+              {rot == null ? '—' : rot.toFixed(2)}
+            </span>
+            <span className="text-[12px] text-carbon/70 text-right tabular-nums font-mono">
+              {sku.days_in_store == null ? '—' : `${sku.days_in_store}d`}
+            </span>
+            <span className={`text-[12px] text-right tabular-nums font-mono ${returnsColor}`}>
+              {returnsPct == null ? '—' : `${Math.round(returnsPct * 100)}%`}
+            </span>
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
