@@ -246,12 +246,17 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
           supabaseAdmin
             .from('strategy_product_facts')
             .select(
-              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, activation_date, observation_date, created_at'
+              // Felipe 2026-05-19 · BUG: todos los product_facts tenían
+              // created_at IDÉNTICO (mismo microsegundo del parser batch
+              // insert) → ORDER BY created_at no era determinístico y la
+              // UI mostraba SKUs en orden arbitrario. La fuente correcta
+              // del orden visual del PDF es strategy_raw_records.row_index
+              // (que el parser asigna 1, 2, 3... en orden de aparición).
+              // Hacemos un nested select para obtenerlo y luego ordenamos
+              // por ese campo en memoria.
+              'id, model_ref, color_ref, product_name, family_code, pvp, markup_pct, margin_pct_list, cost_estimate, activation_date, observation_date, created_at, raw_record_id, strategy_raw_records(row_index)'
             )
-            .in('id', targetPids)
-            // Order by insertion → matches the PDF row order so the panel
-            // ranking maps 1:1 with the Zara RNK position of each SKU.
-            .order('created_at', { ascending: true }),
+            .in('id', targetPids),
           supabaseAdmin
             .from('strategy_sales_windows')
             .select('product_fact_id, window_type, units')
@@ -283,6 +288,18 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
         ];
 
   const products = (productFactsRes.data || []) as any[];
+  // Felipe 2026-05-19 · sort por row_index (= orden visual del PDF Zara
+  // RNK). Si row_index es null, fallback a id stable sort.
+  products.sort((a, b) => {
+    const aRow =
+      (a.strategy_raw_records?.row_index as number | null | undefined) ??
+      Number.MAX_SAFE_INTEGER;
+    const bRow =
+      (b.strategy_raw_records?.row_index as number | null | undefined) ??
+      Number.MAX_SAFE_INTEGER;
+    if (aRow !== bRow) return aRow - bRow;
+    return String(a.id).localeCompare(String(b.id));
+  });
   const candidates = allCandidates;
 
   // Index velocity (units per window) and inventory rows by product_fact_id
