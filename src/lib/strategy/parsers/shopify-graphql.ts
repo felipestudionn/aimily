@@ -103,7 +103,6 @@ const ORDERS_QUERY = /* GraphQL */ `
                 sku
                 quantity
                 originalUnitPriceSet { shopMoney { amount } }
-                refundedQuantity
               }
             }
           }
@@ -187,7 +186,6 @@ type OrderNode = {
         sku: string | null;
         quantity: number;
         originalUnitPriceSet: { shopMoney: { amount: string } };
-        refundedQuantity: number | null;
       };
     }>;
   };
