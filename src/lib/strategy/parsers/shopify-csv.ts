@@ -435,7 +435,7 @@ export function parseShopifyCsvOrXlsx(
  *   - variant_ref → null (talla agregada)
  *   - raw.size_breakdown → array { sku, size, lifetime_units, stock }
  */
-function aggregateBySkuModelColor(records: ParsedRecord[]): ParsedRecord[] {
+export function aggregateBySkuModelColor(records: ParsedRecord[]): ParsedRecord[] {
   const groups = new Map<string, ParsedRecord[]>();
   for (const r of records) {
     // Clave de agrupación. Usamos product_name (= product_title) + color_ref.

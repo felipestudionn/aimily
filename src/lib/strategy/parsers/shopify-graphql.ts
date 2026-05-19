@@ -27,8 +27,9 @@
  */
 
 import type { ParserResult, ParsedRecord, ParsedSalesWindow } from './types';
+import { aggregateBySkuModelColor } from './shopify-csv';
 
-const PARSER_VERSION = '1.0.0';
+const PARSER_VERSION = '1.1.0';
 const SHOPIFY_API_VERSION = '2026-04';
 
 const PRODUCTS_QUERY = /* GraphQL */ `
@@ -536,21 +537,35 @@ export async function parseShopifyGraphql(opts: ShopifyGraphqlOptions): Promise<
     }
   }
 
+  // CARDINAL RULE: aimily-SKU = model + color (Felipe's rule, applied to ALL
+  // Shopify lanes). The CSV parser already collapses size variants via
+  // aggregateBySkuModelColor; we apply the SAME transformation here so the
+  // GraphQL ingest produces the same ranking granularity as the CSV path.
+  // Without this, "Alaro Lace Up" shows 6 rows (one per size) — useless
+  // for merch decisions.
+  const aggregatedRecords = aggregateBySkuModelColor(records);
+  // Re-assign row_index post-aggregation
+  aggregatedRecords.forEach((r, i) => { r.row_index = i + 1; });
+
   const coverage = {
-    identity: records.length > 0,
-    pricing: records.some((r) => r.pvp != null || r.cost_estimate != null),
-    inventory: records.some((r) => r.stock_available != null),
-    velocity_d1: records.some((r) => (r.windows.find((w) => w.window === 'd1')?.units || 0) > 0),
-    velocity_7d: records.some((r) => (r.windows.find((w) => w.window === '7d')?.units || 0) > 0),
-    velocity_8_14d: records.some(
+    identity: aggregatedRecords.length > 0,
+    pricing: aggregatedRecords.some((r) => r.pvp != null || r.cost_estimate != null),
+    inventory: aggregatedRecords.some((r) => r.stock_available != null),
+    velocity_d1: aggregatedRecords.some((r) => (r.windows.find((w) => w.window === 'd1')?.units || 0) > 0),
+    velocity_7d: aggregatedRecords.some((r) => (r.windows.find((w) => w.window === '7d')?.units || 0) > 0),
+    velocity_8_14d: aggregatedRecords.some(
       (r) => (r.windows.find((w) => w.window === '8_14d')?.units || 0) > 0
     ),
     efficiency: false,             // requiere PO app
-    returns: records.some((r) => r.returns_pct != null),
-    distribution: records.some((r) => (r.stores_total ?? 0) > 1),
+    returns: aggregatedRecords.some((r) => r.returns_pct != null),
+    distribution: aggregatedRecords.some((r) => (r.stores_total ?? 0) > 1),
     geographic: false,
     channel: false,
-    size_curve: records.some((r) => r.variant_ref != null),
+    // size_curve = true if any aggregated SKU has size_breakdown with >1 entries
+    size_curve: aggregatedRecords.some(
+      (r) => Array.isArray((r.raw as { size_breakdown?: unknown[] })?.size_breakdown) &&
+             ((r.raw as { size_breakdown: unknown[] }).size_breakdown.length > 1)
+    ),
     weather: false,
     marketing_exposure: false,
     page_traffic: false,
@@ -565,20 +580,25 @@ export async function parseShopifyGraphql(opts: ShopifyGraphqlOptions): Promise<
   if (orders.length === 0) {
     warnings.push('No orders in last 21 days — velocity windows empty. Verify shop has recent activity or request read_all_orders scope.');
   }
-  const skusWithCost = records.filter((r) => r.cost_estimate != null).length;
+  const skusWithCost = aggregatedRecords.filter((r) => r.cost_estimate != null).length;
   if (skusWithCost === 0) {
     warnings.push('No COGS data — InventoryItem.unitCost is null across all variants. Either the shop has not entered cost-per-item, or read_inventory_item_unit_costs scope is missing. Margin verbs degrade.');
   }
-  if (records.some((r) => (r.stores_total ?? 0) <= 1)) {
+  if (aggregatedRecords.some((r) => (r.stores_total ?? 0) <= 1)) {
     warnings.push('Single-location DTC topology — distribution verbs (AMPLIFY_DISTRIBUTION) degrade. Multi-store metrics will be synthesized.');
+  }
+  if (aggregatedRecords.length < records.length) {
+    warnings.push(
+      `Aggregated ${records.length} Shopify variants → ${aggregatedRecords.length} aimily-SKUs (model+color). Size variants collapsed per Felipe's cardinal rule.`
+    );
   }
 
   return {
     parser_version: PARSER_VERSION,
-    records,
+    records: aggregatedRecords,
     coverage_dimensions: coverage,
     parser_warnings: warnings,
-    parse_confidence: records.length > 0 ? 0.92 : 0,
+    parse_confidence: aggregatedRecords.length > 0 ? 0.92 : 0,
   };
 }
 
