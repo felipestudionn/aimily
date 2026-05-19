@@ -69,3 +69,7 @@ posthog-*.png
 mobile-*.png
 *.png
 .gstack/
+
+# Test screenshots from Playwright sessions (Felipe 2026-05-19)
+*.jpeg
+*.png
