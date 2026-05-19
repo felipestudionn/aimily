@@ -146,15 +146,31 @@ function planToProductSetInput(p) {
       inventoryQuantities: [
         { locationId: LOCATION_ID, name: 'available', quantity: v.inventory_qty },
       ],
+      // Per-variant file when the CSV had a Variant Image populated (color-specific
+      // imagery). For Apparel.csv this only applies to canvas-lunch-bag colors +
+      // cydney-plaid. Other products fall back to product master gallery.
+      ...(v.variant_image
+        ? {
+            file: {
+              originalSource: v.variant_image,
+              contentType: 'IMAGE',
+              alt: `${p.title} · ${v.option_values.join(' ')}`,
+            },
+          }
+        : {}),
     };
   });
 
-  // Files: just the master image (apparel.csv often has variant-specific images
-  // but they're URLs only; setting one per variant requires file association which
-  // ProductSetInput supports via variant.file. For simplicity ship the master.)
-  const files = p.master_image
-    ? [{ originalSource: p.master_image, contentType: 'IMAGE', alt: p.title }]
-    : [];
+  // Files: ALL gallery images for the product (apparel.csv has 1-5 images per
+  // handle — master shot, detail closeups, lifestyle shots). Previous version
+  // only sent the master, leaving products visually flat.
+  const files = (p.gallery_images || [])
+    .filter((url) => !!url)
+    .map((url, idx) => ({
+      originalSource: url,
+      contentType: 'IMAGE',
+      alt: idx === 0 ? p.title : `${p.title} · view ${idx + 1}`,
+    }));
 
   const input = {
     title: p.title,
