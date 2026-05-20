@@ -14,7 +14,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Loader2, X, Calendar, Image as ImageIcon, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,11 +54,16 @@ type View = 'intent' | 'pick-date' | 'leaving';
 
 function NewCollectionFlow() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const t = useTranslation();
   const { language } = useLanguage();
 
-  const [view, setView] = useState<View>('intent');
+  // Skip the intent selector when we come from a place that already knows
+  // the user wants to create a collection (e.g. the "+ nueva colección" CTA
+  // inside /my-collections). The selector is for fresh navigations only.
+  const skipIntent = searchParams?.get('direct') === '1';
+  const [view, setView] = useState<View>(skipIntent ? 'pick-date' : 'intent');
   const [launchDate, setLaunchDate] = useState(defaultLaunchDate());
   const [name, setName] = useState('');
   const [skipNaming, setSkipNaming] = useState(false);
@@ -252,10 +257,10 @@ function NewCollectionFlow() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {/* 01 · Crear colección — flujo actual */}
+                {/* 01 · Empezar o gestionar colección — lleva a /my-collections hub */}
                 <button
                   type="button"
-                  onClick={() => setView('pick-date')}
+                  onClick={() => router.push('/my-collections')}
                   className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
                 >
                   <div className="mb-10">
@@ -264,17 +269,17 @@ function NewCollectionFlow() {
                     </span>
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
-                    {language === 'es' ? 'Empezar colección' : 'Start a collection'}
+                    {language === 'es' ? 'Empezar o gestionar colección' : 'Start or manage a collection'}
                   </h3>
                   <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
                     {language === 'es'
-                      ? 'Brand DNA, range plan, tech pack y GTM — el ciclo aimily 360 completo, desde la idea hasta la venta.'
-                      : 'Brand DNA, range plan, tech pack and GTM — the full aimily 360 cycle, from idea to sale.'}
+                      ? 'Brand DNA, range plan, tech pack y GTM — el ciclo aimily 360 completo. Crea una nueva o continúa con las que ya tienes.'
+                      : 'Brand DNA, range plan, tech pack and GTM — the full aimily 360 cycle. Start a new one or pick up where you left off.'}
                   </p>
                   <div className="flex-1" />
                   <div className="flex justify-center mt-10">
                     <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
-                      {language === 'es' ? 'Empezar' : 'Start'}
+                      {language === 'es' ? 'Mis colecciones' : 'My collections'}
                       <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>

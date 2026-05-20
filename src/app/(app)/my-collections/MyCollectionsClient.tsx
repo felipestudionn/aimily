@@ -289,7 +289,7 @@ export default function MyCollectionsClient({
                     </p>
                   </div>
                   <Link
-                    href="/new-collection"
+                    href="/new-collection?direct=1"
                     className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -481,7 +481,7 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
 function NewCollectionTile({ t }: { t: Record<string, string> }) {
   return (
     <Link
-      href="/new-collection"
+      href="/new-collection?direct=1"
       className="group relative bg-white rounded-[20px] border border-dashed border-carbon/[0.15] flex flex-col items-center justify-center p-8 transition-all duration-300 hover:border-carbon/40 hover:bg-white/60 hover:scale-[1.02]"
     >
       <div className="w-14 h-14 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-5 group-hover:bg-carbon group-hover:text-white transition-colors">
@@ -512,7 +512,7 @@ function EmptyState({ t }: { t: Record<string, string> }) {
         </p>
 
         <Link
-          href="/new-collection"
+          href="/new-collection?direct=1"
           className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99] shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
         >
           {t.createFirstCollection || t.start || 'Create your first collection'}
