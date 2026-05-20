@@ -269,7 +269,7 @@ function NewCollectionFlow() {
                     </span>
                   </div>
                   <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
-                    {language === 'es' ? 'Empezar, crear o gestionar tu colección' : 'Start, create or manage your collection'}
+                    {language === 'es' ? 'Empezar o gestionar tu colección' : 'Start or manage your collection'}
                   </h3>
                   <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
                     {language === 'es'
