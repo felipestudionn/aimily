@@ -4296,7 +4296,7 @@ export const es: Dictionary = {
       progressLabel: 'Progreso',
       missingLabel: 'Pendiente',
       missingOfFour: '{n} de 4',
-      output: 'Output',
+      output: 'Salida',
       decisionPackReadyTitle: 'Pack de decisiones listo',
       decisionPackReadyDescription: 'Las cuatro entradas están conectadas. Aimily ha cruzado tu histórico de ventas con la dirección creativa y la estrategia de compra para producir el plan de la temporada.',
       decisionPackOpen: 'Abrir pack de decisiones',
