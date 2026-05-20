@@ -106,28 +106,12 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
       <div className="mx-auto max-w-[2200px]">
         {/* Header */}
         <header className="mb-12">
-          <div className="flex items-center justify-between gap-4 mb-3 flex-wrap">
-            <Link
-              href="/in-season"
-              className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
-            >
-              {t.inSeason.hub.backToAllTenants}
-            </Link>
-            <nav className="flex items-center gap-1.5 text-[12px]">
-              <Link
-                href={`/in-season/${tenant.slug}/connections`}
-                className="px-3 py-1.5 rounded-full bg-white border border-carbon/[0.08] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
-              >
-                Conexiones
-              </Link>
-              <Link
-                href={`/in-season/${tenant.slug}/seeds`}
-                className="px-3 py-1.5 rounded-full bg-white border border-carbon/[0.08] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
-              >
-                Semillas In-Season
-              </Link>
-            </nav>
-          </div>
+          <Link
+            href="/in-season"
+            className="inline-block mb-3 text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
+          >
+            {t.inSeason.hub.backToAllTenants}
+          </Link>
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
@@ -159,6 +143,22 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
               </div>
             </div>
           </div>
+          {/* Sub-nav under the title (no longer floating top-right where the
+              product switcher overlaps it). */}
+          <nav className="mt-6 flex items-center gap-1.5 text-[12px]">
+            <Link
+              href={`/in-season/${tenant.slug}/connections`}
+              className="px-3 py-1.5 rounded-full bg-white border border-carbon/[0.08] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+            >
+              Conexiones
+            </Link>
+            <Link
+              href={`/in-season/${tenant.slug}/seeds`}
+              className="px-3 py-1.5 rounded-full bg-white border border-carbon/[0.08] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+            >
+              Semillas In-Season
+            </Link>
+          </nav>
         </header>
 
         {/* 4 Gold Standard hub cards */}

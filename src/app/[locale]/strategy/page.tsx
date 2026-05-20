@@ -39,16 +39,16 @@ export default async function StrategyLandingPage(props: {
       <section className="px-6 py-20 md:px-12 md:py-32">
         <div className="mx-auto max-w-5xl">
           <p className="text-[11px] font-medium tracking-[0.18em] uppercase text-carbon/45 mb-6">
-            Aimily Strategy · Enterprise
+            aimily In-Season · Enterprise
           </p>
           <h1 className="text-[44px] md:text-[64px] font-medium text-carbon tracking-[-0.035em] leading-[1.02] mb-6 max-w-[14ch]">
-            Forensic merchandising intelligence
+            In-Season Sales Management &amp; Actions
           </h1>
           <p className="text-[16px] md:text-[18px] text-carbon/55 leading-[1.55] max-w-2xl">
-            For established fashion brands with real SKU history. Ingest your last
-            season, run 10 deterministic classifiers, and walk into your next
-            seasonal review meeting with an evidence-backed decision pack —
-            carryover, kill, resize, recolor, markdown, investigate.{' '}
+            For established fashion brands with real SKU history. Ingest your
+            sales data, run 10 deterministic classifiers, and walk into your
+            daily trading meeting with an evidence-backed action pack —
+            replenish, kill, resize, recolor, markdown, investigate.{' '}
             <strong className="text-carbon">No black-box AI</strong>. Six
             confidence dimensions per recommendation. Backtested before we
             recommend.

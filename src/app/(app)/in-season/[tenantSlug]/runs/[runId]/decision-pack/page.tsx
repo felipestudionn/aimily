@@ -199,9 +199,10 @@ export default async function DecisionPackPage({ params }: PageProps) {
             {run.name || `Strategic Review · ${new Date(run.created_at).toLocaleDateString()}`}
           </h1>
           <p className="text-[14px] text-carbon/60 mb-8 leading-[1.6]">
-            Forensic decision pack for <strong>{tenant.display_name}</strong>. Evidence-backed
-            carryover / kill / resize / recolor / markdown / investigate recommendations,
-            grounded in the season&apos;s actual SKU performance.
+            In-season sales decision pack for <strong>{tenant.display_name}</strong>.
+            Evidence-backed replenish / kill / resize / recolor / markdown /
+            investigate actions, grounded in the season&apos;s actual SKU
+            performance.
           </p>
           <div className="border-t border-b border-carbon/10 py-5 grid grid-cols-3 gap-6 text-[11px] uppercase tracking-[0.08em] text-carbon/50">
             <div>

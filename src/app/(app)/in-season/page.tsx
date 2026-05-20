@@ -76,15 +76,16 @@ export default async function StrategyDashboardPage() {
         <header className="mb-12 flex items-end justify-between gap-6 flex-wrap">
           <div>
             <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
-              Aimily Strategy
+              aimily In-Season
             </p>
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05]">
-              Forensic merchandising intelligence
+              In-Season Sales Management &amp; Actions
             </h1>
             <p className="mt-3 text-[14px] text-carbon/50 max-w-2xl leading-[1.6]">
-              Last-season decisions backed by your own SKU data — what to repeat,
-              kill, resize, recolor, carry over, mark down, or investigate. Optional
-              creative direction modulates the recommendation.
+              Daily in-season decisions backed by your own SKU data — what to
+              replenish, kill, resize, recolor, carry over, mark down, or
+              investigate. Optional creative direction modulates the
+              recommendation.
             </p>
           </div>
           {tenants.length > 0 && (
