@@ -13,7 +13,7 @@
    simple and reliable: the bands fade out, the wizard loads.
    ═══════════════════════════════════════════════════════════════════════ */
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { Suspense, useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Loader2, X, Calendar, Image as ImageIcon, BarChart3 } from 'lucide-react';
@@ -682,9 +682,15 @@ function NewCollectionFlow() {
 }
 
 export default function NewCollectionPage() {
+  // `useSearchParams()` inside NewCollectionFlow needs a Suspense boundary
+  // so the page can be statically rendered without bailing out — Next.js
+  // 14+ requirement. Fallback is a minimal blank surface; the wrapped flow
+  // settles in client-side within a tick.
   return (
     <SubscriptionGate>
-      <NewCollectionFlow />
+      <Suspense fallback={<div className="min-h-screen bg-shade" />}>
+        <NewCollectionFlow />
+      </Suspense>
     </SubscriptionGate>
   );
 }
