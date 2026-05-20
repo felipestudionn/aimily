@@ -59,12 +59,21 @@
 5. User confirms email → redirected to `/my-collections`
 6. Auto-trial subscription created (14 days, full Professional access)
 
-### 3.2 First Collection
+### 3.2 First Collection (post-2026-05-20 intent selector)
 1. User clicks "New Collection" → `/new-collection`
-2. Multi-step wizard: name, season, category (clothing/footwear/accessories), distribution channels
-3. Dynamic questions per phase — YES/NO marks milestones as already done
-4. Creates `collection_plans` + `collection_timelines` records with 45 default milestones
-5. Redirected to `/collection/[id]` (overview)
+2. **Intent selector (3 cards, gold standard pattern)**:
+   - **01 · Empezar o gestionar tu colección** → routes to `/my-collections` (hub). The user picks an existing one or clicks "+ nueva colección" to enter the wizard via `/new-collection?direct=1`.
+   - **02 · Generar contenido** → routes to `/studio/new` (Content Studio).
+   - **03 · Analizar ventas In-Season** → routes to `/in-season` (In-Season hub).
+3. `?direct=1` skips the selector and lands straight on the date-picker wizard step. Used from `/my-collections`'s "+ nueva colección" CTA so the user isn't bounced back through the selector.
+4. Wizard step: launch date + optional name. Defaults: launch ≈ 6 months from today, season derived from launch date (SS/FW), name "Sin título · <season>".
+5. Creates `collection_plans` + `collection_timelines` records with default milestones.
+6. Seeds gate (Sprint D · Felipe 2026-05-19 noche): if the user has live `in_season_sku_seeds` across any tenant they own, the wizard shows a "Tienes N semillas" panel with a picker — selected seeds are linked to the new collection via `consumed_in_collection_id` and feed the Block 1 Moodboard via the apply-to-moodboard endpoint.
+7. Redirected to `/collection/[id]` (overview).
+
+**UI rules**:
+- `/new-collection` (any sub-route) hides the floating `StudioSwitcher` and `CreditMeter` widgets because the screen itself is the product choice — having them in the corner is redundant noise.
+- `useSearchParams()` requires a `<Suspense>` boundary around `NewCollectionFlow`. Without it, the static prerender fails (lesson learned 2026-05-20 night when the deploy errored).
 
 ### 3.3 Collection Workflow (4 Blocks)
 User navigates via CollectionSidebar through 4 blocks, each with workspaces:
@@ -373,7 +382,7 @@ CollectionHubLayout (server) — fetches plans, timelines, SKU count
 |-------|-------------|
 | `/my-collections` | Collections dashboard (grid + progress bars + deadlines) |
 | `/account` | Account settings, subscription, AI usage, GDPR export/delete |
-| `/new-collection` | Multi-step collection creation wizard |
+| `/new-collection` | 3-card intent selector (Empezar/Gestionar · Generar contenido · Analizar ventas In-Season). `?direct=1` skips the selector and opens the date-picker wizard directly. |
 | `/sketch-flow` | AI sketch generation → tech pack export (4-step flow) |
 | `/creative-space` | Moodboard builder + trend research (Pinterest + Shoreditch data) |
 | `/trends` | Trend explorer |
