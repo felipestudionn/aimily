@@ -24,17 +24,17 @@ import { ArrowRight, Plus, BarChart3, Building2, ShieldCheck, FileSearch } from 
 export const dynamic = 'force-dynamic';
 
 const TIER_LABELS: Record<string, string> = {
-  tier2_mid: 'Tier-2 Mid',
+  tier2_mid: 'Tier-2 Medio',
   tier2_premium: 'Tier-2 Premium',
-  tier1_fashion: 'Tier-1 Fashion',
+  tier1_fashion: 'Tier-1 Moda',
   tier1_mega: 'Tier-1 Mega',
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  analyst: 'Analyst',
-  viewer: 'Viewer',
+  owner: 'Propietario',
+  admin: 'Administrador',
+  analyst: 'Analista',
+  viewer: 'Lectura',
 };
 
 export default async function StrategyDashboardPage() {
@@ -79,13 +79,13 @@ export default async function StrategyDashboardPage() {
               aimily In-Season
             </p>
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05]">
-              In-Season Sales Management &amp; Actions
+              Gestión y acciones de venta In-Season
             </h1>
             <p className="mt-3 text-[14px] text-carbon/50 max-w-2xl leading-[1.6]">
-              Daily in-season decisions backed by your own SKU data — what to
-              replenish, kill, resize, recolor, carry over, mark down, or
-              investigate. Optional creative direction modulates the
-              recommendation.
+              Decisiones diarias durante la temporada respaldadas por tus
+              propios datos de SKU — qué reponer, matar, redimensionar,
+              recolorear, mantener, rebajar o investigar. La dirección creativa
+              opcional modula la recomendación.
             </p>
           </div>
           {tenants.length > 0 && (
@@ -94,7 +94,7 @@ export default async function StrategyDashboardPage() {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
             >
               <Plus className="h-4 w-4" />
-              New analysis run
+              Nuevo análisis
             </Link>
           )}
         </header>
@@ -143,7 +143,7 @@ export default async function StrategyDashboardPage() {
                         {row.run_count}
                       </div>
                       <div className="text-[11px] uppercase tracking-[0.08em] text-carbon/35">
-                        Runs
+                        Análisis
                       </div>
                     </div>
                     <div>
@@ -151,14 +151,14 @@ export default async function StrategyDashboardPage() {
                         {row.source_count}
                       </div>
                       <div className="text-[11px] uppercase tracking-[0.08em] text-carbon/35">
-                        Sources
+                        Fuentes
                       </div>
                     </div>
                   </div>
 
                   {lastRunAt && (
                     <p className="mt-4 text-[11px] text-carbon/35">
-                      Last run · {lastRunAt}
+                      Último · {lastRunAt}
                     </p>
                   )}
 
@@ -173,18 +173,18 @@ export default async function StrategyDashboardPage() {
         <section className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-5">
           <TrustCard
             icon={FileSearch}
-            title="Backtested first"
-            description="Every algorithm version is validated against the prior season before any recommendation reaches you. Calibrated uncertainty over confident guessing."
+            title="Backtest primero"
+            description="Cada versión del algoritmo se valida contra la temporada anterior antes de que una recomendación llegue a ti. Incertidumbre calibrada por encima de adivinanzas seguras."
           />
           <TrustCard
             icon={BarChart3}
-            title="6 confidence dimensions"
-            description="Data completeness, identity, demand, margin, creative fit, action robustness. No single score — the breakdown is the value."
+            title="6 dimensiones de confianza"
+            description="Completitud de datos, identidad, demanda, margen, encaje creativo, robustez de la acción. Sin score único — el desglose es el valor."
           />
           <TrustCard
             icon={ShieldCheck}
-            title="EU AI Act lane"
-            description="No training on your data. DPA + SCCs default. Dedicated tenant available for tier-1. Audit trail per recommendation."
+            title="EU AI Act compliant"
+            description="No entrenamos sobre tus datos. DPA + SCCs por defecto. Tenant dedicado disponible para tier-1. Trazabilidad por recomendación."
           />
         </section>
       </div>

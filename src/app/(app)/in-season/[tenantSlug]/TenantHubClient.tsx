@@ -53,20 +53,24 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
   const completedCount = cards.filter((c) => c.progress === 100).length;
   const allFour = completedCount === 4;
 
-  // ── Static tenant chips (tier + isolation labels stay English on purpose;
-  // these are technical terms in our internal contract, not user-facing
-  // marketing copy). ────────────────────────────────────────────────────
+  // ── Static tenant chips ────────────────────────────────────────────────
   const TIER_LABELS: Record<string, string> = {
-    tier2_mid: 'Tier-2 Mid',
+    tier2_mid: 'Tier-2 Medio',
     tier2_premium: 'Tier-2 Premium',
-    tier1_fashion: 'Tier-1 Fashion',
+    tier1_fashion: 'Tier-1 Moda',
     tier1_mega: 'Tier-1 Mega',
   };
   const ISOLATION_LABELS: Record<string, string> = {
-    shared_rls: 'Shared · RLS',
-    dedicated_schema: 'Dedicated schema',
-    dedicated_project: 'Dedicated project',
+    shared_rls: 'Compartido · RLS',
+    dedicated_schema: 'Schema dedicado',
+    dedicated_project: 'Proyecto dedicado',
     vpc_byoc: 'VPC · BYOC',
+  };
+  const ROLE_LABELS: Record<string, string> = {
+    owner: 'Propietario',
+    admin: 'Administrador',
+    analyst: 'Analista',
+    viewer: 'Lectura',
   };
 
   function renderStatus(status: HubCardData['status']): string {
@@ -124,7 +128,7 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
                   {ISOLATION_LABELS[tenant.isolation_mode] || tenant.isolation_mode}
                 </span>
                 <span className="text-[11px] text-carbon/35 uppercase tracking-[0.08em]">
-                  {tenant.role}
+                  {ROLE_LABELS[tenant.role] || tenant.role}
                 </span>
               </div>
               <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05]">
