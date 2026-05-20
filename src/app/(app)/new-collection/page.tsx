@@ -16,7 +16,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Loader2, X, Calendar } from 'lucide-react';
+import { ArrowRight, Loader2, X, Calendar, Image as ImageIcon, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
@@ -50,7 +50,7 @@ function defaultName(season: string, untitledLabel: string): string {
   return `${untitledLabel} · ${season}`;
 }
 
-type View = 'pick-date' | 'leaving';
+type View = 'intent' | 'pick-date' | 'leaving';
 
 function NewCollectionFlow() {
   const router = useRouter();
@@ -58,7 +58,7 @@ function NewCollectionFlow() {
   const t = useTranslation();
   const { language } = useLanguage();
 
-  const [view, setView] = useState<View>('pick-date');
+  const [view, setView] = useState<View>('intent');
   const [launchDate, setLaunchDate] = useState(defaultLaunchDate());
   const [name, setName] = useState('');
   const [skipNaming, setSkipNaming] = useState(false);
@@ -221,6 +221,126 @@ function NewCollectionFlow() {
 
       <main className="flex-1 flex items-center justify-center px-4 md:px-10 lg:px-14 pb-12">
         <AnimatePresence mode="wait">
+          {view === 'intent' && (
+            <motion.div
+              key="intent"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+              className="w-full max-w-[1400px] mx-auto"
+            >
+              <div className="text-center mb-12 md:mb-16">
+                <h1 className="text-[40px] md:text-[56px] font-semibold text-carbon tracking-[-0.04em] leading-[1.05]">
+                  {language === 'es'
+                    ? '¿Qué quieres hacer hoy?'
+                    : language === 'fr'
+                      ? "Qu'est-ce que tu veux faire aujourd'hui?"
+                      : language === 'it'
+                        ? 'Cosa vuoi fare oggi?'
+                        : language === 'de'
+                          ? 'Was möchtest du heute tun?'
+                          : language === 'pt'
+                            ? 'O que queres fazer hoje?'
+                            : 'What do you want to do today?'}
+                </h1>
+                <p className="mt-3 text-[16px] md:text-[18px] text-carbon/55 italic tracking-[-0.01em] max-w-[640px] mx-auto leading-[1.5]">
+                  {language === 'es'
+                    ? 'Crea una colección desde cero, genera contenido para una existente, o analiza tus ventas en directo.'
+                    : 'Start a new collection, generate content for an existing one, or analyse your live sales.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* 01 · Crear colección — flujo actual */}
+                <button
+                  type="button"
+                  onClick={() => setView('pick-date')}
+                  className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+                >
+                  <div className="mb-10">
+                    <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                      01.
+                    </span>
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                    {language === 'es' ? 'Empezar colección' : 'Start a collection'}
+                  </h3>
+                  <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                    {language === 'es'
+                      ? 'Brand DNA, range plan, tech pack y GTM — el ciclo aimily 360 completo, desde la idea hasta la venta.'
+                      : 'Brand DNA, range plan, tech pack and GTM — the full aimily 360 cycle, from idea to sale.'}
+                  </p>
+                  <div className="flex-1" />
+                  <div className="flex justify-center mt-10">
+                    <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
+                      {language === 'es' ? 'Empezar' : 'Start'}
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 02 · Generar contenido — Studio */}
+                <button
+                  type="button"
+                  onClick={() => router.push('/studio/new')}
+                  className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+                >
+                  <div className="mb-10">
+                    <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                      02.
+                    </span>
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                    {language === 'es' ? 'Generar contenido' : 'Generate content'}
+                  </h3>
+                  <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                    {language === 'es'
+                      ? 'Editoriales, still life, try-on y vídeo. Sube referencia o reutiliza tu producto — Content Studio se encarga.'
+                      : 'Editorials, still life, try-on and video. Drop a reference or reuse your product — Content Studio takes care of it.'}
+                  </p>
+                  <div className="flex-1" />
+                  <div className="flex justify-center mt-10">
+                    <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      {language === 'es' ? 'Abrir Studio' : 'Open Studio'}
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 03 · Analizar ventas — In-Season */}
+                <button
+                  type="button"
+                  onClick={() => router.push('/in-season')}
+                  className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+                >
+                  <div className="mb-10">
+                    <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                      03.
+                    </span>
+                  </div>
+                  <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                    {language === 'es' ? 'Analizar ventas In-Season' : 'Analyse In-Season sales'}
+                  </h3>
+                  <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                    {language === 'es'
+                      ? 'Conecta Shopify o sube tu reporte interno. El motor te devuelve qué reponer, matar, redimensionar, recolorear o investigar.'
+                      : 'Connect Shopify or upload your internal report. The engine returns what to replenish, kill, resize, recolor or investigate.'}
+                  </p>
+                  <div className="flex-1" />
+                  <div className="flex justify-center mt-10">
+                    <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
+                      <BarChart3 className="h-3.5 w-3.5" />
+                      {language === 'es' ? 'Abrir In-Season' : 'Open In-Season'}
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {view === 'pick-date' && (
             <motion.div
               key="canvas"
