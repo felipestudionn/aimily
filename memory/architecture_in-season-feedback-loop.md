@@ -12,6 +12,37 @@ Doc estructural — no plan de implementación. Captura una visión que debe inf
 
 ---
 
+## STATE 2026-05-20 (overnight build) · loop completo LIVE en prod
+
+El roadmap de §6 (que originalmente decía «NO ejecutar ahora, ~5 semanas») se ejecutó en una sola sesión. Estado actual end-to-end:
+
+| Sprint | Estado | Notas |
+|---|---|---|
+| A · Rename Strategy→In-Season | ✅ shipped | URLs `/in-season/*` canónicas (legacy `/strategy/*` con rewrite). DB renamed en migration 068 con back-compat views `security_invoker=true`; código sigue funcionando bajo ambos nombres. |
+| B · `in_season_sku_seeds` + materialización | ✅ shipped | Migration 065 · schema + auto-mat helper. **User-initiated** (no auto-mat silenciosa) — merch click "+ Añadir a semillas" o "Desarrollar ahora" en verdict pills. |
+| C · Pool UI "Mis semillas" | ✅ shipped | `/in-season/<tenant>/seeds` SKU-card grid carbon palette. |
+| D · Gate New Collection bring-forward | ✅ shipped | Banner + picker modal en `/new-collection`; `consumed_in_collection_id` linkea. |
+| E · Block ingestion (deep moodboard) | ✅ shipped | `POST /api/collection-plans/[id]/seeds/apply-to-moodboard` escribe `creative.color.primary_palette` + `creative.moodboard.seed_summary` al CIS. Migration 071 añade `applied_to_moodboard_at` timestamp. Banner CTA cambia a "Abrir Moodboard" tras aplicar. |
+| F · Cyclic sales ingestion para tenants 360 | ✅ shipped | Cron diario `/api/cron/strategy/sales-sync` itera connections activos. Webhook endpoints scaffolded (Shopify + Stripe) con idempotency + DLQ + per-tenant vault secrets en migration 070. |
+| F+ · **OAuth Shopify Partner App handshake real** | ✅ shipped | App "aimily In-Season" registrada en partners.shopify.com (StudioNN Agency · client_id `9428e755ff23ab69e2a55affc7182c8b`). `/api/in-season/oauth/shopify/install` + `/callback` con state HMAC firmado + verify HMAC del callback + token exchange + Vault store. 9 read scopes (incluye `read_returns`). Protected Customer Data Access aprobado con reasons App functionality + Analytics + Store management. Test E2E exitoso con dev store `aimily-mlyel0nm`: install → scope screen → callback → token en vault → sync 58 records en 7.9s. |
+
+**Migrations vivas en prod** (Supabase `sbweszownvspzjfejmfx`):
+- `065_in_season_sku_seeds` · seed schema + materialization helper
+- `066_tenant_sales_connections` · OAuth bridge + sync audit
+- `067_tenant_sales_connections_vault` · Vault encryption helpers
+- `068_in_season_table_rename` · 25 tables `strategy_*` → `in_season_*` + back-compat views
+- `069_tenant_sales_connections_drop_plaintext_token` · vault is the only source
+- `070_webhook_hardening` · idempotency + DLQ + per-tenant webhook secrets
+- `071_in_season_seeds_applied_at` · timestamp para banner CTA
+- `072_fix_vault_store_token_after_column_drop` · regression fix de 069
+
+**Diferido a sprint propio** (quedan limpiezas, no funcionalidad):
+- (nada en lo que respecta a este doc — el loop está cerrado)
+
+El resto del doc abajo es **la visión original** que motivó la construcción. Léase como contexto, no como pendiente.
+
+---
+
 ## §1 · Dos superficies, un mismo motor
 
 In-Season tiene **dos entry points** distintos. Comparten el motor (parsers + classifiers + orchestrator + verdict resolver) pero sirven a personas distintas y conviven con bloques distintos del aimily app.
