@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { executeAnalysisRun } from '@/lib/strategy/orchestrator';
+import { consumeCredits, refundCredits } from '@/lib/api-auth';
+import { CREDIT_COSTS } from '@/lib/stripe';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -38,19 +40,44 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Run already in progress' }, { status: 409 });
   }
 
+  // Credits gate · Felipe 2026-05-20 night.
+  // A user-initiated In-Season run subtracts CREDIT_COSTS.in_season_run from
+  // the caller's monthly bucket. The cron-driven daily sync runs as system
+  // and does NOT pass through this endpoint, so it bypasses credit accounting
+  // by design (the customer paid for daily cadence as part of their plan).
+  const { data: userInfo } = await supabaseAdmin.auth.admin.getUserById(access.userId);
+  const userEmail = userInfo?.user?.email ?? '';
+  const credits = await consumeCredits(access.userId, userEmail, 'in_season_run');
+  if (!credits.allowed) {
+    return NextResponse.json(
+      {
+        error: 'credits_exhausted',
+        reason: credits.reason,
+        current: credits.current,
+        limit: credits.limit,
+        pack_balance: credits.packBalance,
+        cost: CREDIT_COSTS.in_season_run,
+      },
+      { status: 402 }
+    );
+  }
+
   try {
     const result = await executeAnalysisRun(runId);
     return NextResponse.json(result);
-  } catch (err: any) {
+  } catch (err) {
+    // Refund the credits — the user never received the analysis output.
+    await refundCredits(access.userId, credits.planConsumed ?? 0, credits.packConsumed ?? 0);
+    const message = err instanceof Error ? err.message : String(err);
     await supabaseAdmin
       .from('strategy_analysis_runs')
       .update({
         run_status: 'failed',
-        error_log: [{ at: new Date().toISOString(), message: err?.message || String(err) }],
+        error_log: [{ at: new Date().toISOString(), message }],
       })
       .eq('id', runId);
     return NextResponse.json(
-      { error: 'Execution failed', detail: err?.message || String(err) },
+      { error: 'Execution failed', detail: message },
       { status: 500 }
     );
   }

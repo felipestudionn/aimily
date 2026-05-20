@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
-import { ADMIN_EMAILS, getPlanLimits, PlanId } from '@/lib/stripe';
+import { ADMIN_EMAILS, getPlanLimits, PlanId, CREDIT_COSTS, type CreditAction } from '@/lib/stripe';
 import { checkTeamPermission, type TeamPermission } from '@/lib/team-permissions';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -174,6 +174,39 @@ export async function refundImageryUnits(
  * Will be removed once all endpoints migrate.
  */
 export const checkAIUsage = checkImageryUsage;
+
+/**
+ * Semantic wrapper around `checkImageryUsage` that takes a CreditAction
+ * (declarative) instead of a raw unit count. Felipe 2026-05-20 night ·
+ * unifies the credits taxonomy so the pricing copy, the consumer endpoints,
+ * and the audit log all reference the same `CREDIT_COSTS` source of truth.
+ *
+ * Use this in any new endpoint that consumes credits — passing an action
+ * name (e.g. `'editorial'`) instead of `units: 5` keeps the cost editable
+ * in one place (`src/lib/stripe.ts#CREDIT_COSTS`) and avoids accidentally
+ * billing the wrong amount when a pipeline changes shape.
+ */
+export async function consumeCredits(
+  userId: string,
+  userEmail: string,
+  action: CreditAction,
+) {
+  const units = CREDIT_COSTS[action];
+  return checkImageryUsage(userId, userEmail, units);
+}
+
+/**
+ * Refund the credits previously taken by `consumeCredits` for the same
+ * action. Pass the `planConsumed` / `packConsumed` returned by the original
+ * call. Pure no-op when both are zero (admin / unlimited paths).
+ */
+export async function refundCredits(
+  userId: string,
+  planConsumed: number,
+  packConsumed: number,
+) {
+  return refundImageryUnits(userId, planConsumed, packConsumed);
+}
 
 /**
  * Per-user rate limit on AI endpoints. Stops a runaway client (loop in

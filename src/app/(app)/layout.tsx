@@ -29,6 +29,7 @@ import { CookieConsent } from '@/components/CookieConsent';
 import { ObservabilityBootstrap } from '@/components/ObservabilityBootstrap';
 import { GlobalNav } from '@/components/layout/GlobalNav';
 import { StudioSwitcher } from '@/components/layout/StudioSwitcher';
+import { CreditMeter } from '@/components/billing/CreditMeter';
 import { Analytics } from '@vercel/analytics/react';
 import { GoogleAdsTag } from '@/components/GoogleAdsTag';
 import { GtagEventFirer } from '@/components/GtagEventFirer';
@@ -79,6 +80,8 @@ export default async function AppLayout({
           <GlobalNav />
           {/* StudioSwitcher renders only when the user has BOTH Aimily 360 and Aimily Studio (otherwise null) */}
           <StudioSwitcher />
+          {/* CreditMeter floats just to the left of the switcher — same fixed top-right cluster */}
+          <CreditMeter />
           <Suspense fallback={<main className="relative min-h-screen">{children}</main>}>
             <AssistantMount>
               <main className="relative min-h-screen">{children}</main>

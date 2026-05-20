@@ -151,6 +151,56 @@ export function getPlanLimits(plan: PlanId) {
   return PLANS[plan].limits;
 }
 
+/**
+ * Monthly credits bucket per plan. Alias of `imageryGenerations` — same
+ * field, named for what it conceptually is. The DB column is still
+ * `ai_usage.imagery_count` for backwards-compat; rename happens in a
+ * dedicated follow-up sprint once all surfaces consume via this helper.
+ */
+export function getMonthlyCredits(plan: PlanId): number {
+  return PLANS[plan].limits.imageryGenerations;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Credit costs · what each AI/analysis action subtracts from the monthly
+// bucket. Single source of truth — every endpoint that consumes credits
+// (Studio renders, In-Season runs, design phase, video) reads from here.
+//
+// Pricing UI shows the same numbers to the client so they know what 100
+// or 1.000 credits buys them. Felipe 2026-05-20 night.
+// ────────────────────────────────────────────────────────────────────────
+export const CREDIT_COSTS = {
+  /** 1 sketch / colorize / brand-board / brand-reference (single image). */
+  sketch: 1,
+  /** 1 still life (product alone) or try-on. */
+  still_life: 3,
+  tryon: 3,
+  /** 1 editorial (foto con modelo). */
+  editorial: 5,
+  /** 1 vídeo Kling 2.1 Pro (5-15s). */
+  video_kling: 30,
+  /** 1 análisis In-Season completo (orchestrator + LLM narrative). Flat
+   *  cost — Felipe quiere que un Founder valga tanto como un Team por
+   *  análisis. Volumen es la palanca de upsell, no la potencia del run. */
+  in_season_run: 10,
+} as const satisfies Record<string, number>;
+export type CreditAction = keyof typeof CREDIT_COSTS;
+
+/**
+ * What the marketing copy on `/pricing` should render below each plan
+ * for the "≈ X análisis · Y editoriales · …" line. Derived from
+ * `monthlyCredits / CREDIT_COSTS[action]` so it stays consistent.
+ */
+export function creditsEquivalents(monthlyCredits: number) {
+  return {
+    in_season_runs: Math.floor(monthlyCredits / CREDIT_COSTS.in_season_run),
+    editorials: Math.floor(monthlyCredits / CREDIT_COSTS.editorial),
+    still_lifes: Math.floor(monthlyCredits / CREDIT_COSTS.still_life),
+    sketches: Math.floor(monthlyCredits / CREDIT_COSTS.sketch),
+    videos: Math.floor(monthlyCredits / CREDIT_COSTS.video_kling),
+  };
+}
+
 // Self-serve = paid plans purchasable via Stripe Checkout
 export function isSelfServePlan(plan: PlanId): boolean {
   return plan === 'founder' || plan === 'team' || plan === 'team_pro';
