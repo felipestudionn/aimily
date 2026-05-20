@@ -14,6 +14,14 @@ Doc estructural — no plan de implementación. Captura una visión que debe inf
 
 ## STATE 2026-05-20 (overnight build) · loop completo LIVE en prod
 
+**Producto canónico**: **In-Season Sales Management & Actions** (subtítulo "Daily in-season decisions backed by your own SKU data — what to replenish, kill, resize, recolor, carry over, mark down, or investigate"). El framing "Forensic merchandising intelligence" se retiró morning del 2026-05-20 — Felipe lo encontró raro y confunde el wedge. El nombre actual es operacional y describe exactamente lo que el comprador-merchandiser hace cada mañana.
+
+**Tenants demo canónicos** (los únicos dos que ven los usuarios Felipe + demo audiences):
+- `big-brand-demo` "Big brand · Reporte interno" — PDF intake con corpus Zara RNK V26
+- `dtc-shopify-demo` "DTC brand · Shopify live" — OAuth Partner App con dev store `aimily-mlyel0nm`
+
+Los dos demuestran que la misma lógica del engine corre sobre dos fuentes muy distintas (un PDF semanal de big-brand vs Shopify GraphQL live). El antiguo `aimily-internal` ("Aimily Internal Dogfood") se renombró in-place — los slugs originales no están hardcoded en código así que el rename no rompió nada. El `mango-pitch` está archived (third-party brand name violaba la regla `no-brand-names-in-ui`).
+
 El roadmap de §6 (que originalmente decía «NO ejecutar ahora, ~5 semanas») se ejecutó en una sola sesión. Estado actual end-to-end:
 
 | Sprint | Estado | Notas |
