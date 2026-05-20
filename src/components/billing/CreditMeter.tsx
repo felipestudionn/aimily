@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Zap, X } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -28,12 +29,17 @@ const COST_TABLE = [
 export function CreditMeter() {
   const { subscription, isAdmin, isTrial, loading } = useSubscription();
   const { language } = useLanguage();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   if (loading || !subscription) return null;
   if (isAdmin) return null;
   // Trial users see the TrialBanner — no need for credit meter until they pay.
   if (isTrial) return null;
+  // /new-collection is the intent selector — credits aren't being spent
+  // yet (the user hasn't entered any product). Hide here to match the
+  // StudioSwitcher rule.
+  if (pathname?.startsWith('/new-collection')) return null;
 
   const limit = subscription.limits.imageryGenerations;
   const used = subscription.usage.imagery ?? 0;

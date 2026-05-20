@@ -47,6 +47,11 @@ export function StudioSwitcher() {
   }, []);
 
   if (!products) return null;
+  // /new-collection is the intent selector — the user is choosing between
+  // products there, so a product switcher in the corner is redundant and
+  // confusing. Hide it on that surface (both the intent step and the
+  // ?direct=1 wizard variant).
+  if (pathname?.startsWith('/new-collection')) return null;
   const accessCount =
     (products.has360 ? 1 : 0) +
     (products.hasStudio ? 1 : 0) +
