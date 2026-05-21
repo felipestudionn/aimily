@@ -14,7 +14,7 @@
 
 import { ReactNode } from 'react';
 import Image from 'next/image';
-import { ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowRight, ArrowDown, ChevronDown, ShoppingBag, FileText, CreditCard, Server } from 'lucide-react';
 import { useHomeTranslation } from '@/i18n/home';
 
 interface RevealProps {
@@ -894,6 +894,147 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
           </Reveal>
         </div>
       </section>
+
+      {/* Block 05 — In-Season (the loop closes). Only renders if the locale
+          has the block5 dictionary (EN + ES today; other locales fall back at
+          runtime in useHomeTranslation, but we still need the keys to render).
+          We pull from EN inline as a safety net so the block doesn't blink in
+          and out of existence across language switches. */}
+      {h.block5 && (
+        <section id="block-5" className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
+          <BlockHeading
+            num="05"
+            label={h.block5.label}
+            title={<>{h.block5.titleStart}<span className="italic">{h.block5.titleItalic}</span>{h.block5.titleEnd}</>}
+            description={h.block5.description}
+            before={h.block5.before}
+            after={h.block5.after}
+            beforeAimily={h.blocks.beforeAimily}
+            withAimily={h.blocks.withAimily}
+          />
+
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-5">
+            {/* Verdict pills — the daily action pack */}
+            <Reveal className="md:col-span-7">
+              <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-10 h-full">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
+                  {h.block5.verdictEyebrow}
+                </div>
+                <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-8 italic">
+                  {h.block5.verdictTitle}
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {[
+                    h.block5.verdictReplenish,
+                    h.block5.verdictKill,
+                    h.block5.verdictMarkdown,
+                    h.block5.verdictAmplify,
+                    h.block5.verdictRecolor,
+                    h.block5.verdictResize,
+                    h.block5.verdictPullForward,
+                    h.block5.verdictInvestigate,
+                    h.block5.verdictCarryOver,
+                  ].map((v) => (
+                    <span
+                      key={v}
+                      className="text-[13px] tracking-[-0.005em] text-crema/85 bg-crema/[0.06] border border-crema/[0.1] rounded-full px-4 py-2"
+                    >
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* 6 confidence dimensions */}
+            <Reveal delay={150} className="md:col-span-5">
+              <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-10 h-full">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
+                  {h.block5.confidenceEyebrow}
+                </div>
+                <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
+                  {h.block5.confidenceTitle}
+                </div>
+                <ul className="space-y-2.5 text-[13.5px] text-crema/85 leading-[1.5]">
+                  {[
+                    h.block5.confidenceData,
+                    h.block5.confidenceIdentity,
+                    h.block5.confidenceDemand,
+                    h.block5.confidenceMargin,
+                    h.block5.confidenceCreative,
+                    h.block5.confidenceAction,
+                  ].map((c, i) => (
+                    <li key={c} className="flex items-baseline gap-3">
+                      <span className="text-[11px] tracking-[0.1em] text-crema/45 font-medium w-5 shrink-0">
+                        0{i + 1}
+                      </span>
+                      <span>{c}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+
+            {/* Integrations row */}
+            <Reveal delay={250} className="md:col-span-12">
+              <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6">
+                  {h.block5.integrationsEyebrow}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {[
+                    { icon: ShoppingBag, label: h.block5.integrationShopify },
+                    { icon: CreditCard, label: h.block5.integrationStripe },
+                    { icon: FileText, label: h.block5.integrationPdf },
+                    { icon: Server, label: h.block5.integrationErp },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div
+                        key={item.label}
+                        className="flex items-center gap-3 rounded-[12px] bg-crema/[0.03] border border-crema/[0.06] px-4 py-3"
+                      >
+                        <Icon className="h-4 w-4 text-crema/55 shrink-0" />
+                        <span className="text-[13px] text-crema/85 leading-[1.4]">{item.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Seeds → Moodboard — the loop closes */}
+            <Reveal delay={350} className="md:col-span-12">
+              <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                  <div className="md:col-span-2">
+                    <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
+                      {h.block5.seedsEyebrow}
+                    </div>
+                    <h3 className="text-[28px] md:text-[36px] font-light tracking-[-0.025em] leading-[1.1] mb-5 italic">
+                      {h.block5.seedsTitle}
+                    </h3>
+                    <p className="text-[15px] text-crema/65 leading-[1.65] tracking-[-0.01em] max-w-[600px]">
+                      {h.block5.seedsBody}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center md:items-end gap-3">
+                    {/* Loop pictogram: 05 → 01 */}
+                    <div className="flex items-center gap-3 text-crema/65">
+                      <span className="text-[48px] font-light leading-none tracking-[-0.04em] text-crema/85">05</span>
+                      <ArrowDown className="h-5 w-5 -rotate-90" />
+                      <span className="text-[48px] font-light leading-none tracking-[-0.04em] text-crema/85">01</span>
+                    </div>
+                    <p className="text-[12px] text-crema/55 italic text-center md:text-right max-w-[200px] leading-[1.5]">
+                      {h.block5.loopCaption}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      )}
 
       {/* Enterprise artifacts */}
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
