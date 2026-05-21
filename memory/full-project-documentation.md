@@ -1,1448 +1,941 @@
-# aimily — Full Project Documentation
+# aimily — Full Project Documentation (The Bible)
 
-> **Last updated**: 2026-05-21 — Senior-dev pre-ship cleanup sweep (-25 DB tables, -46 API routes, -16 hooks, -8 lib utilities, -3 orphan components, -11 npm packages, -17 public/ assets, -9.700 lines of dead code).  Previous update: 2026-05-06 — Ecom Block + SEO Research module + pricing v5 rebrand + Vercel Pro + Cloudflare aimily.shop wildcard + middleware multi-tenant rewrite + 12 themes editorial + per-subdomain SSL.
+> **Last verified**: 2026-05-21 — deep rewrite. Every claim cross-checked against code + recent git history. Replaces the 2026-05-06 version, which had drifted across 4+ feature waves (In-Season feedback loop, Studio rebrand, pricing v6, Aimily Assistant, landing redesign).
 >
-> ⚠️ **2026-05-21 cleanup notice**: The DB tables and API routes lists below (sections ~§Schema and §API) include items that were dropped during the cleanup sweep. Specifically: 25 tables (raw_content, signals, reports, tech_packs, sales_entries, market_predictions, brand_models, pr_contacts, commercial_actions, content_calendar, content_pillars, email_templates_content, launch_tasks, lookbook_pages, paid_campaigns, product_copy, social_templates, campaign_shoots, paid_ad_sets, launch_checklist, launch_issues, lessons_learned, asset_reviews, analyzed_content, processing_jobs) and 46 API routes (/api/signals, /api/reports, /api/ai/market-prediction + 8 other AI orphans, /api/commercial-actions, /api/content-calendar, /api/content-pillars, /api/email-templates, /api/launch-tasks, /api/lookbook-pages, /api/paid-campaigns, /api/pr-contacts, /api/product-copy, /api/social-templates, /api/brand-models, /api/billing/usage, /api/city-trends, /api/promo/counter, /api/pinterest/image-proxy, 8 dead crons). See `db-dropped-tables-backup-2026-05-21.md` for per-table rationale and the 3 demo rows of `signals` that were backed up before drop.
+> **Source of truth rule**: when this document conflicts with code, code wins. Verify before quoting — and when you spot drift, update the Bible in the same PR that changes the code.
 >
-> **This is the master reference (the Bible)** for ALL infrastructure, frontend, backend, usability, consumer journey, and implementation details. Read this first before touching anything.
->
-> **Living docs that pair with this Bible**:
-> - `architecture-ecom.md` — DTC storefront generator (zoom into section 22)
-> - `architecture-presentation.md` — Presentation deck module (21 slides × 10 themes)
-> - `architecture-tree-rubik-cube.md` — Block × Mini-block × Micro-block tree across Work/Calendar/Presentation modes
+> **Companion docs** (each owns a deeper slice):
+> - `architecture_in-season-feedback-loop.md` — In-Season pipeline (parsers, scoring, scenarios, OAuth)
+> - `architecture-ecom.md` — DTC storefront generator on `*.aimily.shop`
+> - `architecture-presentation.md` — Public presentation deck module
+> - `architecture-tree-rubik-cube.md` — Block × mini-block × micro-block tree
 > - `architecture-block-3.md` — Design & Development block deep map
-> - `design-components-canonical.md` — MANDATORY component inventory (no inventing)
-> - `changelog.md` — Running log of UI changes per session
-> - `credentials.md` + `credentials_cloudflare-aimily-shop.md` — service credentials
+> - `design-components-canonical.md` — MANDATORY component inventory (do not invent variants)
+> - `ai-generation-bible.md` — Per-endpoint AI provider map + fallback chains
+> - `shopify-partner-app-oauth.md` — Replicable Shopify OAuth Partner App setup
+> - `product-spec_aimily-in-season-2026-05-17.md` — In-Season cardinal rules + 13 decision verbs
+>
+> Also in the repo: `memory/credentials.md` + `memory/credentials_cloudflare-aimily-shop.md`, `memory/changelog.md`, `memory/db-dropped-tables-backup-2026-05-21.md`, plus ~40 research / decision-map / handoff docs.
+>
+> A second tranche of canonical docs lives in the user memory directory (`~/.claude/projects/-Users-felipemartinez-aimily/memory/`), not in the repo: `state_aimily-studio-2026-05-16.md`, `framework_retailer-agnostic-in-season-engine.md`, `security-ai-privacy.md`, `vercel-env-vars.md`, `stripe-billing.md`. They are referenced by name; pointers in §20.
 
 ---
 
-## 1. PROJECT OVERVIEW
+## 1. WHAT AIMILY IS
 
-**aimily** is an AI-native fashion collection management platform for planning, designing, and launching clothing/footwear collections. It guides teams through the entire collection lifecycle — from creative vision to market launch — using a 4-block workflow with AI assistance at every step.
+aimily is an **AI-native operating system for fashion brands**. It runs the entire lifecycle of a collection — creative direction, range plan, design, production, marketing, ecom — and then closes the loop with real sales data to inform the next collection.
 
-- **URL**: https://www.aimily.app (also https://aimily.app)
-- **Company**: StudioNN Agency S.L. (NIF: B42978130, VAT: ESB42978130)
-- **Address**: Avinguda Del Doctor Gadea 1, 10E, 03003 Alicante, Spain
+The platform ships as **three coupled products** that share the same account, brand identity, and Aimily Credits bucket:
 
----
+1. **aimily 360** — the collection workspace. 4 blocks × 5 mini-blocks each, with AI assistance at every step and a CIS (Collection Intelligence System) that captures every decision and threads it into every AI prompt.
+2. **Aimily Studio** — standalone AI image/video studio (`/studio`). Lifestyle, editorial, still-life, try-on, video. Founder/Team customers use it from the unified credits bucket; non-subscribers can buy one-shot Studio packs (€49 / €99 / €199).
+3. **aimily In-Season** — daily in-season sales management for fashion buyers and commercials. Connects Shopify (OAuth) or accepts PDF/CSV imports, classifies SKUs into 13 verbs (REPLENISH / KILL / RESIZE / RECOLOR / CARRY_OVER / MARKDOWN / INVESTIGATE / AMPLIFY_DISTRIBUTION / EXTEND_COLORS / AMPLIFY_NEXT_SEASON / PROMOTE_PUSH / PULL_FORWARD_INTAKE / WAIT), and feeds verdicts back into the next collection through the seeds gate.
 
-## 2. TECH STACK
-
-| Layer | Technology | Details |
-|-------|-----------|---------|
-| Framework | Next.js 16 | App Router, React 19, TypeScript |
-| Styling | Tailwind CSS 3.3 | + Radix UI + Lucide icons |
-| Auth & DB | Supabase | PostgreSQL, Auth (SSR cookies), RLS |
-| Payments | Stripe | Checkout, Webhooks, Customer Portal, Tax |
-| Email | Resend | SMTP via Supabase, custom HTML templates |
-| AI | Gemini 2.5 Flash Lite | Text generation (cheap, fast) |
-| AI | Claude Sonnet | SketchFlow (sketches), long-form content |
-| AI | OpenAI gpt-image-1.5 | Design-phase colorization + 3D render (photoreal) |
-| AI | Freepik Nano Banana (Gemini 2.5 Flash Image) | Marketing Still Life / Brand Model / Try-On |
-| AI | Freepik Kling 2.1 Pro/Std | Marketing video generation (5s/10s, image-to-video) |
-| AI | Freepik Flux Dev | Technical flat sketches |
-| Hosting | Vercel | Auto-deploy from GitHub main branch |
-| DNS | IONOS | aimily.app domain, API-managed |
-| Analytics | Vercel Analytics | `@vercel/analytics/react` in layout |
-| OAuth | Google | "Continue with Google" sign-in |
-| Scraping | Apify | Trend analysis |
-| Social | Pinterest API | Pin/board integration |
+| Fact | Value |
+|---|---|
+| Public URL | `https://www.aimily.app` (also `aimily.app`) |
+| Public ecom wildcard | `*.aimily.shop` |
+| Company | StudioNN Agency S.L. · NIF B42978130 · Avinguda Del Doctor Gadea 1, 10E, 03003 Alicante, Spain |
+| Contact email | `hello@aimily.app` |
+| Repo | `felipes-projects-ab46a8c8/aimily` on Vercel · GitHub main branch |
+| Supabase | project `sbweszownvspzjfejmfx` |
 
 ---
 
-## 3. CONSUMER JOURNEY (End-to-End)
+## 2. TECH STACK (verified against package.json 2026-05-21)
 
-### 3.1 Discovery → Sign Up
-1. User lands on `/` (the consolidated public landing — minimalist portada → DWP narrative + AZUR · SS27 walkthrough → 4 Stripe-LIVE plans → final CTA)
-2. Sees pricing inline at `#pricing` anchor, CTA buttons ("Start Free Trial" in current locale)
-3. Clicks → AuthModal opens (sign up with email or Google)
-4. Confirmation email sent (Resend SMTP, branded template)
-5. User confirms email → redirected to `/my-collections`
-6. Auto-trial subscription created (14 days, full Professional access)
+| Layer | Technology | Version / notes |
+|---|---|---|
+| Framework | Next.js | 16.1.6 · App Router · React 19.2 · TypeScript 5.8 |
+| Styling | Tailwind CSS | 4.2.2 (Tailwind v4 with `@tailwindcss/postcss`) |
+| Components | shadcn/ui (Radix) + Lucide icons | `src/components/ui/` only — see `design-components-canonical.md` |
+| Auth & DB | Supabase | `@supabase/ssr` 0.9 · `@supabase/supabase-js` 2.84 · cookies-based SSR |
+| Payments | Stripe | server SDK 20.4 · API version `2026-02-25.clover` · LIVE mode |
+| Email | Resend | SPF/DKIM/DMARC verified · sender `aimily <noreply@aimily.app>` |
+| i18n | next-intl 4.11 | 9 locales: en, es, fr, it, de, pt, nl, no, sv (default `en`) |
+| Text AI · primary | Anthropic Claude Haiku 4.5 | `claude-haiku-4-5-20251001` |
+| Text AI · fallback | Google Gemini 2.5 Flash Lite | `models/gemini-2.5-flash-lite` |
+| Text AI · heavy | Anthropic Claude Sonnet 4.5 | SEO research, long-form |
+| Live search | Perplexity Sonar | brand DNA, trends, SEO competitors |
+| Design renders | OpenAI gpt-image-1.5 | sketches + colorized + 3D render |
+| Still life / try-on / editorial | Freepik Nano Banana (Gemini 2.5 Flash Image) | 1–3 reference images |
+| Model headshots | Freepik Mystic | 28-model brand roster |
+| Video | Freepik Kling 2.1 Pro / Std | image-to-video, async polling |
+| OAuth | Google sign-in | Supabase-managed |
+| Observability | PostHog · Sentry · Vercel Analytics | funnel + errors + Web Vitals |
+| Hosting | Vercel | Pro plan · Fluid Compute · 5 cron jobs |
+| Domain (app) | IONOS (`aimily.app`) | DNS-API managed |
+| Domain (ecom) | Cloudflare (`aimily.shop`) | wildcard CNAME + per-subdomain SSL via Vercel API |
 
-### 3.2 First Collection (post-2026-05-20 intent selector)
-1. User clicks "New Collection" → `/new-collection`
-2. **Intent selector (3 cards, gold standard pattern)**:
-   - **01 · Empezar o gestionar tu colección** → routes to `/my-collections` (hub). The user picks an existing one or clicks "+ nueva colección" to enter the wizard via `/new-collection?direct=1`.
-   - **02 · Generar contenido** → routes to `/studio/new` (Content Studio).
-   - **03 · Analizar ventas In-Season** → routes to `/in-season` (In-Season hub).
-3. `?direct=1` skips the selector and lands straight on the date-picker wizard step. Used from `/my-collections`'s "+ nueva colección" CTA so the user isn't bounced back through the selector.
-4. Wizard step: launch date + optional name. Defaults: launch ≈ 6 months from today, season derived from launch date (SS/FW), name "Sin título · <season>".
-5. Creates `collection_plans` + `collection_timelines` records with default milestones.
-6. Seeds gate (Sprint D · Felipe 2026-05-19 noche): if the user has live `in_season_sku_seeds` across any tenant they own, the wizard shows a "Tienes N semillas" panel with a picker — selected seeds are linked to the new collection via `consumed_in_collection_id` and feed the Block 1 Moodboard via the apply-to-moodboard endpoint.
-7. Redirected to `/collection/[id]` (overview).
-
-**UI rules**:
-- `/new-collection` (any sub-route) hides the floating `StudioSwitcher` and `CreditMeter` widgets because the screen itself is the product choice — having them in the corner is redundant noise.
-- `useSearchParams()` requires a `<Suspense>` boundary around `NewCollectionFlow`. Without it, the static prerender fails (lesson learned 2026-05-20 night when the deploy errored).
-
-### 3.3 Collection Workflow (4 Blocks)
-User navigates via CollectionSidebar through 4 blocks, each with workspaces:
-
-```
-BLOCK 1: Creative & Brand
-  → Product & Creative (merchandising, SKU planning, Collection Builder)
-  → Brand & Identity (naming, voice, colors, typography, packaging)
-
-BLOCK 2: Range Planning & Strategy
-  → (Integrated into Product workspace — budget, channels, families)
-
-BLOCK 3: Design & Development
-  → Design (lasts/forms, design review, colorways, patterns)
-  → Prototyping (proto tracker, tech sheets)
-  → Sampling (color samples, fitting review, final approval)
-  → Production (orders, QC, logistics)
-
-BLOCK 4: Marketing & Digital
-  → Marketing Creation (sales dashboard, content studio, communications, point of sale)
-  → Marketing Distribution (GTM, content calendar, paid & growth, launch)
-```
-
-### 3.4 Workspace Unlock Logic
-Workspaces unlock progressively based on milestone completion:
-- Product, Brand → **always available** (no dependencies)
-- Design → unlocks when `rp-6` (GTM planning) completed
-- Prototyping → unlocks when `dd-6` (colorways done) completed
-- Sampling → unlocks when `dd-10` (tech sheets done) completed
-- Production → unlocks when `dd-14` (sampling done) completed
-- Marketing Creation → unlocks when `rp-6` (Range Plan done) completed
-- Marketing Distribution → unlocks when `gm-5` (creation done) completed
-
-### 3.5 First Entry to Each Workspace
-- WorkspaceGate pattern: if `setup_data.workspace_config.{workspace}.configured === false`, shows MiniWizard
-- User answers quick config questions → marked as configured → workspace renders
-- Exception: Marketing Creation/Distribution render directly (no gate after Phase 10 cleanup)
-
-### 3.6 AI Assistance Throughout
-Every card/workspace offers 3 modes (UX universal rule):
-| Mode | Label | Behavior |
-|------|-------|----------|
-| 1 | **Libre** | User inputs everything manually |
-| 2 | **Asistido** | User gives direction → AI complements |
-| 3 | **Propuesta IA** | Minimal input → AI generates full proposal |
-
-### 3.7 Billing Journey
-1. Trial: 14 days, full Professional access, 250 AI generations
-2. Trial expires → read-only mode
-3. User upgrades via `/pricing` or UpgradePrompt → Stripe Checkout
-4. Subscription managed via Stripe Customer Portal
-
-### 3.8 Standalone Tools (No Collection Required)
-- `/sketch-flow` — AI sketch generation + tech packs (upload image → flat sketch → tech pack PDF)
-- `/creative-space` — Moodboard builder + trend research (Pinterest integration, Shoreditch trend data)
-- `/collection-calendar` — Standalone Gantt timeline (not tied to collection)
-- `/trends` — Trend explorer
+The full AI provider map per endpoint is in `ai-generation-bible.md`. `src/lib/ai/llm-client.ts` exports `generateJSON` / `generateText` which try Claude Haiku first and fall back to Gemini.
 
 ---
 
-## 4. INFRASTRUCTURE & SERVICES
+## 3. THREE PRODUCTS, ONE ACCOUNT
 
-### 4.1 Supabase
-- **Project ID**: `sbweszownvspzjfejmfx`
-- **Project URL**: `https://sbweszownvspzjfejmfx.supabase.co`
-- **Management API**: `https://api.supabase.com/v1` — token in `.env.local` → `SUPABASE_MANAGEMENT_TOKEN`
-- **Auth config** (set via Management API):
-  - Password: min 8 chars, letters + digits required
-  - Reauthentication required for password change
-  - Password change notification enabled
-  - Confirm email: enabled
-  - MFA: enabled on admin account
-  - Rate limits: 30/hr email, 150/hr token refresh
-  - `password_hibp_enabled`: requires Supabase Pro (pending)
-- **SMTP**: Resend (`smtp.resend.com:465`, user: `resend`, sender: `aimily <noreply@aimily.app>`)
-- **Site URL**: `https://www.aimily.app`
-- **Redirect URLs**: `https://www.aimily.app/**`, `http://localhost:3000/**`
-- **Google OAuth**: enabled (client ID in `.env.local`)
-- **Redirect URI for OAuth**: `https://sbweszownvspzjfejmfx.supabase.co/auth/v1/callback`
+A single signup gives the user access to all three products. The header pill (`StudioSwitcher`) lets them toggle between them. The **Aimily Credits** bucket is shared across all three.
 
-### 4.2 Stripe (TEST MODE)
-- **Account ID**: `acct_1T9iqZQxnvnXDeja`
-- **Statement descriptor**: AIMILY APP / AIMILY
-- **Currency**: EUR (euros)
-- **Stripe Tax**: activated (automatic VAT calculation)
-  - B2B with valid VAT → reverse charge (0%)
-  - B2C in EU → customer's country VAT
-  - Outside EU → 0%
-- **Products**:
-  - Starter: `prod_U81vNsecStddmo`
-  - Professional: `prod_U81vq1vfjKzrqA`
-  - Old products (Pro, Business, Enterprise) archived
-- **Webhook**:
-  - ID: `we_1T9iwQQxnvnXDejamI2db1V0`
-  - URL: `https://www.aimily.app/api/webhooks/stripe`
-  - Events: `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.payment_failed`, `charge.dispute.created/closed`, `invoice.payment_action_required`
-  - Secret: `.env.local` → `STRIPE_WEBHOOK_SECRET`
-- **Keys**: `.env.local` → `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- **Price IDs**: `.env.local` → `STRIPE_STARTER_MONTHLY_PRICE_ID`, `STRIPE_STARTER_ANNUAL_PRICE_ID`, `STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID`, `STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID`
-
-### 4.3 Resend (Email)
-- **Domain**: `aimily.app` (verified — SPF, DKIM, DMARC via IONOS DNS)
-- **API Key**: `.env.local` → `RESEND_API_KEY`
-- **Configured in Supabase** via Management API (not Dashboard)
-
-### 4.4 Google OAuth
-- **Cloud Project**: Gemini API (ID: `936283260324`)
-- **OAuth Client**: `aimily web`
-- **Client ID**: `.env.local` → `GOOGLE_OAUTH_CLIENT_ID`
-- **JS Origins**: `https://www.aimily.app`, `http://localhost:3000`
-- **Redirect URI**: `https://sbweszownvspzjfejmfx.supabase.co/auth/v1/callback`
-
-### 4.5 DNS (IONOS)
-- **Domain**: `aimily.app`
-- **API**: `https://api.hosting.ionos.com/dns/v1/`
-- **API Key**: `.env.local` → `IONOS_DNS_API_KEY`
-- **Zone ID**: `.env.local` → `IONOS_ZONE_ID_AIMILY`
-- **Key records**:
-  - `A aimily.app → 76.76.21.21` (Vercel)
-  - `CNAME www.aimily.app → cname.vercel-dns.com` (Vercel)
-  - `CNAME _domainconnect → cname.vercel-dns.com`
-  - `TXT SPF` (ionos + resend/amazonses)
-  - `CNAME DKIM` (resend._domainkey, s1-ionos._domainkey, s2-ionos._domainkey)
-  - `CNAME _dmarc → dmarc.ionos.es`
-
-### 4.6 Vercel
-- **Project**: `felipes-projects-ab46a8c8/aimily`
-- **Plan**: **Pro** (upgraded 2026-05-05 for wildcard support and ToS commercial use)
-- **Team ID**: `team_kieSXcYQ6bbTv4a94IR2DN1e`
-- **Domains**:
-  - `www.aimily.app` + `aimily.app` — main app
-  - `*.aimily.shop` — Ecom storefront wildcard (added 2026-05-05)
-  - Per-subdomain SSL via Vercel API on each storefront publish (Let's Encrypt 50/week per registered domain)
-- **Analytics**: enabled on main app + on every storefront layout (privacy-friendly, no cookies, GDPR-default)
-- **Auto-deploy**: from GitHub `main` branch
-- **All env vars uploaded** (see section 13). Notable: `VERCEL_API_TOKEN` (used by /api/ecom/publish to register storefront domains)
-
-### 4.6b Google Search Console (verified 2026-05-06)
-
-- **Property type**: `sc-domain:aimily.app` (Domain property · cubre www, apex, todos subdominios)
-- **Verification method**: DNS TXT record en IONOS (la propiedad ya estaba verificada antes de mayo · no requiere meta tag en código)
-- **Owner**: `felipe.studionn@gmail.com`
-- **Sitemap submitted**: `https://www.aimily.app/sitemap.xml` el 5 may 2026
-- **Estado actual** (2026-05-06): 122 páginas descubiertas · estado Correcto · 0 indexadas todavía (datos procesando)
-- **Tráfico actual**: 0 clicks · 0 impresiones (sitio nuevo · ranking Google necesita 2-6 semanas para sites nuevos)
-- **URLs forzadas a cola prioritaria** (URL Inspection · 2026-05-06): los 9 home locales (/en /es /fr /it /de /pt /nl /sv /no). Aceleración esperada: indexación en 1-3 días vs 2-6 semanas vía sitemap solo
-- **Wakeups Claude programados**:
-  - 13 may 09:37 — chequeo de progreso a 7 días (impressions iniciales)
-  - 3 jun 09:23 — reporte mensual completo (top keywords / páginas / países)
-  - ⚠️ Wakeups son **session-only** del Claude session que los creó. Si la sesión muere, los wakeups mueren. Para garantía cross-session habría que añadir un cron Vercel `/api/cron/gsc-report` (no implementado).
-- **NO existen** como referencia: meta tag GSC en código (no necesario · DNS verification ya hecho), Indexing API automatizado para sitio web normal (Google solo permite Indexing API para job postings/livestreams)
-- **Pending**: añadir IndexNow protocol para Bing Webmaster (~30 LOC, opcional)
-
-### 4.6c Observability · PostHog + Sentry + Vercel Analytics
-
-- **PostHog** (product analytics + funnels):
-  - Env var: `NEXT_PUBLIC_POSTHOG_KEY` (in `.env.local` + Vercel)
-  - SDK init: `src/lib/observability-bootstrap.tsx` (loads `window.posthog`)
-  - Events helper: `src/lib/posthog.ts` exports `track(event, properties?)` + `Events` const
-  - Tracked events (funnel): `LANDING_VIEWED · CTA_CLICKED · AUTH_OPENED · SIGNUP_COMPLETED · COLLECTION_CREATED · AI_GENERATION_STARTED/SUCCEEDED/FAILED · IMAGERY_LIMIT_REACHED · CHECKOUT_OPENED · CREDIT_PACK_OPENED · SUBSCRIPTION_ACTIVATED`
-  - Used in: `SubscriptionContext`, `account/page.tsx`, `my-collections/page.tsx`, `new-collection/page.tsx`, auth callback
-  - Dashboard URL: PostHog cloud (login with felipe.studionn@gmail.com)
-
-- **Sentry** (error tracking + performance):
-  - Env vars: `SENTRY_DSN` (in `.env.local`), `SENTRY_AUTH_TOKEN` (release tracking, only in CI/build)
-  - Config files: `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
-  - Org: aimily / project: aimily-app on sentry.io
-  - Sampling: 10% performance, 100% errors
-
-- **Vercel Web Analytics**:
-  - Active on main app (`src/app/layout.tsx` `<Analytics />`) AND on every storefront layout (Sprint 9 Ecom)
-  - Privacy-friendly · no cookies · GDPR-default
-  - Per-storefront beforeSend hook tags events with the storefront host (multi-tenant grouping in Vercel dashboard)
-
-### 4.6d AI providers (env vars confirmed in .env.local + Vercel)
-
-- `ANTHROPIC_API_KEY` — Claude Haiku 4.5 (primary text) + Claude Sonnet 4.5 (SeoResearch heavy text)
-- `GEMINI_API_KEY` — Google Gemini 2.5 Flash (text fallback) + 2.5 Flash Image
-- `OPENAI_API_KEY` — gpt-image-1.5 (design renders, OG images via next/og uses standard) + text-embedding-3
-- `PERPLEXITY_API_KEY` — Sonar (live search for trends + brand DNA + SEO competitors)
-- `FREEPIK_API_KEY` — Mystic (model headshots) + Nano Banana (still life/tryon/editorial) + Kling 2.1 Pro (video)
-- (Kling is invoked via Freepik wrapper · no separate `KLING_API_KEY` in .env)
-
-### 4.6e IONOS DNS API (aimily.app)
-
-- **Endpoint**: `https://api.hosting.ionos.com/dns/v1/`
-- **Env vars**: `IONOS_DNS_API_KEY` + `IONOS_ZONE_ID_AIMILY` (both in `.env.local`, NOT in Vercel — local management only)
-- **Capability**: añadir/editar/borrar DNS records de aimily.app via API. Útil para:
-  - Cron renewal de DKIM keys (Resend rotates)
-  - Future: añadir TXT records de verification para servicios externos sin pedir a Felipe
-- **Scope**: aimily.app zone only (no permite gestionar otras zonas Felipe)
-
-### 4.7 Cloudflare (NEW 2026-05-05) · Ecom storefront DNS
-
-- **Domain**: `aimily.shop` registered via Cloudflare Registrar (~$30/year)
-- **Account ID**: `77123e1e9e30bb61364a9f9009c498cc`
-- **Zone ID**: `58392d7347415328aae1d8ae6c7ff338`
-- **DNS**: single wildcard record `* CNAME → cname.vercel-dns.com` (DNS only, no proxy — Cloudflare Free can't proxy wildcards)
-- **API Token**: User Token in `.env.local` (`CLOUDFLARE_API_TOKEN`), scope `Zone:DNS:Edit + Account:Registrar:Edit` on `aimily.shop` only, no expiry
-- **Why Cloudflare for Ecom DNS** (despite Cloudflare Registrar locking NS for 60 days post-purchase, blocking the originally-planned wildcard SSL via Vercel DNS):
-  - Cheapest .shop registrar at cost (~$30 vs $35-45 at IONOS/Namecheap)
-  - Free wildcard SSL handled at Vercel level (per-subdomain via API on publish)
-  - DDoS protection + future CDN headroom
-  - Migration path: after **2026-07-04** (60-day ICANN window), can transfer to Vercel Domains for native wildcard SSL
-- **Reference**: `memory/credentials_cloudflare-aimily-shop.md` + `memory/architecture-ecom.md`
-
----
-
-## 5. FRONTEND ARCHITECTURE
-
-### 5.1 Root Layout (`src/app/layout.tsx`)
 ```
-<html>
-  <body>
-    <AuthProvider>          ← Supabase auth state
-      <SubscriptionProvider> ← Stripe billing/plan state
-        <ServiceWorkerRegistrar /> ← PWA support
-        <main>{children}</main>
-        <CookieConsent />    ← GDPR cookie banner
-        <Analytics />        ← Vercel Analytics
-      </SubscriptionProvider>
-    </AuthProvider>
-  </body>
-</html>
-```
-- Theme color: `#282A29` (carbon)
-- PWA manifest + Apple icon
-
-### 5.2 Navigation
-
-**Navbar** (`src/components/layout/navbar.tsx`) — 3 variants:
-| Variant | Used On | Style | Logo Links To |
-|---------|---------|-------|---------------|
-| `default` | Public pages, auth | `bg-crema/80 backdrop-blur-sm` | `/` |
-| `workspace` | Collection hub | `bg-white/80` | `/my-collections` |
-| `workspace-dark` | Dark themed views | transparent, white logo | `/my-collections` |
-
-- Logged out: "Log in" + "Start Free Trial" buttons
-- Logged in: Pricing link, NotificationBell, user avatar, Sign Out
-- Mobile: hamburger + dropdown
-
-**CollectionSidebar** (`src/components/collection/CollectionSidebar.tsx`):
-- Fixed left sidebar (w-64, collapsible to w-16)
-- Top items: Overview + Calendar
-- 4 block groups with workspace sub-items:
-  - Creative & Brand → Product, Brand
-  - Range Planning → (header only, no workspaces)
-  - Design & Development → Design, Prototyping, Sampling, Production
-  - Marketing & Digital → Marketing Creation, Marketing Distribution
-- Per-workspace progress % from milestones
-- Block-colored icons
-
-### 5.3 Collection Hub Layout
-```
-CollectionHubLayout (server) — fetches plans, timelines, SKU count
-  └─ CollectionHubShell (client) — passes props down
-     └─ SubscriptionGate — validates active subscription
-        └─ WizardLayout — sidebar + content area
-           └─ CollectionSidebar (fixed left)
-           └─ {children} (workspace page content)
+                        ┌──────────────────────┐
+                        │   aimily account     │
+                        │   (one Stripe sub)   │
+                        └──────────┬───────────┘
+                                   │
+              ┌────────────────────┼────────────────────┐
+              ▼                    ▼                    ▼
+        aimily 360            Aimily Studio        aimily In-Season
+       /my-collections          /studio              /in-season
+   collection lifecycle    standalone AI images   daily sales mgmt
+       (4 blocks)          + video (€49/€99/€199    (13 verbs,
+                            packs OR credits)       feedback loop)
+              │                    │                    │
+              └────────────────────┴────────────────────┘
+                                   │
+                          shared Aimily Credits bucket
+                       (sketch=1, still_life=3, tryon=3,
+                        editorial=5, video_kling=30,
+                        in_season_run=10)
 ```
 
-### 5.4 Design System
-- **Tailwind CSS** + Radix UI primitives
-- **Colors**: crema (cream bg), carbon (dark), texto, gris, error
-- **Typography**: font-light headlines, tracking-tight, italic emphasis, uppercase labels
-- **No rounded corners** — clean/minimal aesthetic
-- **UI Components** (`src/components/ui/`): button, card, tabs, label, input, textarea, select, badge, colored-svg, svg-icon, animate-on-scroll
+### 3.1 The Collection Loop (closes via In-Season → seeds)
 
----
-
-## 6. ALL PAGES & ROUTES
-
-### 6.1 Public Pages (No Auth)
-**Restructured 2026-04-28**: 4 marketing routes consolidated into the home. The home is now the single canonical landing.
-
-| Route | Description |
-|-------|-------------|
-| `/` | The consolidated landing — minimalist portada (logo + tagline) → MEET AIMILY hero with DWP angle → Emily↔aimily silogism → "the problem" → 4-block journey overview → 4 detailed blocks with AZUR · SS27 walkthrough → enterprise artifacts → StudioNN origin → pricing (4 plans, packs, imagery table) → "That's all." final CTA → shared SiteFooter. All copy i18n-driven via `src/i18n/home.ts` across 9 locales. |
-| `/contact` | Contact + StudioNN team |
-| `/trust` | Privacy/security pillars + AI provider transparency |
-| `/terms` | Terms of Service |
-| `/privacy` | Privacy Policy |
-| `/cookies` | Cookie Policy |
-| `/video-reel` | Demo/portfolio video page |
-
-**Retired routes (308 redirects via `next.config.js`)**:
-| Old route | Redirects to |
-|-----------|--------------|
-| `/meet-aimily` | `/` |
-| `/how-it-works` | `/` |
-| `/discover` | `/` |
-| `/pricing` | `/#pricing` (anchor inside the home) |
-
-### 6.2 Auth Pages
-| Route | Description |
-|-------|-------------|
-| `/auth/callback` | PKCE code exchange + smart redirect (recovery→reset, signup→collections) |
-| `/auth/forgot-password` | Email input → sends reset email |
-| `/auth/reset-password` | New password form (8+ chars, 1+ digit) |
-| `/auth/confirm` | Email verification callback |
-| `/auth/confirm-status` | Confirmation status display |
-
-### 6.3 Protected Pages (Auth Required)
-| Route | Description |
-|-------|-------------|
-| `/my-collections` | Collections dashboard (grid + progress bars + deadlines) |
-| `/account` | Account settings, subscription, AI usage, GDPR export/delete |
-| `/new-collection` | 3-card intent selector (Empezar/Gestionar · Generar contenido · Analizar ventas In-Season). `?direct=1` skips the selector and opens the date-picker wizard directly. |
-| `/sketch-flow` | AI sketch generation → tech pack export (4-step flow) |
-| `/creative-space` | Moodboard builder + trend research (Pinterest + Shoreditch data) |
-| `/trends` | Trend explorer |
-| `/collection-calendar` | Standalone Gantt timeline |
-| `/collection-calendar/[id]` | Collection-linked Gantt timeline |
-| `/analytics` | Collection insights & trends dashboard |
-| `/color-palettes` | Color palette management tool |
-
-### 6.4 Collection Workspaces (`/collection/[id]/...`)
-| Route | Component | Purpose |
-|-------|-----------|---------|
-| `/collection/[id]` | CollectionOverview | Dashboard: progress, milestones, SKU count |
-| `/collection/[id]/calendar` | CollectionCalendarClient | Embedded Gantt (drag/resize, inline edit) |
-| `/collection/[id]/product` | PlannerDashboard | Collection Builder, SKU table, families, pricing, budget |
-| `/collection/[id]/brand` | BrandWorkspace | Brand profile, visual identity, packaging |
-| `/collection/[id]/design` | DesignWorkspace | Lasts/forms, design review, colorways, patterns |
-| `/collection/[id]/prototyping` | PrototypingWorkspace | Proto tracker, tech sheets |
-| `/collection/[id]/sampling` | SamplingWorkspace | Color samples, fitting review, final approval |
-| `/collection/[id]/production` | ProductionWorkspace | Orders, QC, logistics |
-| `/collection/[id]/creative` | CreativePage | 3-step flow: Vision (4 mini-blocks) → Research (4) → Synthesis |
-| `/collection/[id]/merchandising` | MerchandisingPage | 4 cards: Families → Pricing → Channels → Budget → Collection Builder |
-| `/collection/[id]/development` | DevelopmentPage | Navigation hub for 4 design/dev phases |
-| `/collection/[id]/go-to-market` | GoToMarketDashboard | Drops, commercial actions, AI market validation |
-| `/collection/[id]/marketing/creation` | MarketingCreationScreen | 4 cards: Sales Dashboard, Content Studio, Communications, Point of Sale |
-| `/collection/[id]/marketing/distribution` | MarketingDistributionScreen | 4 cards: GTM, Content Calendar, Paid & Growth, Launch |
-
----
-
-## 7. WORKSPACE DETAILS
-
-### 7.0a Creative & Brand (`/collection/[id]/creative`)
-- **No Gate** — renders directly
-- **Component**: CreativePage (inline, 1,173 lines)
-- **Flow**: 3 sequential steps with expand/collapse 2x2 grid
-- **Step 1 — Creative Vision** (4 mini-blocks): Consumer Definition, Collection Vibe, Moodboard, Brand DNA
-- **Step 2 — Market Research** (4 mini-blocks): Global Trends, Deep Dive, Live Signals, Competitors
-- **Step 3 — Creative Synthesis**: Placeholder (consolidation not implemented)
-- **AI**: `/api/ai/creative-generate` — 10 generation types
-- **3 Modes**: Libre/Asistido/Propuesta IA in all mini-blocks
-- **⚠️ Gaps**: No DB persistence (state in memory), Pinterest placeholder, Synthesis empty
-
-### 7.0b Merchandising (`/collection/[id]/merchandising`)
-- **No Gate** — renders directly
-- **Component**: MerchandisingPage (inline, 883 lines)
-- **Flow**: 4 cards with expand/collapse, then Collection Builder CTA
-- **Cards**: 1. Product Families → 2. Pricing (locked until 1✓) → 3. Channels & Markets → 4. Budget & Financials
-- **AI**: `/api/ai/merch-generate` — 8 generation types
-- **3 Modes**: Libre/Asistido/Propuesta IA in all cards
-- **Collection Builder CTA**: Navigates to `/collection/{id}/product` when all 4 validated
-- **⚠️ Gaps**: No DB persistence (state in memory)
-
-### 7.1 Product & Creative (`/collection/[id]/product`)
-- **Gate**: ProductWorkspaceGate + ProductMiniWizard
-- **Component**: PlannerDashboard
-- **Tabs**: Constructor, Strategic Dashboard, Historical
-- **Features**:
-  - Collection Builder (SKU table, drag-and-drop)
-  - Collection Framework Summary (expected SKUs, drops, margins, sales targets)
-  - Monthly Distribution (seasonality 12-month spread)
-  - Families Snapshot (product families %)
-  - Product Types Mix (IMAGEN/REVENUE/ENTRY pyramid)
-  - Price Segments
-  - Distribution Pyramid visualization
-- **Hooks**: useSkus, useDrops
-- **Milestones**: rp-1 through rp-6
-
-### 7.2 Brand & Identity (`/collection/[id]/brand`)
-- **Gate**: BrandWorkspaceGate + BrandMiniWizard
-- **Component**: BrandWorkspace
-- **Tabs**: Brand Profile, Visual Identity, Packaging
-- **Features**:
-  - Brand Naming (options, name, tagline)
-  - Brand Story, Brand Voice, Target Audience
-  - Competitor Map
-  - Color Palette (primary/secondary), Typography
-  - Packaging Notes
-  - Milestones Checklist
-- **Hooks**: useBrandProfile
-- **Milestones**: br-1 through br-4
-
-### 7.3 Design (`/collection/[id]/design`)
-- **Gate**: WorkspaceGate + DesignMiniWizard
-- **Component**: DesignWorkspace
-- **Tabs**: Lasts & Forms, Design Review, Colorways, Patterns
-- **Features**:
-  - SKU form specs (last type, code, factory link, notes)
-  - Design files per SKU (draft/review/approved/rejected)
-  - Colorway Manager from DB
-  - Pattern files per SKU
-  - Auto-saves to localStorage (500ms debounce)
-- **Hooks**: useSkus, useColorways
-- **Milestones**: dd-1 through dd-6
-
-### 7.4 Prototyping (`/collection/[id]/prototyping`)
-- **Gate**: WorkspaceGate + PrototypingMiniWizard
-- **Component**: PrototypingWorkspace
-- **Tabs**: Proto Tracker, Tech Sheets
-- **Features**:
-  - Sample review management (white_proto type)
-  - Technical documentation
-- **Hooks**: useSkus, useSampleReviews(collectionId, 'white_proto')
-- **Milestones**: dd-7 through dd-10
-
-### 7.5 Sampling (`/collection/[id]/sampling`)
-- **Gate**: WorkspaceGate + SamplingMiniWizard
-- **Component**: SamplingWorkspace
-- **Tabs**: Color Samples, Fitting Review, Final Approval
-- **Features**:
-  - ColorSampleReview (filtered by `color_sample`)
-  - FittingReview (filtered by `fitting_sample`)
-  - FinalApproval (all reviews)
-- **Hooks**: useSkus, useColorways, useSampleReviews
-- **Milestones**: dd-11 through dd-14
-
-### 7.6 Production (`/collection/[id]/production`)
-- **Gate**: WorkspaceGate + ProductionMiniWizard
-- **Component**: ProductionWorkspace
-- **Tabs**: Production Orders, Quality Control, Logistics
-- **Features**:
-  - OrderTracker (create/edit/delete POs)
-  - QcTracker (quality control status)
-  - LogisticsTracker (shipment tracking)
-- **Hooks**: useProductionOrders, useSkus
-- **Milestones**: dd-15 through dd-18
-
-### 7.7 Go-To-Market (`/collection/[id]/go-to-market`)
-- **Gate**: GtmWorkspaceGate + GtmMiniWizard
-- **Component**: GoToMarketDashboard
-- **Features**:
-  - Total Sales Target display
-  - Channel filter (ALL, DTC, WHOLESALE)
-  - Visual Timeline (drops as circles, commercial actions as dots)
-  - Drops Section (create/edit drops, organize SKUs by drop)
-  - Commercial Actions (SALE, COLLAB, CAMPAIGN, SEEDING, EVENT)
-  - AI Market Validation (Gemini prediction vs planned sales)
-  - Planned Sales by Month calculation
-- **Hooks**: useDrops, useCommercialActions, useSkus
-
-### 7.8 Marketing Creation (`/collection/[id]/marketing/creation`) — REDESIGNED 2026-05-05
-- **No Gate** — renders directly
-- **Component**: MarketingCreationScreen (sidebar-driven, ?block= param)
-- **Sub-blocks** (5):
-  1. **GtmLaunchHub** (`?block=gtm`) — Pre-launch timing, press kit, content calendar, launch countdown
-  2. **ContentStudioCard** (`?block=content`) — Per-SKU 4-level visual pipeline + 28-model roster + editorial casting
-  3. **CommunicationsCard** (`?block=comms`) — Copy, social templates, email, brand voice, SEO copy
-  4. **SalesDashboardCard** (`?block=sales`) — KPIs, Recharts revenue curve, drop calendar
-  5. **EcomCard** (`?block=ecom`) — **Storefront generator** — see section 22 for full reference. Renders 3 sub-sections:
-     - `EcomHub` — publish flow (subdomain, 12 themes, payment connect)
-     - `SeoResearchHub` — 4 tabs (keywords, on-page, competitors, audit)
-     - `OverridesEditor` — inline copy edits per page (saves to `storefront_overrides`)
-- **Renamed 2026-05-05**: card `04.5 Point of Sale` → `04.4 Ecom`. Wholesale Orders CRUD moved to Block 2 Merchandising > Channels > `wholesale` (see section 22 + `architecture-ecom.md`).
-- **Hooks**: useStories, useLookbookPages, useAiGenerations, useBrandModels, useAimilyModels, useContentPillars, useBrandVoiceConfig, useProductCopy, useSocialTemplates, useEmailTemplates, useCollectionIntelligence
-- **Milestones**: gm-3, gm-4, gm-5
-
-### 7.9 Marketing Distribution (`/collection/[id]/marketing/distribution`)
-- **No Gate** — renders directly
-- **Component**: MarketingDistributionScreen
-- **Layout**: 2×2 card grid
-- **Cards**:
-  1. **GoToMarketCard** — GTM strategy, positioning, PR contacts management
-  2. **ContentCalendarCard** — Content scheduling & publishing calendar
-  3. **PaidGrowthCard** — Paid ads, budget allocation, ROAS tracking
-  4. **LaunchCard** — Launch checklist (pre-launch, launch-day, post-launch tasks)
-- **Hooks**: usePrContacts, useContentCalendar, usePaidCampaigns, useLaunchTasks
-- **Milestones**: gm-1, gm-2, gm-6 through gm-15
-
----
-
-## 8. AUTH SYSTEM
-
-### 8.1 Architecture
-- **SSR cookie-based** auth via `@supabase/ssr`
-- **Browser client**: `createClient()` from `src/lib/supabase/client.ts`
-- **Server client**: `createClient()` from `src/lib/supabase/server.ts` (reads cookies)
-- **Admin client**: `supabaseAdmin` from `src/lib/supabase-admin.ts` (service role)
-
-### 8.2 Auth Context (`src/contexts/AuthContext.tsx`)
 ```
-user, session, loading
-signUp(email, password), signIn(email, password)
-signInWithGoogle(), signOut()
-resetPassword(email), updatePassword(newPassword)
-```
-
-### 8.3 Auth UI
-- `AuthModal.tsx` — Tabs: Sign In / Sign Up, email+password, Google OAuth
-- "Forgot password?" → `/auth/forgot-password`
-- Post-signup → "Check your email" message
-
-### 8.4 Middleware (`src/middleware.ts`)
-- Refreshes tokens on every request
-- **Public routes**: `/`, `/contact`, `/trust`, `/terms`, `/privacy`, `/cookies`, `/auth/*`, `/video-reel`
-- **Skipped paths**: `/api/webhooks/`, `/api/cron/`, `/api/auth/`
-- **Retired routes** (308 redirects in `next.config.js`, processed before middleware): `/meet-aimily`, `/how-it-works`, `/discover`, `/pricing`
-- **Protected routes**: everything else → redirects unauthenticated to `/`
-
-### 8.5 Email Templates (`supabase/email-templates/`)
-- `signup-confirmation.html`, `password-reset.html`, `magic-link.html`, `email-change.html`
-- Design: dark editorial (#282A29 bg, #FAEFE0 text, aimily logo white)
-
----
-
-## 9. BILLING SYSTEM
-
-### 9.1b Stripe price IDs (verified in Vercel env 2026-05-06)
-```
-STRIPE_FOUNDER_MONTHLY_PRICE_ID    + STRIPE_FOUNDER_ANNUAL_PRICE_ID
-STRIPE_TEAM_MONTHLY_PRICE_ID       + STRIPE_TEAM_ANNUAL_PRICE_ID
-STRIPE_TEAM_PRO_MONTHLY_PRICE_ID   + STRIPE_TEAM_PRO_ANNUAL_PRICE_ID
-STRIPE_CREDITS_PACK_50_PRICE_ID    + _250 + _1000 (top-ups)
-```
-Legacy IDs (kept for backward compat, not used by new checkout):
-```
-STRIPE_STARTER_*  · STRIPE_PROFESSIONAL_*  · STRIPE_PRO_MAX_*
-```
-Stripe LIVE mode active. Customer Portal configured. Refund flow handled by `webhooks/stripe` route.
-
-### 9.1 Pricing v5 (May 2026 rebrand · LIVE)
-Renamed by ICP (target organization size) so customers self-identify:
-
-| Plan ID | Name | Monthly | Annual/mo (-20%) | Aimily Credits/mo | Users | Storefronts | Notes |
-|---------|------|---------|-------------------|---------------------|-------|-------------|-------|
-| `student` | Student | Free 12 mo | — | 100 | 1 | 1 | Auto-verified via institutional email (167 schools whitelist) |
-| `founder` | Founder | €99 | €79 | 100 | 1 | 1 | Indie default · all AI tools |
-| `team` | Team | €599 | €479 | 1.000 | 10 | 5 | + collab, roles, multi-brand |
-| `team_pro` | Team Pro | €999 | €799 | 5.000 | 25 | 25 | + advanced analytics |
-| `enterprise` | Enterprise | from €3.000 | — | ∞ | ∞ | ∞ | + SSO, API, dedicated support |
-| `trial` | Trial | Free 30 days · no card | — | 100 | 1 | 1 | `payment_method_collection: 'if_required'` |
-
-**Storefront quota** (Sprint 1 Ecom · `subscriptions.storefront_quota`): 1/5/25/∞ per plan, enforced via `can_publish_storefront(user_id)` RPC.
-
-**Aimily Credits** = imagery generations (UI rename · DB still tracks as `imagery_credits.balance`).
-
-### 9.1b Promo strategy
-- **Public launch promo retired** (was 100×50% for 12mo). Felipe decided after launch that with Student gratis + Founder €99 the promo was double-discounting.
-- **Private STUDIONN50 coupon** in Stripe (50% off · 12mo · repeating) for selective outreach. Customers type code at checkout (`allow_promotion_codes: true`).
-
-### 9.2 Feature Gates
-| Feature | Trial | Student | Founder | Team | Team Pro | Enterprise |
-|---------|-------|---------|---------|------|----------|------------|
-| All AI tools | Yes | Yes | Yes | Yes | Yes | Yes |
-| Trend Alerts | Yes | Yes | Yes | Yes | Yes | Yes |
-| Storefront publish | 1 | 1 | 1 | 5 | 25 | ∞ |
-| Collaboration | Yes | No | No | Yes | Yes | Yes |
-| Roles & Permissions | Yes | No | No | Yes | Yes | Yes |
-| Multi-brand | No | No | No | Yes | Yes | Yes |
-| SSO | No | No | No | No | No | Yes |
-| API access | No | No | No | No | No | Yes |
-
-### 9.3 Payment Flow
-1. User clicks plan → `checkoutPlan()` in SubscriptionContext
-2. POST `/api/billing/checkout` → creates Stripe Customer + Checkout Session
-3. Redirect to Stripe Checkout (hosted)
-4. Payment → webhook to `/api/webhooks/stripe`
-5. Webhook updates `subscriptions` table
-6. Redirect to `/my-collections?billing=success`
-7. SubscriptionContext auto-refreshes via Supabase realtime
-
-### 9.4 Subscription Context (`src/contexts/SubscriptionContext.tsx`)
-```
-subscription, loading
-isStarter, isProfessional, isEnterprise, isPaid, isTrial
-isTrialExpired, trialDaysLeft
-canUseAI, aiUsagePercent
-refresh(), checkoutPlan(plan, annual?), openPortal(), trackAIUsage()
+   Block 1: Creative & Brand          Block 4: Marketing & Sales
+   ┌─────────────────┐                ┌─────────────────────┐
+   │ Consumer        │                │ GTM & Launch Plan   │
+   │ Moodboard       │                │ Content Studio      │
+   │ Market Research │                │ Communications      │
+   │ Brand Identity  │                │ Sales Dashboard     │
+   │ Creative Overv. │                │ Ecom (storefront)   │
+   └────────┬────────┘                └──────────┬──────────┘
+            │                                     │
+            ▼                                     ▼
+   Block 2: Merchandising            ┌─────────────────────┐
+   ┌─────────────────┐               │  aimily In-Season   │
+   │ Buying Strategy │               │   - sales sync      │
+   │ Assortment &Pri.│               │   - 13-verb classif.│
+   │ Distribution    │               │   - scenarios       │
+   │ Financial Plan  │               │   - seeds pool      │
+   │ Collection Bld. │◀──── seeds ───┤   - Aimily Design   │
+   └────────┬────────┘    feed next  └──────────▲──────────┘
+            │            collection             │
+            ▼                                    │ pulls actuals
+   Block 3: Design & Development                 │
+   ┌─────────────────┐                          │
+   │ Sketch & Color  │                          │
+   │ Tech Pack       │                          │
+   │ Prototyping     │                          │
+   │ Production      │                          │
+   │ Final Selection │                          │
+   └────────┬────────┘                          │
+            │                                    │
+            └────────────────────────────────────┘
 ```
 
 ---
 
-## 10. API ROUTES (115+ total · last updated 2026-05-06)
+## 4. ROUTING & FOLDER LAYOUT
 
-> **NEW since April audit**: `/api/ecom/*` (6 routes) + `/api/ai/seo-*` (5 routes) + cron `/api/cron/expire-student-verifications` + `/api/student/verify` + `/api/academic-domains/list` + `/api/promo/counter`. See sections 22 + 23 for Ecom + SEO routes detail.
+Top-level groups under `src/app/`:
 
-### 10.1 Auth & Account (4 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/account/delete` | POST | Delete account + cascade all data (GDPR) |
-| `/api/account/export` | GET | Export all user data as JSON (GDPR) |
-| `/api/auth/pinterest/callback` | GET | Pinterest OAuth callback |
-| `/api/auth/pinterest/signout` | GET/POST | Disconnect Pinterest |
+| Group | Purpose | Auth |
+|---|---|---|
+| `[locale]/` | Public marketing pages (next-intl, 9 locales) | Public |
+| `(app)/` | Authenticated dashboard | Required |
+| `(storefront)/` | Wildcard `*.aimily.shop` SSR storefronts | Public (per-storefront) |
+| `api/` | 212 route handlers | Per-route |
 
-### 10.2 Billing (4 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/billing/checkout` | POST | Create Stripe Checkout session |
-| `/api/billing/portal` | POST | Stripe Customer Portal redirect |
-| `/api/billing/subscription` | GET | Current plan, status, limits, trial |
-| `/api/billing/usage` | POST | Increment AI usage + limit check (429 if exceeded) |
+### 4.1 Public marketing (`src/app/[locale]/...`)
 
-### 10.3 Collections & Planning (8 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/planner/create` | POST | Create new collection plan |
-| `/api/planner/[id]` | PATCH | Update plan metadata |
-| `/api/planner/[id]/workspace-config` | PATCH | Configure workspace settings |
-| `/api/collection-plans/[id]/save` | POST | Save plan config |
-| `/api/collection-timelines` | GET/POST | Get or upsert timeline with milestones |
-| `/api/standalone-timelines` | GET/POST | Manage timelines not tied to collections |
-| `/api/reports` | GET | Generate collection reports |
-| `/api/signals` | GET | Trend signals |
+| Route | Component | Notes |
+|---|---|---|
+| `/[locale]` | `MarketingHomeClient` | Home with 5 blocks (Creative · Merch · Design · Marketing · In-Season) |
+| `/[locale]/in-season` | dedicated landing | In-Season product page |
+| `/[locale]/studio` | dedicated landing | Aimily Studio product page |
+| `/[locale]/student` | student program | 12-mo free for institutional emails |
+| `/[locale]/strategy` | legacy → redirects to `/in-season` (308 in `next.config.js`) | |
+| `/[locale]/contact` · `/trust` · `/privacy` · `/terms` · `/cookies` | static | |
+| `/[locale]/vs/[competitor]` | comparison pages | SEO long-tail |
+| `/[locale]/workflows/[slug]` · `/how-to/[slug]` | MDX content | SEO long-tail |
 
-### 10.4 Product & Merchandising (11 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/skus` | GET/POST | List and create SKUs |
-| `/api/skus/[id]` | GET/PATCH/DELETE | CRUD individual SKU |
-| `/api/skus/carry-over` | GET/POST | Carry over SKUs from previous collection |
-| `/api/drops` | GET/POST | List and create drops |
-| `/api/drops/[id]` | GET/PATCH/DELETE | CRUD drop |
-| `/api/colorways` | GET/POST | SKU colorway variants |
-| `/api/colorways/[id]` | PATCH/DELETE | Update/delete colorway |
-| `/api/production-orders` | GET/POST | Production POs |
-| `/api/production-orders/[id]` | PATCH/DELETE | Update/cancel PO |
-| `/api/sample-reviews` | GET/POST | Sample reviews |
-| `/api/sample-reviews/[id]` | PATCH/DELETE | Update/delete review |
+Bare paths (`/contact`, `/privacy`, …) redirect to `/[locale]/<path>` via next-intl middleware. The middleware logic is in [`src/middleware.ts`](src/middleware.ts) (`MARKETING_BARE_PATHS`, `MARKETING_LOCALE_ONLY_PATHS`, `MARKETING_PREFIXES`).
 
-### 10.5 Brand & Creative (6 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/brand-profiles` | GET/PATCH | Brand identity |
-| `/api/brand-voice-config` | GET/POST | Brand voice guidelines |
-| `/api/brand-models` | GET/POST | AI brand reference models |
-| `/api/brand-models/[id]` | PATCH/DELETE | Update/delete model |
-| `/api/stories` | GET/POST | Collection stories/narratives |
-| `/api/stories/[id]` | PATCH/DELETE | Update/delete story |
+### 4.2 Authenticated app (`src/app/(app)/...`)
 
-### 10.6 AI Generation (24 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/ai-generations` | GET/POST | AI generation records |
-| `/api/ai-generations/[id]` | PATCH/DELETE | Update/delete generation |
-| `/api/ai/analyze-moodboard` | POST | Gemini Vision: extract colors, trends, brands from moodboard |
-| `/api/ai/analyze-text` | POST | Gemini: extract fashion data from text |
-| `/api/ai/explore-trends` | POST | Deep trend analysis (runway, celebrities, retail) |
-| `/api/ai/market-trends` | GET | Current market trends (SS26/Pre-Fall 2026) |
-| `/api/ai/market-prediction` | POST | Demand weights + sales predictions from commercial plan |
-| `/api/ai/generate-plan` | POST | Merchandising plan from consumer/season/category inputs |
-| `/api/ai/generate-skus` | POST | SKU list with pricing to match sales targets |
-| `/api/ai/generate-sketch-options` | POST | OpenAI: flat sketches from reference photos |
-| `/api/ai/generate-techpack` | POST | Claude + Gemini fallback: tech pack (front/back SVG sketches) |
-| `/api/ai/propose-comments` | POST | Claude: tech comments and measurements on sketches |
-| `/api/ai/creative-generate` | POST | Creative block: 10 types (consumer, vibe, brand, trends) |
-| `/api/ai/merch-generate` | POST | Merch block: 8 types (families, pricing, channels, budget) |
-| `/api/ai/design-generate` | POST | Design block: 4 types (sketch, color, materials, catalog) ⚠️ no UI |
-| `/api/ai/content-strategy/generate` | POST | Content pillars, brand voice, tones (multi-mode) |
-| `/api/ai/copy/generate` | POST | Product copy, brand story, SEO, email/social templates |
-| `/api/ai/stories/generate` | POST | Collection stories (assist or full proposal mode) |
-| `/api/ai/gtm/generate` | POST | GTM plan with drops + commercial actions |
-| `/api/ai/launch/generate` | POST | Launch checklist (pre/during/post) |
-| `/api/ai/paid/generate` | POST | Paid media campaigns + ROAS allocations |
-| `/api/ai/content-calendar/generate` | POST | Editorial content calendar aligned with drops |
-| `/api/ai/colorize-sketch` | POST | OpenAI gpt-image-1.5: flat colorization + photoreal 3D render (is_3d_render flag). Also the "Product Render" source for marketing. |
-| `/api/ai/freepik/sketch` | POST | Freepik Flux Dev: technical flat sketches |
-| `/api/ai/freepik/still-life` | POST | Freepik Nano Banana: editorial still life with reference_images |
-| `/api/ai/freepik/video` | POST | Freepik Kling 2.1 Pro/Std: image-to-video (5s/10s) |
-| `/api/ai/freepik/brand-model` | POST | Freepik Nano Banana: brand model roster (editorial portraits) |
-| `/api/ai/freepik/tryon` | POST | Freepik Nano Banana multi-reference: virtual try-on |
-| `/api/ai/freepik/editorial` | POST | Freepik Nano Banana: editorial on-model narrative (3 refs: product + face-blurred style ref + model headshot) |
+| Route | Purpose |
+|---|---|
+| `/my-collections` | Collection hub (grid + progress + deadlines) |
+| `/new-collection` | Intent selector (Empezar · Studio · In-Season). `?direct=1` skips selector |
+| `/account` | Settings, subscription, GDPR export/delete |
+| `/welcome` · `/welcome/tour` | First-run onboarding |
+| `/studio` · `/studio/new` · `/studio/[id]` | Aimily Studio dashboard + project view |
+| `/in-season` · `/in-season/[tenant]/{page,seeds,setup,upload,connections}` | In-Season multi-tenant hub |
+| `/library/artworks` | Artwork library |
+| `/planner/[id]` | Standalone collection planner |
+| `/p/[token]` | Public share link viewer (presentation deck) |
+| `/vendor/[token]` | Vendor portal (signed JWT, no auth) |
+| `/video-reel` · `/auth/*` | Auth utility pages |
+| `/presentation/export/[id]` · `/tech-pack/export/[skuId]` | Internal PDF export targets |
 
-### 10.7 Marketing & Content (20 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/content-calendar` | GET/POST | Content calendar entries |
-| `/api/content-calendar/[id]` | PATCH/DELETE | Update/delete entry |
-| `/api/content-pillars` | GET/POST | Brand content pillars |
-| `/api/content-pillars/[id]` | PATCH/DELETE | Update/delete pillar |
-| `/api/product-copy` | GET/POST | Product copy variants |
-| `/api/product-copy/[id]` | PATCH/DELETE | Update/delete copy |
-| `/api/social-templates` | GET/POST | Social media templates |
-| `/api/social-templates/[id]` | PATCH/DELETE | Update/delete template |
-| `/api/email-templates` | GET/POST | Email campaign templates |
-| `/api/email-templates/[id]` | PATCH/DELETE | Update/delete template |
-| `/api/paid-campaigns` | GET/POST | Paid media campaigns |
-| `/api/paid-campaigns/[id]` | PATCH/DELETE | Update/delete campaign |
-| `/api/launch-tasks` | GET/POST | Launch tasks |
-| `/api/launch-tasks/[id]` | PATCH/DELETE | Update/delete task |
-| `/api/pr-contacts` | GET/POST | PR contacts/influencers |
-| `/api/pr-contacts/[id]` | PATCH/DELETE | Update/delete contact |
-| `/api/lookbook-pages` | GET/POST | Lookbook page designs |
-| `/api/lookbook-pages/[id]` | PATCH/DELETE | Update/delete page |
-| `/api/commercial-actions` | GET/POST | Commercial actions (SALE, COLLAB, etc.) |
-| `/api/commercial-actions/[id]` | PATCH/DELETE | Update/delete action |
+#### 4.2.1 Collection workspaces (`/collection/[id]/...`)
 
-### 10.8 Models, Intelligence & Sales (3 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/aimily-models` | GET | 28 aimily AI model roster (filterable by gender) |
-| `/api/collection-intelligence` | GET/POST | CIS — read/write collection decisions (domain, subdomain, key, JSONB value, tags, version, rationale) |
-| `/api/wholesale-orders` | GET/POST | Wholesale order CRUD (buyer, order_lines JSONB, status, total_units, total_value) |
+| Route | Component | Block |
+|---|---|---|
+| `/collection/[id]` | `CollectionOverview` | Hub — 4 block cards + In-Season banner |
+| `/collection/[id]/calendar` | embedded Gantt | All blocks |
+| `/collection/[id]/creative?block=…` | `CreativePage` | Block 1 (consumer · moodboard · research · brand-dna · synthesis) |
+| `/collection/[id]/merchandising?block=…` | `MerchandisingPage` | Block 2 (scenarios · families · channels · wholesale · budget) |
+| `/collection/[id]/product?phase=…` | `PlannerDashboard` | Block 3 phases (sketch · techpack · prototyping · production · selection) |
+| `/collection/[id]/marketing/creation?block=…` | `MarketingCreationScreen` | Block 4 (gtm · content · comms · sales · ecom) |
+| `/collection/[id]/presentation` | shared deck viewer | Cross-cut |
+| `/collection/[id]/factories` · `/suppliers` · `/vendors` · `/compliance` · `/variance` | partner + compliance + variance dashboards | Block 3 |
 
-### 10.9 Pinterest (2 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/pinterest/boards` | GET | User's Pinterest boards |
-| `/api/pinterest/boards/[boardId]/pins` | GET | Pins from board |
+### 4.3 Storefront SSR (`src/app/(storefront)/storefront/[host]/...`)
 
-### 10.10 Timeline & Milestones (1 route)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/alfred-milestones` | GET | All milestones, summaries, next actions, overdue alerts |
-
-### 10.11 Data, Crons & Other (10 routes)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/city-trends` | GET | Fashion trends by city |
-| `/api/cron/collect-instagram` | GET | Background: Instagram trend data |
-| `/api/cron/collect-instagram-2` | GET | Background: Instagram secondary |
-| `/api/cron/collect-instagram-3` | GET | Background: Instagram tertiary |
-| `/api/cron/collect-tiktok` | GET | Background: TikTok trends |
-| `/api/cron/collect-tiktok-trends` | GET | Background: TikTok enhanced |
-| `/api/cron/collect-reddit` | GET | Background: Reddit fashion |
-| `/api/cron/collect-social-data` | GET | Background: aggregate social |
-| `/api/cron/process-city-trends` | GET | Background: process city trends |
-| `/api/notifications` | GET | User notifications |
-| `/api/proxy-image` | POST | Image proxy for CDN |
-
-### 10.12 Webhooks (1 route)
-| Route | Method | Purpose |
-|-------|--------|---------|
-| `/api/webhooks/stripe` | POST | Stripe subscription events |
+Wildcard `*.aimily.shop` → middleware rewrites to `/storefront/<encoded-host>`. Pages: `page.tsx` (home) · `shop/page.tsx` (PLP) · `shop/[sku]/page.tsx` (PDP) · `lookbook` · `about` · `contact` · dynamic `sitemap.xml`, `robots.txt`, `og.png`. Full reference: `architecture-ecom.md`.
 
 ---
 
-## 11. DATABASE
+## 5. THE 4-BLOCK ARCHITECTURE (verified against `CollectionOverview.tsx`)
 
-### 11.1 Key Tables
+```
+BLOCK 1 · Creative & Brand
+  consumer    Define target audience, build personas
+  moodboard   Visual references + creative direction
+  research    Trends, deep dive, signals, competitors
+  brand       Brand DNA, voice, visual identity
+  synthesis   Consolidated creative brief (output)
 
-**Auth & Billing**:
-- `subscriptions` — user_id, stripe_customer_id, plan (trial/starter/professional/enterprise), status, current_period_start/end, trial_ends_at, is_admin
-- `ai_usage` — user_id, month (YYYY-MM), generation_count
+BLOCK 2 · Merchandising & Planning
+  scenarios   Buying strategy A/B/C (SKU count + budget)
+  families    Assortment & pricing architecture
+  channels    Distribution (DTC + wholesale + markets)
+  budget      Financial plan (target, margins, sell-through)
+  builder     Collection Builder · SKU grid (output → /product)
 
-**Collections** (all reference `collection_plan_id`):
-- `collection_plans` — user_id, name, brand, season, setup_data (JSONB with workspace_config)
-- `collection_skus` — SKU data (name, category, family, type, pvp, cost, origin, size_run, sku_role, source_sku_id)
-- `collection_timelines` — milestones (JSONB array of 45 milestones), launch_date
-- `drops` — drop_number, name, launch_date, weeks_active, story, channels
-- `commercial_actions` — action_type (SALE/COLLAB/CAMPAIGN/SEEDING/EVENT), dates, boosts
-- `market_predictions` — weekly_predictions, insights, gaps, recommendations
-- `sku_colorways` — sku_id, hex colors, pantone, material_swatch, status
-- `brand_profiles` — brand_name, tagline, story, voice, audience, competitors, colors, typography
-- `brand_models` — AI reference models (gender, body type, style)
-- `ai_generations` — generation_type, prompt, input/output data, provider_request_id, model_used, cost, status
-- `stories` — collection narratives
-- `lookbook_pages` — page designs (layout, content items, background, story_id)
-- `content_calendar` — title, content_type, platform, scheduled_date, status, caption, hashtags
-- `pr_contacts` — name, type (influencer/media/stylist), platform, followers, status
-- `content_pillars` — name, description, examples, stories_alignment
-- `brand_voice_config` — personality, tone, do/don't rules, vocabulary
-- `social_templates` — platform, type, caption, hashtags, cta
-- `email_templates` — email_type, subject, body, cta
-- `product_copy` — copy_type, content, metadata, status
-- `production_orders` — order_number, factory, status, line_items, qc_issues, documents
-- `sample_reviews` — sku_id, review_type, status, fit/construction/material notes, measurements, photos, issues
-- `tech_packs` — garment_type, sketches (SVG), construction_notes, measurements
-- `paid_campaigns` — name, platform, objective, budget, ad_sets
-- `launch_tasks` — title, category, due_date, status, priority, depends_on
-- `campaign_shoots` — shoot_type, date, location, team, shot_list, deliverables
-- `aimily_models` — 28 AI models (name, gender, headshot_url, complexion, hair_style, hair_color, ethnicity, age_range, body_type, description)
-- `collection_decisions` — CIS (collection_plan_id, domain, subdomain, key, value JSONB, tags[], version, rationale, source)
-- `sales_channels` — collection_plan_id, channel_type (shopify/woocommerce/wholesale), config JSONB, status
-- `wholesale_orders` — collection_plan_id, buyer, order_lines JSONB, status, total_units, total_value, notes
+BLOCK 3 · Design & Development
+  sketch       Sketches + colorways + materials
+  tech-pack    Specs + BOM + factory selection
+  prototyping  Proto review + fit sessions
+  production   Size runs + factory orders + logistics
+  selection    Final line review (output)
 
-**Standalone**:
-- `standalone_timelines` — user_id (not tied to a collection)
+BLOCK 4 · Marketing & Sales
+  gtm        Pre-launch, press, content calendar, countdown
+  content    Per-SKU visual pipeline (Studio inside the collection)
+  comms      Copy + SEO + social + email + brand voice
+  sales      Forecasting + drop planning + commercial KPIs
+  ecom       DTC storefront publish (output → *.aimily.shop)
+```
 
-**Public Data**:
-- `raw_content` — trend data (public, read-only)
-- `reports` — trend reports
-- `signals` — trend signals
+**The loop closes in `aimily In-Season`** — sales actuals from the published collection feed the next collection through SKU verdicts and seeds.
 
-### 11.2 RLS (Row Level Security)
-- **All tables have RLS enabled**
-- Collection tables: `collection_plan_id IN (SELECT id FROM collection_plans WHERE user_id = auth.uid())`
-- Direct user tables: `WHERE user_id = auth.uid()`
-- Service role has full access
-- Applied in migrations 006 (13 tables) + security_hardening (22 tables)
+### 5.1 CIS — Collection Intelligence System
 
-### 11.3 Migrations
-1. `001` — Initial schema
-2. `002` — collection_skus
-3. `003` — drops, commercial_actions, market_predictions
-4. `004` — collection_plans user_id + RLS
-5. `005` — subscriptions, ai_usage
-6. `006` — RLS hardening (13 tables)
-7. `security_hardening_rls_and_functions` — RLS (22 tables) + 3 functions
-8. `010` — Fix subscription plan enum (trial/starter/professional/enterprise)
-9. `011` — Auto-trial on signup (trigger function)
-10. `012` — SKU merchandising fields (origin, size_run, sku_role, source_sku_id)
-11. `013` — Collection assets storage bucket
-12. `014` — Service role policies
-13. `015` — Team members + marketing permissions
-14. `016` — Rename fal_request_id → provider_request_id
-15. `017` — Stories enrichment
-16. `018` — Email sequences
-17. `019` — AI generations types enum update
-18. `020` — aimily_models table (28 AI models roster)
-19. `021` — collection_decisions (CIS — Collection Intelligence System)
-20. `022` — sales_channels + wholesale_orders
+The CIS is the spine. Every meaningful decision is captured to `collection_decisions` (271 rows in prod across 6 collections) and read back on every AI generation server-side via `loadFullContext()`. **This is the platform's #1 competitive moat.**
+
+```
+src/lib/collection-intelligence.ts    recordDecision · getIntelligence · compilePromptContext
+src/lib/ai/load-full-context.ts       loadFullContext(planId) — used by ALL AI endpoints
+src/lib/ai/prompt-foundations.ts      buildInheritedContext — formats CIS into prompts
+src/lib/prompts/prompt-context.ts     buildPromptContext — reads CIS + DB tables
+public.collection_decisions           domain/subdomain/key/value JSONB/tags/version/rationale
+```
+
+**ARCHITECTURE LOCK (rule of the project)**: frontend changes must NEVER modify these 5 files. UI work sends `collectionPlanId` only; the server loads everything else from the DB. Any new AI endpoint must call `loadFullContext()` — no endpoint-specific loaders.
+
+The 32 routes under `/api/ai/*` that currently consume CIS context are listed in §9.
 
 ---
 
-## 12. CUSTOM HOOKS (`src/hooks/`)
+## 6. AIMILY IN-SEASON (the 5th product · `/in-season`)
 
-All hooks follow the pattern: fetch from REST API, return `{ data[], loading, error, CRUD methods, refetch() }`.
+In-Season is the **6th and final block** of the aimily 360 flow conceptually, but it lives as its own surface so a brand can plug it in without owning a collection in aimily yet. Canonical product naming: **"In-Season Sales Management & Actions — daily in-season decisions backed by your own SKU data — what to replenish, kill, resize, recolor, carry over, mark down, or investigate."** Retired naming: "Forensic merchandising intelligence" (deprecated 2026-05-20).
 
-| Hook | Table/API | Key Returns |
-|------|-----------|-------------|
-| `useSkus` | collection_skus | skus[], addSku, updateSku, deleteSku |
-| `useDrops` | drops | drops[], addDrop, updateDrop, deleteDrop, reorderDrops |
-| `useColorways` | sku_colorways | colorways[], add/update/delete |
-| `useSampleReviews` | sample_reviews | reviews[] (filtered by reviewType), add/update/delete |
-| `useProductionOrders` | production_orders | orders[], add/update/delete |
-| `useCommercialActions` | commercial_actions | actions[] (sorted by start_date) |
-| `useBrandProfile` | brand_profiles | profile, updateProfile (800ms debounce) |
-| `useBrandModels` | brand_models | models[], add/update/delete |
-| `useAiGenerations` | ai_generations | generations[] (filtered by type), toggleFavorite |
-| `useStories` | stories | stories[], bulkSaveStories, assignSku |
-| `useLookbookPages` | lookbook_pages | pages[] (filtered by lookbookName/storyId) |
-| `useContentCalendar` | content_calendar | entries[], add/update/delete |
-| `useContentPillars` | content_pillars | pillars[], bulkSavePillars |
-| `useBrandVoiceConfig` | brand_voice_config | config, saveConfig |
-| `useProductCopy` | product_copy | copies[] (filtered by copyType) |
-| `useSocialTemplates` | social_templates | templates[], bulkSaveTemplates |
-| `useEmailTemplates` | email_templates | templates[], bulkSaveTemplates |
-| `usePrContacts` | pr_contacts | contacts[], add/update/delete |
-| `usePaidCampaigns` | paid_campaigns | campaigns[], add/update/delete |
-| `useLaunchTasks` | launch_tasks | tasks[], add/update/delete |
-| `useTechPacks` | tech_packs | techPacks[] (direct Supabase client) |
-| `useCollectionTimeline` | collection_timelines | timeline, updateMilestone (1000ms debounce) |
-| `useNotifications` | /api/notifications | notifications[], unreadCount, dismiss |
-| `useAimilyModels` | aimily_models | models[] (28 AI model roster, filterable by gender) |
-| `useCollectionIntelligence` | collection_decisions | decisions[], recordDecision, getIntelligence |
-| `useWholesaleOrders` | wholesale_orders | orders[], addOrder, updateOrder, deleteOrder |
-| `useWizardState` | (computed) | phases[], overallProgress, isPhaseAccessible |
+### 6.1 Multi-tenant model
+
+A user owns one or more `in_season_tenants`. Felipe's two demo tenants:
+- `big-brand-demo` · *Big brand · Reporte interno* — PDF intake (Zara RNK style). 1 source, 1 completed run.
+- `dtc-shopify-demo` · *DTC brand · Shopify live* — Shopify GraphQL Admin API via OAuth Partner App. 14 sources, 9 completed runs.
+
+### 6.2 Data ingestion (multi-source)
+
+| Connector | Parser | OAuth? |
+|---|---|---|
+| Shopify | [`shopify-graphql.ts`](src/lib/in-season/parsers/shopify-graphql.ts) + [`shopify-csv.ts`](src/lib/in-season/parsers/shopify-csv.ts) | Yes · Partner App live since 2026-05-20 |
+| Stripe | [`stripe-api.ts`](src/lib/in-season/parsers/stripe-api.ts) | Yes |
+| Big brand RNK PDF | [`zara-rnk-pdf.ts`](src/lib/in-season/parsers/zara-rnk-pdf.ts) | n/a (file upload) |
+| Generic CSV | shopify-csv parser | n/a |
+
+The triplet `parser + retailer profile + taxonomy` makes the engine retailer-agnostic. See [`framework_retailer-agnostic-in-season-engine.md`](memory/framework_retailer-agnostic-in-season-engine.md).
+
+### 6.3 Pipeline tables (24 tables, all `in_season_*`)
+
+```
+in_season_tenants                 enterprise customer entity
+in_season_tenant_members          access control per user
+in_season_sources                 ingestion metadata
+in_season_raw_records             original rows preserved for re-derivation
+in_season_product_facts           normalized product identity per snapshot
+in_season_inventory_facts         multi-location stock per snapshot
+in_season_sales_windows           velocity per window (4656 rows in dogfood)
+in_season_efficiency_facts        lifecycle: bought/sold/shipped/ST/returns
+in_season_sku_identity_graph      confidence-weighted lineage (renames + ERP aliases)
+in_season_taxonomies              per-tenant family/color/archetype mapping
+in_season_constraints             hard/semi-hard commercial constraints (Bucket A)
+in_season_creative_briefs         OPTIONAL creative direction (Bucket B · soft weights)
+in_season_algorithm_versions      versioned classifier bundles
+in_season_analysis_runs           one row per run
+in_season_sku_scores              per SKU per run · 6 confidence dimensions
+in_season_family_scores           ROI + saturation + cannibalization
+in_season_recommendation_candidates  concrete actions pre-assembly
+in_season_scenarios               assembled recommendation sets
+in_season_replenishment_allocations  per-SKU buy units per scenario
+in_season_user_sku_selections     chooser-UI locks per SKU
+in_season_action_executions       Aimily Design output assets (variants/extensions)
+in_season_inventory_snapshots     daily cron-populated price+stock history
+in_season_tenant_connectors       per-tenant credentials (v2 needs pgsodium)
+in_season_sku_seeds               verdicts that feed the next collection
+in_season_recommended_palettes    per-family color recommendations
+in_season_backtests               train-on-N-1 / test-on-N (required for paid pilot)
+```
+
+Migrations 065–072 own the In-Season schema and the security hardening (Vault-encrypted tokens, webhook idempotency + DLQ).
+
+### 6.4 The 13 decision verbs
+
+`REPLENISH · KILL · RESIZE · RECOLOR · CARRY_OVER · MARKDOWN · INVESTIGATE · AMPLIFY_DISTRIBUTION · EXTEND_COLORS · AMPLIFY_NEXT_SEASON · PROMOTE_PUSH · PULL_FORWARD_INTAKE · WAIT`
+
+Scope decision (2026-05-17): **aimily does NOT do inter-store transfer.** It DOES do `AMPLIFY_DISTRIBUTION` (warehouse → more stores).
+
+Each verdict carries a **6-dimension confidence score** (data quality, signal strength, sample size, recency, model agreement, business-rule consistency) — not a single number — because graceful degradation is mandatory. When tenant input is missing, the system uses synthetic estimates flagged in the UI with the confidence drop.
+
+### 6.5 The feedback loop (5 sprints A→F+, all shipped 2026-05-20)
+
+```
+1. user-initiated seeds        verdict pill → "+ Añadir a semillas" or "Desarrollar ahora"
+2. seeds pool                  /in-season/<tenant>/seeds (carbon palette SKU-card grid)
+3. apply-to-moodboard          POST /api/collection-plans/[id]/seeds/apply-to-moodboard
+4. new-collection gate         banner + picker modal in /new-collection
+5. consumption tracking        consumed_in_collection_id links seed → collection
+```
+
+Banner CTA in `CollectionOverview` flips to "Abrir Moodboard" after `applied_to_moodboard_at` is set.
+
+### 6.6 In-Season ↔ Aimily Design (shipped 2026-05-19)
+
+Verdict pills `extend_colors` / `amplify_next_season` open Aimily Design — a Builder phase in the collection workspace that crops the source PDF photo and creates a new SKU in collection "Aimily Design — In-Season". Two modes: **Réplica fiel 1:1** and **Variación 85/15**. Full reference: [`aimily-design-architecture-2026-05-19.md`](memory/aimily-design-architecture-2026-05-19.md).
+
+### 6.7 API surface (36 routes under `/api/in-season/*` + `/api/cron/in-season/*`)
+
+| Route | Purpose |
+|---|---|
+| `POST /oauth/shopify/install` + `/callback` | HMAC-signed install flow; tokens stored in Supabase Vault |
+| `GET/POST /sales-connections` + `/[id]/sync` | Per-tenant connector management |
+| `POST /webhooks/shopify` + `/webhooks/stripe` | Idempotent (per-tenant Vault signing secrets) |
+| `GET/POST /runs` + `/[runId]/{execute,narrate,backtest,sku-selections,skus,propose-extensions,propose-skus,recommend-palette}` | Full run lifecycle |
+| `POST /runs/[runId]/scenarios/create-custom` + `/[scenarioId]/{allocate-replenishment,promote}` | Scenario manipulation |
+| `GET/POST /seeds` + `/seeds/[id]` + `/seeds/summary` | Seeds CRUD |
+| `POST /sku-actions/open-design` | Bridge to Aimily Design |
+| `POST /sources/upload` + `/shopify-ingest` + `/[sourceId]/parse` | Manual ingestion |
+| `GET/POST /briefs` + `/discover` + `/constraints` + `/moodboard/upload` + `/market-trends` + `/analyze-moodboard` | Bucket B creative side |
+
+Daily crons (`vercel.json`): `/api/cron/in-season/inventory-snapshot` (06:00 UTC) + `/api/cron/in-season/sales-sync` (07:00 UTC).
+
+### 6.8 Cardinal rules
+
+Read [`product-spec_aimily-in-season-2026-05-17.md`](memory/product-spec_aimily-in-season-2026-05-17.md) for the canonical product spec — 8 input buckets, 5 header KPIs (GMROI, ST vs plan, FWOC/LT, S/S, MMU), 13 decision gates, stacking & filtering, graceful degradation rule.
 
 ---
 
-## 13. TYPE DEFINITIONS (`src/types/`)
+## 7. AIMILY STUDIO (standalone product · `/studio`)
 
-| File | Key Types |
-|------|-----------|
-| `timeline.ts` | TimelinePhase, MilestoneStatus, TimelineMilestone, CollectionTimeline |
-| `brand.ts` | BrandProfile, BrandColor, BrandVoice, TargetAudience, Competitor, BrandTypography |
-| `creative.ts` | MoodImage, PinterestPin/Board, MoodboardAnalysis, MarketTrends, CreativeBriefData |
-| `design.ts` | SkuColorway, FormSpec, DesignIteration, PatternFile |
-| `digital.ts` | CopyType, ProductCopy, ContentPillar, BrandVoiceConfig, SocialTemplate, EmailTemplateContent |
-| `marketing.ts` | ContentCalendarEntry, PrContact, AdCampaign, AdSet |
-| `production.ts` | ProductionOrder, LineItem, QcIssue, OrderDocument |
-| `prototyping.ts` | SampleReview, ReviewType, ReviewStatus, MeasurementRow |
-| `studio.ts` | AiGeneration, BrandModel, LookbookPage, CampaignShoot, GenerationType, AimilyModel |
-| `tech-pack.ts` | TechPack, GarmentDetails, SketchOption, ConstructionNote, FlowStep |
+Aimily Studio is **the marketing AI pipeline of aimily 360, broken out as a standalone product** for brands that already have a catalog and just want photoshoots/video at scale.
 
----
+### 7.1 Packs (one-shot Stripe Checkout, no subscription)
 
-## 14. TIMELINE SYSTEM (4-Block Calendar)
+| Pack | Price | Includes |
+|---|---|---|
+| Capsule | €49 | Still life + try-on for up to 5 SKUs |
+| Editorial | €99 | Above + editorial on-model |
+| Full Campaign | €199 | Above + Kling 2.1 Pro video |
 
-### 14.1 Blocks & Milestones (45 total)
+Subscribers (Founder / Team / Team Pro) generate from the unified Aimily Credits bucket and don't need to buy packs.
 
-**Creative & Brand (6 milestones: cr-1 to cr-6)**:
-Consumer definition, trend research, brand naming, logo, guidelines, packaging
+### 7.2 Stack
 
-**Range Planning (6 milestones: rp-1 to rp-6)**:
-Consumer/market analysis, channel strategy, budget, range framework, SKU definition, GTM
+- **Image generation**: OpenAI gpt-image-1.5 (HD), Freepik Nano Banana (Gemini 2.5 Flash Image), Flux 2 Pro (headshots)
+- **Video**: Freepik Kling 2.1 Pro/Std via async polling pipeline
+- **Background removal**: [`src/lib/studio/background-removal.ts`](src/lib/studio/background-removal.ts)
+- **Multi-format export**: [`src/lib/studio/multi-format.ts`](src/lib/studio/multi-format.ts) — Instagram square/story, e-com web, print
 
-**Design & Development (18 milestones: dd-1 to dd-18)**:
-Design shots, patterns, colorways, white proto, color samples, tech sheets, fitting, final approval, production order, QC, logistics
+### 7.3 DB
 
-**Go-to-Market (15 milestones: gm-1 to gm-15)**:
-Website, e-commerce, photography, copywriting, lookbook, social setup, content calendar, influencer outreach, email flows, paid ads, PR seeding, launch campaign, execution, post-launch
+```
+studio_projects          one row per brand container per user (1 row in prod)
+studio_purchases         Stripe payment record
+studio_output_formats    per-format derivative URLs
+```
 
-### 14.2 Key Config (`src/lib/timeline-template.ts`)
-- `PHASES` — 4 blocks with names (EN/ES), colors, icons
-- `DEFAULT_MILESTONES` — 45 milestones with startWeeksBefore, durationWeeks, responsible (US/FACTORY/ALL)
-- `migrateLegacyMilestones()` — Converts old IDs to new 4-block system
-- `getMilestoneDate()` / `getMilestoneEndDate()` — Date math from launch date
+### 7.4 API (16 routes under `/api/studio/*`)
 
-### 14.3 Wizard Phases (`src/lib/wizard-phases.ts`)
-- 8 workspace definitions with unlock dependencies
-- `computeWizardState()` — Maps milestones → phase states (locked/available/in-progress/completed)
+`generate` · `variation` · `video` + `video/status` · `output-formats` · `download` · `download-zip` · `upload` · `projects` + `projects/[id]` · `style-memory` · `checkout`.
 
-### 14.4 Gantt Chart (`src/components/timeline/GanttChart.tsx`)
-- Interactive drag & resize
-- Inline editing of dates
-- Excel export via ExcelJS (`src/lib/export-timeline-excel.ts`)
+Full state of play: [`state_aimily-studio-2026-05-16.md`](memory/state_aimily-studio-2026-05-16.md).
 
 ---
 
-## 15. SECURITY
+## 8. PRICING & BILLING (v6 · LIVE since 2026-05-20)
 
-### 15.1 Auth Security
-- Password: 8+ chars, letters + digits
-- Reauthentication for password changes
-- Email confirmation required
-- MFA on admin account
+Source of truth: [`src/lib/stripe.ts`](src/lib/stripe.ts).
 
-### 15.2 Authorization
-- All routes protected via middleware
-- API routes use Supabase server client (cookie session)
-- Webhooks skip auth (verified via Stripe signature)
-- RLS on all database tables
-- Service role only in webhooks/admin ops
+### 8.1 Plans
 
-### 15.3 GDPR Compliance
-- **Right of Access**: `/api/account/export` — JSON download
-- **Right to Erasure**: `/api/account/delete` — Stripe cancel + data delete + auth user delete
-- **Privacy Policy**: `/privacy`, **Terms**: `/terms`, **Cookies**: `/cookies`
-- Cookie consent banner: `src/components/CookieConsent.tsx`
+| Plan | Monthly | Annual/mo | Aimily Credits/mo | Users | Storefronts | Notes |
+|---|---|---|---|---|---|---|
+| `trial` | Free 30d, no card | — | 100 | 1 | 1 | `payment_method_collection: if_required` |
+| `student` | Free 12mo | — | 100 | 1 | 1 | Auto-verified via 167-school whitelist |
+| `founder` | €99 | €79 | 100 | 1 | 1 | Indie default |
+| `team` | €599 | €479 | 1.000 | 10 | 5 | + collab, roles, multi-brand |
+| `team_pro` | €999 | €799 | 5.000 | 25 | 25 | + analytics (private — not on public pricing page) |
+| `enterprise` | from €3.000 | custom | ∞ | ∞ | ∞ | SSO + API + dedicated support |
+
+Public pricing page exposes Founder + Team (+ Enterprise contact). Team Pro is a soft-upsell tier visible only in code / checkout. The 3 legacy products (Starter / Professional / Pro Max) were archived in Stripe on 2026-05-20.
+
+### 8.2 Aimily Credits (shared bucket)
+
+`src/lib/stripe.ts#CREDIT_COSTS`:
+
+| Action | Cost |
+|---|---|
+| sketch (single image: sketch · colorize · brand-board · brand-reference) | 1 |
+| still_life | 3 |
+| tryon | 3 |
+| editorial | 5 |
+| video_kling | 30 |
+| in_season_run | 10 |
+
+Top-up packs (one-time): +50 €29 · +250 €119 · +1.000 €399. Studio standalone packs (€49/€99/€199) coexist for customers without a subscription.
+
+Active migration note: most AI endpoints still call `checkImageryUsage(units)` directly. `consumeCredits(userId, email, action)` in `src/lib/api-auth.ts` is the new canonical helper — In-Season runs already use it (`/api/in-season/runs/[id]/execute`). Pricing-page alignment with `CREDIT_COSTS` is a deliberate follow-up (don't change pricing on live users without comms).
+
+### 8.3 Stripe surface
+
+```
+LIVE products            Aimily Founder · Aimily Team · Aimily Team Pro
+                         + 3 Studio packs (Capsule/Editorial/Full Campaign)
+                         + 3 Credit packs (50/250/1000)
+ARCHIVED                 Starter, Professional, Pro Max (2026-05-20)
+Webhook                  POST /api/webhooks/stripe — handles subscription
+                         + studio purchase + credit pack events
+Env vars (Vercel × 3 targets):
+   STRIPE_FOUNDER_MONTHLY_PRICE_ID  + STRIPE_FOUNDER_ANNUAL_PRICE_ID
+   STRIPE_TEAM_MONTHLY_PRICE_ID     + STRIPE_TEAM_ANNUAL_PRICE_ID
+   STRIPE_TEAM_PRO_MONTHLY_PRICE_ID + STRIPE_TEAM_PRO_ANNUAL_PRICE_ID
+   STRIPE_CREDITS_PACK_{50,250,1000}_PRICE_ID
+   STRIPE_STUDIO_PACK_{CAPSULE,EDITORIAL,FULL_CAMPAIGN}_PRICE_ID
+Promo                    Private STUDIONN50 coupon (50% × 12mo)
+                         Public launch promo archived
+```
+
+### 8.4 Billing UI
+
+- `CreditMeter` pill (top-right, hidden on `/new-collection`) — progress bar + costs table + "Buy more" / "Upgrade" CTAs
+- `SubscriptionContext` exposes `subscription`, `isPaid`, `isTrial`, `canUseAI`, `aiUsagePercent`, `checkoutPlan(plan, annual?)`, `openPortal()`
+- Refunds: `/api/billing/refund` + `/api/billing/refund-eligibility` (Studio purchases are refundable within 14 days)
+
+---
+
+## 9. AI ARCHITECTURE
+
+### 9.1 Provider waterfall
+
+```
+generateJSON / generateText  (src/lib/ai/llm-client.ts)
+  ├─► Claude Haiku 4.5    primary
+  └─► Gemini 2.5 Flash    fallback (on Anthropic 429 / timeout)
+
+Domain-specific:
+  Claude Sonnet 4.5       SEO heavy text, complex narratives
+  Perplexity Sonar        live web (brand DNA, trends, competitors)
+  OpenAI gpt-image-1.5    design renders (sketches, colorize, 3D)
+  Freepik Nano Banana     still life · try-on · editorial
+  Freepik Mystic          aimily 28-model headshots
+  Freepik Kling 2.1       image-to-video (async)
+```
+
+### 9.2 The 32 AI endpoints (`/api/ai/*`)
+
+Sub-trees:
+- **CIS-consuming (must use `loadFullContext()`)**: `creative-generate`, `merch-generate`, `design-generate`, `consumer-suggest-input`, `research-suggest-input`, `brand-propose`, `brand-from-external`, `generate-skus`, `scenarios-deepen`, `scenarios-prefill-editor`, `distribution-propose`, `sales-strategy-prefill-editor`, `seo-keywords`, `seo-onpage`, `seo-competitors`, `seo-copy`, `seo-audit`, `post-launch/generate`, `freepik/editorial`, `freepik/still-life`, `freepik/tryon`
+- **Utility / standalone** (no CIS): `analyze-moodboard`, `explore-trends`, `translate`, `costing/suggest-substitutions`, `sample-review/compare`, `tech-pack/generate`, `colorize-sketch`, `generate-sketch-options`, `freepik/sketch` (deprecated), `freepik/brand-model`, `freepik/video`, `zones/detect`
+
+### 9.3 Credit consumption per endpoint
+
+| Endpoint | Helper | Cost |
+|---|---|---|
+| `colorize-sketch` · `generate-sketch-options` · `freepik/brand-model` | `checkImageryUsage(1)` | 1 |
+| `freepik/still-life` · `freepik/tryon` | `checkImageryUsage(1)` | 3 |
+| `freepik/editorial` | `checkImageryUsage(1)` | 5 |
+| `freepik/video` | `checkImageryUsage(5)` | 30 |
+| `in-season/runs/[id]/execute` | `consumeCredits(action='in_season_run')` | 10 |
+
+Refund-on-failure pattern: `refundImageryUnits(...)` / `refundCredits(...)` is called when the upstream provider returns an error or the async job ultimately fails.
+
+### 9.4 The 5 architecture locks
+
+1. **`loadFullContext` is the single entry point.** New AI endpoints must call it; no endpoint-specific loaders.
+2. **`mergeContextWithInput` preserves frontend data.** Server context fills empty fields only.
+3. **Frontend changes never touch context loading.** UI work shouldn't modify `load-full-context.ts`, `prompt-foundations.ts`, `prompt-context.ts`, `collection-intelligence.ts`, or any `/api/ai/*` route.
+4. **New context fields flow through all three layers**: `loadFullContext` extraction → `buildInheritedContext` formatting → prompt template. Never skip one.
+5. **CIS decisions are versioned, never deleted.** `recordDecision()` flips `is_current=false` on the previous version and inserts a new row.
+
+Full prompt details: `ai-generation-bible.md`.
+
+---
+
+## 10. DATABASE (83 tables, all with RLS enabled · verified via Supabase MCP)
+
+### 10.1 By family
+
+**Core auth & billing (5)**
+`subscriptions` · `ai_usage` · `imagery_credits` · `imagery_credit_purchases` · `audit_log`
+
+**Collections (16)**
+`collection_plans` · `collection_skus` · `collection_timelines` · `collection_assets` · `collection_workspace_data` · `collection_stories` · `collection_decisions` (CIS · 271 rows) · `collection_plan_strategy_links` · `drops` · `sku_colorways` · `sales_actions` · `sales_channels` · `wholesale_orders` · `aimily_models` (28-model roster) · `brand_profiles` · `brand_voice_config`
+
+**Design & dev (8)**
+`tech_pack_data` · `tech_pack_revisions` (28 rows · PLM parity, partial unique on `(sku_id) WHERE is_current=true`) · `tech_pack_comments` · `sample_reviews` · `production_orders` · `suppliers` · `factories` · `artworks`
+
+**Marketing & ecom (8)**
+`ai_generations` · `presentation_shares` · `presentation_deck_overrides` · `storefronts` · `storefront_overrides` · `storefront_publishes` · `user_brands` · `certifications`
+
+**Vendor & team (3)**
+`vendor_invitations` · `team_members` · `student_verifications`
+
+**In-Season (24)**
+See §6.3 above — `in_season_*` family.
+
+**Tenant sales (4)**
+`tenant_sales_connections` · `tenant_sales_sync_runs` · `tenant_sales_webhook_events` · `tenant_sales_webhook_dead_letters`
+
+**Studio (3)**
+`studio_projects` · `studio_purchases` · `studio_output_formats`
+
+**Aimily Assistant (3)**
+`aimily_assistant_conversations` (24) · `aimily_assistant_messages` (46) · `aimily_assistant_user_usage`
+
+**Reference / static (7)**
+`materials_library` (956 rows) · `pantone_colors` (2317) · `fx_rates` (30) · `academic_domains` (167) · `faq_documents` (110) · `faq_chat_log` (8) · `launch_promo_counter`
+
+**Public trend data (3)**
+`city_trends_raw` (3736) · `city_trends_processed` (262) · `tiktok_hashtag_trends` (18) — collection cron retired; raw kept for re-derivation
+
+**Standalone (1)**
+`standalone_timelines`
+
+### 10.2 Migrations of interest
+
+The migrations folder lives in `supabase/migrations/`. Recent waves:
+- **065–072** · In-Season feedback loop, OAuth Vault encryption, webhook hardening (idempotency + DLQ), seeds gate
+- **2026-05-21 drops** · 25 tables removed in 4 waves (raw_content, signals, reports, tech_packs old, market_predictions, product_copy, social_templates, email_templates_content, brand_models, pr_contacts, commercial_actions, content_calendar, content_pillars, launch_tasks, lookbook_pages, paid_campaigns, campaign_shoots, paid_ad_sets, launch_checklist, launch_issues, lessons_learned, asset_reviews, analyzed_content, processing_jobs, sales_entries) — see [`db-dropped-tables-backup-2026-05-21.md`](memory/db-dropped-tables-backup-2026-05-21.md) for rationale + backup of the 3 signals demo rows.
+
+### 10.3 RLS pattern
+
+```sql
+-- Collection-scoped tables
+collection_plan_id IN (SELECT id FROM collection_plans WHERE user_id = auth.uid())
+-- Direct user tables
+user_id = auth.uid()
+-- Tenant-scoped (In-Season)
+tenant_id IN (SELECT id FROM in_season_tenants WHERE owner_user_id = auth.uid())
+                                                OR id IN (SELECT tenant_id FROM in_season_tenant_members WHERE user_id = auth.uid())
+```
+
+Service role bypasses RLS — only used in webhooks, admin ops, and `supabaseAdmin` server contexts.
+
+---
+
+## 11. API ROUTE INVENTORY (212 routes · verified 2026-05-21)
+
+Full list at `/tmp/all-routes.txt` (regenerable from `find src/app/api -name route.ts`). Grouped:
+
+| Group | Count | Notable routes |
+|---|---|---|
+| `/api/ai/*` | 32 | CIS-consuming generators + standalone tools |
+| `/api/in-season/*` | 36 | OAuth, sync, runs, scenarios, seeds, briefs |
+| `/api/cron/*` | 9 | 5 active (Vercel) + 3 pg_cron (cleanup × 2, trial-emails) + 1 unscheduled (`post-launch-analysis`) |
+| `/api/studio/*` | 12 | generate, variation, video, downloads, projects |
+| `/api/ecom/*` | 8 | publish/unpublish/validate/override/storefront |
+| `/api/tech-pack/*` | 7 | revisions, comments, diff, decide, submit, export |
+| `/api/billing/*` | 5 | checkout, portal, subscription, refund, refund-eligibility |
+| `/api/collection-plans/*` | 4 | save, lock-selection, seeds, apply-to-moodboard |
+| `/api/skus/*` (incl bulk) | 9 | CRUD + bulk-rename/scale-pvp/trim-lowest/update-margin |
+| `/api/webhooks/*` | 2 | stripe, db-event |
+| `/api/auth/*` | 3 | pinterest callback/signout, auth-email-hook |
+| `/api/presentation/*` | 5 | data, export, override, promote, share + share/unlock |
+| `/api/vendor-*` | 4 | invitations + portal |
+| Other | ~76 | account, brand-*, drops, factories, suppliers, materials, pantone, fx-rates, notifications, fonts, financial-plan, etc. |
+
+**Active Vercel crons** (`vercel.json`):
+```
+0 9  * * *  /api/cron/cert-expiry-warnings     supplier cert renewal warnings
+0 16 * * *  /api/cron/fx-rates                 daily FX snapshot
+0 3  * * *  /api/cron/expire-student-verifications  12-mo student access expiry
+0 6  * * *  /api/cron/in-season/inventory-snapshot  daily stock+price freeze
+0 7  * * *  /api/cron/in-season/sales-sync     pull sales from all active connectors
+```
+
+Routes scheduled via `pg_cron` (Supabase, not Vercel): `trial-emails`, `cleanup-deleted-collections`, `cleanup-storage-trash`. Lesson learned 2026-05-21: do NOT also add these to `vercel.json` — they'd run twice.
+
+---
+
+## 12. HOOKS, TYPES, COMPONENTS
+
+### 12.1 Hooks (14 · `src/hooks/`)
+
+```
+useSkus                  collection_skus · add/update/delete
+useDrops                  via useWorkspaceData
+useColorways             sku_colorways · add/update/delete
+useSampleReviews         sample_reviews · filtered by reviewType
+useProductionOrders      production_orders · add/update/delete
+useAiGenerations         ai_generations · filtered by type · toggleFavorite
+useStories               collection_stories · bulkSave · assignSku
+useNotifications         /api/notifications · unread count · dismiss
+useAimilyModels          aimily_models · 28-model roster (filterable by gender)
+useCollectionTimeline    collection_timelines · updateMilestone (1000ms debounce)
+usePresentationData      /api/presentation/data · shareable deck
+useWholesaleOrders       wholesale_orders CRUD
+useWorkspaceData         collection_workspace_data + workspaces unlock map
+useWizardState           computed phases[] + accessibility from milestones
+```
+
+Error contract: all writes throw via `src/hooks/hook-errors.ts#backendError`. Reads set local `error` state. Never silent-fail. (Locked rule.)
+
+### 12.2 Types (13 files · `src/types/`)
+
+`brand.ts` · `creative.ts` · `design.ts` · `digital.ts` · `marketing.ts` · `planner.ts` · `production.ts` · `prototyping.ts` · `sales-strategy.ts` · `storefront.ts` · `studio.ts` · `tech-pack.ts` · `timeline.ts`
+
+Single rule: TS enum changes ship with the matching SQL migration.
+
+### 12.3 Component tree (`src/components/`)
+
+```
+aimily-assistant/    in-app AI assistant chat surface
+auth/                AuthModal + GoogleButton + ResetForm
+Bg/                  background visual treatments
+billing/             CreditMeter · UpgradePrompt · PlanCard
+collections/         collection cards + grids
+creative/            CIS-bound creative workspace cards
+design-dev/          design/proto/sampling/production workspace cards
+ecom/                EcomHub · SeoResearchHub · OverridesEditor · ThemePicker
+faq/                 FAQ surface (backed by faq_documents + faq_chat_log)
+landing/             marketing page sections (5-block home)
+layout/              StudioSwitcher · CreditMeter · GlobalNav · Footer
+marketing/           Block 4 workspace cards
+materials/           materials_library browsers + pickers
+merchandising/       Block 2 workspace cards (Family Card gold standard)
+new-collection/      intent selector + date-picker wizard + seeds gate
+notifications/       NotificationBell + dropdown
+onboarding/          welcome tour
+planner/             PlannerDashboard for /collection/[id]/product
+presentation/        21-slide × 10-theme deck
+providers/           PostHogProvider · SentryProvider · etc.
+pwa/                 service worker registrar + install prompt
+strategy/            (legacy alias for in-season components)
+tech-pack/           PLM editor + revisions diff
+timeline/            Gantt + milestones editor
+ui/                  shadcn primitives (24 components — see §13)
+wizard/              WorkspaceGate + WizardLayout + MiniWizards
+workspace/           DecisionCard + WorkspaceShell + ViewPort
+```
+
+### 12.4 shadcn/ui inventory (`src/components/ui/`)
+
+`accordion` · `animate-on-scroll` · `badge` · `button` · `card` · `collapsible` · `colored-svg` · `confirm-dialog` · `input` · `label` · `progress` · `segmented-pill` · `select` · `separator` · `slider` · `svg-icon` · `switch` · `tabs` · `textarea` · `toast` · `toggle` · `toggle-group` · `tooltip` · `index.ts` (24 components)
+
+**LAW**: never raw `<input>`, `<button>`, `<label>`, `<textarea>` — always shadcn. Full design rules in `design-components-canonical.md` and `CLAUDE.md` §🚨 DESIGN SYSTEM V2.
+
+---
+
+## 13. ECOM STOREFRONT (`*.aimily.shop`)
+
+Companion doc: [`architecture-ecom.md`](memory/architecture-ecom.md). Quick reference:
+
+| Aspect | Detail |
+|---|---|
+| Domain | `aimily.shop` registered with Cloudflare Registrar ($30/yr) |
+| DNS | Wildcard CNAME `* → cname.vercel-dns.com` (DNS-only, no proxy) |
+| SSL | Per-subdomain via Vercel API on publish (Let's Encrypt 50/wk per domain) |
+| Themes | 12 (`editorial-heritage` is the canonical bespoke; 9 use the `createAllPages` factory; 2 are single-page bespoke) |
+| Payment providers | `lookbook_only` (default) · `stripe_buy_button` · `shopify_buy` — aimily NEVER touches money |
+| Data loader | [`src/lib/storefront/load-storefront-data.ts`](src/lib/storefront/load-storefront-data.ts) reads CIS canonically and throws `StorefrontDataMissingError` rather than silently masking with defaults |
+| Validator | [`src/lib/storefront/validate.ts`](src/lib/storefront/validate.ts) — same util used by `/api/ecom/publish` (blocks on errors) and `/api/ecom/validate` (UX feedback) |
+| Quota | `subscriptions.storefront_quota` (1/5/25/∞) enforced via `can_publish_storefront(user_id)` RPC |
+| Card location | `04.5 Ecom` inside Block 4 Marketing & Sales |
+
+---
+
+## 14. AUTH, SECURITY, GDPR
+
+### 14.1 Auth
+
+- SSR cookie-based via `@supabase/ssr`
+- Browser: `src/lib/supabase/client.ts`
+- Server: `src/lib/supabase/server.ts` (reads cookies)
+- Admin: `src/lib/supabase-admin.ts` (service role — bypass RLS)
+- Google OAuth: Supabase-managed
+- Middleware ([`src/middleware.ts`](src/middleware.ts)): token refresh on every request, marketing paths delegated to next-intl, app paths gated, storefront wildcard rewritten
+
+### 14.2 Rate limiting
+
+`src/lib/rate-limit.ts` — per-IP throttle on auth and write endpoints (configurable per-route).
+
+### 14.3 RLS
+
+All 83 tables have RLS enabled. See §10.3 for the standard predicates. Service role policies live in migration `014_service_role_policies` + recent in-season hardenings.
+
+### 14.4 GDPR
+
+- Right of Access: `GET /api/account/export` — JSON download (verified to NOT reference dropped tables, fixed 2026-05-21)
+- Right to Erasure: `POST /api/account/delete` — Stripe cancel + cascade data delete + auth.user delete
+- Public policy pages: `/privacy` · `/terms` · `/cookies`
+- Cookie banner: `src/components/CookieConsent.tsx`
 - Data controller: StudioNN Agency S.L.
 
----
+### 14.5 Audit log
 
-## 16. ENVIRONMENT VARIABLES
+`audit_log` table — 11 rows in prod. Writes from `src/lib/audit-log.ts`. Currently covers admin overrides + manual data corrections.
 
-### All in `.env.local` (gitignored)
+### 14.6 In-Season webhook hardening
 
-**Supabase**: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_MANAGEMENT_TOKEN
-
-**Stripe**: STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_STARTER_MONTHLY_PRICE_ID, STRIPE_STARTER_ANNUAL_PRICE_ID, STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID, STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID
-
-**Google OAuth**: GOOGLE_OAUTH_CLIENT_ID
-
-**AI APIs**: GEMINI_API_KEY, GEMINI_MODEL, ANTHROPIC_API_KEY, OPENAI_API_KEY, FREEPIK_API_KEY _(FAL_KEY removed 2026-04-10 — fal.ai no longer used)_
-
-**Other**: APIFY_API_TOKEN, CRON_SECRET, NEXT_PUBLIC_PINTEREST_CLIENT_ID, PINTEREST_CLIENT_SECRET, NEXT_PUBLIC_PINTEREST_REDIRECT_URI, RESEND_API_KEY, IONOS_DNS_API_KEY, IONOS_ZONE_ID_AIMILY
-
-**In Vercel**: All except SUPABASE_MANAGEMENT_TOKEN, IONOS_DNS_API_KEY, IONOS_ZONE_ID_AIMILY, RESEND_API_KEY (management-only).
+Migration 070: per-tenant Vault signing secrets, idempotency table (`tenant_sales_webhook_events` unique `(provider, event_id)`), DLQ (`tenant_sales_webhook_dead_letters`). Replay = 200 `duplicate`.
 
 ---
 
-## 17. KEY FILE INDEX
+## 15. OBSERVABILITY
 
-### Core Infrastructure
-| File | Purpose |
-|------|---------|
-| `src/app/layout.tsx` | Root layout: AuthProvider, SubscriptionProvider, CookieConsent, Analytics |
-| `src/middleware.ts` | Token refresh, route protection |
-| `src/lib/supabase/client.ts` | Browser Supabase client |
-| `src/lib/supabase/server.ts` | Server Supabase client |
-| `src/lib/supabase-admin.ts` | Admin Supabase client (service role) |
-| `src/lib/stripe.ts` | Stripe server init + PLANS config |
-| `src/lib/stripe-client.ts` | Client-side Stripe.js loader |
-| `src/lib/timeline-template.ts` | 4-block timeline: phases, milestones, date math |
-| `src/lib/wizard-phases.ts` | Workspace unlock logic + phase progression |
-| `src/lib/export-timeline-excel.ts` | Gantt → Excel export |
-
-### Auth
-| File | Purpose |
-|------|---------|
-| `src/contexts/AuthContext.tsx` | Auth state + methods |
-| `src/components/auth/AuthModal.tsx` | Sign in/up modal |
-| `src/app/auth/callback/route.ts` | PKCE exchange + smart redirects |
-| `src/app/auth/forgot-password/page.tsx` | Password reset request |
-| `src/app/auth/reset-password/page.tsx` | New password form |
-
-### Billing
-| File | Purpose |
-|------|---------|
-| `src/contexts/SubscriptionContext.tsx` | Subscription state + checkout + portal + usage |
-| `src/app/api/billing/checkout/route.ts` | Stripe Checkout session |
-| `src/app/api/webhooks/stripe/route.ts` | Stripe webhook handler |
-| `src/components/billing/UpgradePrompt.tsx` | Upgrade prompt + usage badge |
-
-### Collection Hub
-| File | Purpose |
-|------|---------|
-| `src/app/collection/[id]/layout.tsx` | Hub layout (fetches plan, timeline, SKUs) |
-| `src/app/collection/[id]/CollectionHubShell.tsx` | Client shell (SubscriptionGate + WizardLayout) |
-| `src/components/collection/CollectionSidebar.tsx` | 4-block sidebar navigation |
-| `src/components/wizard/WorkspaceGate.tsx` | Generic first-entry wizard gate |
-| `src/components/wizard/WizardLayout.tsx` | Workspace layout wrapper |
-
-### Workspace Components
-| File | Purpose |
-|------|---------|
-| `src/components/planner/PlannerDashboard.tsx` | Product workspace |
-| `src/components/brand/BrandWorkspace.tsx` | Brand workspace |
-| `src/components/design/DesignWorkspace.tsx` | Design workspace |
-| `src/components/prototyping/PrototypingWorkspace.tsx` | Prototyping workspace |
-| `src/components/sampling/SamplingWorkspace.tsx` | Sampling workspace |
-| `src/components/production/ProductionWorkspace.tsx` | Production workspace |
-| `src/components/gtm/GoToMarketDashboard.tsx` | GTM workspace |
-| `src/components/marketing/MarketingCreationScreen.tsx` | Marketing Screen 1 (4 cards) |
-| `src/components/marketing/MarketingDistributionScreen.tsx` | Marketing Screen 2 (4 cards) |
-
-### Marketing Cards (Creation — Block 4)
-| File | Purpose |
-|------|---------|
-| `src/components/marketing/SalesDashboardCard.tsx` | KPIs + Recharts revenue curve + stories commercial + drop calendar |
-| `src/components/marketing/ContentStudioCard.tsx` | Per-SKU visual pipeline + ContentEvolutionStrip |
-| `src/components/marketing/ContentEvolutionStrip.tsx` | 4-level visual pipeline (Still Life → Editorial → Campaign → Video) |
-| `src/components/marketing/ModelRosterPicker.tsx` | 28 aimily model headshot grid for editorial casting |
-| `src/components/marketing/CommunicationsCard.tsx` | Copy, social, email, brand voice, SEO — wraps ContentStrategyCard |
-| `src/components/marketing/PointOfSaleCard.tsx` | Wholesale order CRUD + web store placeholder |
-| `src/components/marketing/ContentStrategyCard.tsx` | Content pillars + copy (wrapped by CommunicationsCard) |
-| `src/components/marketing/CampaignVideoCard.tsx` | Video campaigns |
-
-### Marketing Cards (Distribution — Block 4)
-| File | Purpose |
-|------|---------|
-| `src/components/marketing/GoToMarketCard.tsx` | GTM strategy + PR |
-| `src/components/marketing/ContentCalendarCard.tsx` | Content scheduling |
-| `src/components/marketing/PaidGrowthCard.tsx` | Paid ads + growth |
-| `src/components/marketing/LaunchCard.tsx` | Launch execution |
-
-### AI Pipeline & Intelligence
-| File | Purpose |
-|------|---------|
-| `src/lib/collection-intelligence.ts` | CIS core — recordDecision, getIntelligence, compilePromptContext (11 presets) |
-| `src/lib/face-blur.ts` | Face blur preprocessing for editorial style references |
-| `src/lib/prompts/prompt-context.ts` | buildPromptContext() — reads from CIS instead of empty setup_data paths |
-
----
-
-## 18. ENTERPRISE READY PLAN — ALL PHASES COMPLETED
-
-| Phase | Name | Status |
-|-------|------|--------|
-| 0 | Limpieza (OlaWave → aimily + RLS audit) | COMPLETED |
-| 1 | Auth SSR + Middleware | COMPLETED |
-| 2 | Auth Flows (password reset, email confirm, PKCE) | COMPLETED |
-| 3 | SMTP + Email Templates (Resend + 4 branded templates) | COMPLETED |
-| 4 | Google Sign-In (OAuth) | COMPLETED |
-| 5 | Account + GDPR (export, deletion, privacy, terms) | COMPLETED |
-| 6 | Security (RLS hardening, cookie consent) | COMPLETED |
-| 7 | Deploy + Env Vars (Vercel config, DNS, analytics) | COMPLETED |
-
----
-
-## 19. MARKETING BLOCK REDESIGN — V2 COMPLETE (2026-04-12)
-
-Marketing Creation restructured from the original 4-card layout (Stories, Product Visuals, Campaign & Video, Content Strategy) to a new 4-card structure:
-
-| Card | Component | Purpose |
-|------|-----------|---------|
-| Sales Dashboard | SalesDashboardCard | KPIs, Recharts revenue curve, stories commercial, drop calendar |
-| Content Studio | ContentStudioCard | Per-SKU 4-level visual pipeline + 28 aimily model roster picker |
-| Communications | CommunicationsCard | Copy, social, email, brand voice, SEO — wraps ContentStrategyCard |
-| Point of Sale | PointOfSaleCard | Web store placeholder + wholesale order CRUD |
-
-Marketing Distribution remains unchanged (GTM, Content Calendar, Paid & Growth, Launch).
-
-Final routes: `/marketing/creation` and `/marketing/distribution`
-
----
-
-## 19b. COLLECTION INTELLIGENCE SYSTEM (CIS) — UPDATED 2026-04-14
-
-### 🚨 ARCHITECTURE LOCK — DO NOT MODIFY WITHOUT EXPLICIT APPROVAL
-
-The CIS is the backbone of aimily's AI quality. It captures decisions made throughout the collection workflow and feeds them into EVERY AI prompt server-side. This is the #1 competitive advantage of the platform — the "wow moment" when AI proposes perfect results because it has full context.
-
-### Core Components
-
-| Component | Path | Purpose |
-|-----------|------|---------|
-| **CIS Core** | `src/lib/collection-intelligence.ts` | `recordDecision()`, `getIntelligence()`, `compilePromptContext()` with 11 presets |
-| **Prompt Context Builder** | `src/lib/prompts/prompt-context.ts` | `buildPromptContext()` — reads from 11 DB tables + CIS decisions in parallel |
-| **Full Context Loader** | `src/lib/ai/load-full-context.ts` | `loadFullContext()` — CIS + Creative workspace + Brief answers + Collection plan |
-| **Inherited Context** | `src/lib/ai/prompt-foundations.ts` | `buildInheritedContext()` — formats context fields into prompt text |
-| **API** | `GET/POST /api/collection-intelligence` | Direct CIS read/write |
-| **Hook** | `useCollectionIntelligence` | Client-side CIS access |
-| **DB Table** | `collection_decisions` | domain, subdomain, key, value JSONB, tags[], version, rationale, source |
-
-### Data Flow: How AI Gets Context
-
-```
-User makes decisions in UI (Block 1-4)
-        ↓
-recordDecision() → collection_decisions table (versioned, never overwritten)
-        ↓
-User clicks "AI Proposal" / "Generate" / "Regenerate"
-        ↓
-Frontend sends collectionPlanId to API endpoint
-        ↓
-loadFullContext(collectionPlanId) runs SERVER-SIDE:
-  1. buildPromptContext() → CIS (11 DB tables + collection_decisions)
-  2. Creative workspace → consumer proposals, vibe narrative, brandDNA, trends, moodboard, synthesis
-  3. Collection plan → name, season, productCategory (with SKU fallback)
-  4. Brief answers → user's original input that started the collection
-        ↓
-mergeContextWithInput() → server data fills gaps, frontend data preserved
-        ↓
-buildInheritedContext() → formats into prompt text blocks:
-  - PRODUCT CATEGORY (with constraint)
-  - TARGET CONSUMER
-  - COLLECTION VIBE
-  - BRAND DNA
-  - SELECTED TRENDS
-  - MOODBOARD & VISUAL RESEARCH
-  - CREATIVE SYNTHESIS
-  - ORIGINAL BRIEF
-  - EXISTING SKUs
-  - PRODUCT FAMILIES
-  - PRICING ARCHITECTURE
-  - DISTRIBUTION CHANNELS
-  - TARGET MARKETS
-        ↓
-AI receives MAXIMUM context → generates contextually perfect results
-```
-
-### Endpoint Coverage (13/13 critical endpoints)
-
-| Endpoint | Block | Context Source |
-|----------|-------|---------------|
-| `creative-generate` | Block 1 | `loadFullContext` |
-| `merch-generate` | Block 2 | `loadFullContext` |
-| `design-generate` | Block 3 | `loadFullContext` |
-| `stories/generate` | Block 4 | `buildPromptContext` (original) |
-| `content-strategy/generate` | Block 4 | `loadFullContext` |
-| `copy/generate` | Block 4 | `loadFullContext` |
-| `gtm/generate` | Block 4 | `loadFullContext` |
-| `launch/generate` | Block 4 | `buildPromptContext` (original) |
-| `post-launch/generate` | Block 4 | `buildPromptContext` (original) |
-| `content-calendar/generate` | Block 4 | `loadFullContext` |
-| `paid/generate` | Block 4 | `loadFullContext` |
-| `generate-skus` | Builder | `loadFullContext` |
-| `freepik/editorial` | Images | `loadFullContext` |
-| `freepik/still-life` | Images | `loadFullContext` |
-| `freepik/tryon` | Images | `loadFullContext` |
-| `market-prediction` | Analytics | `loadFullContext` |
-
-### Endpoints that DO NOT need CIS (21 utility endpoints)
-
-`brief/*` (4), `analyze-moodboard`, `analyze-text`, `detect-zones`, `explore-trends`, `market-trends`, `freepik/sketch`, `freepik/video`, `freepik/brand-model`, `colorize-sketch`, `generate-sketch-options`, `generate-techpack`, `propose-comments`, `generate-plan`, `vectorize` (deprecated)
-
-### 🔒 RULES — NEVER BREAK THESE
-
-1. **Context is ALWAYS server-side.** No AI endpoint may depend solely on frontend-sent context. The frontend sends `collectionPlanId` and optional user input (direction, preferences). The server loads everything else from the DB.
-
-2. **`loadFullContext()` is the single entry point.** All new AI endpoints MUST use `loadFullContext` from `src/lib/ai/load-full-context.ts`. Do NOT create endpoint-specific context loaders.
-
-3. **`mergeContextWithInput()` preserves frontend data.** Server context only fills empty fields. If the frontend explicitly sends a value, it wins. This ensures backwards compatibility.
-
-4. **Frontend changes NEVER touch context loading.** UI/design changes must not modify how AI endpoints receive context. If you're changing a component's layout, you should NOT be touching `loadFullContext`, `buildPromptContext`, `buildInheritedContext`, or any API route.
-
-5. **New context fields go through `buildInheritedContext`.** If a new data type needs to reach AI prompts, add it to: (a) `loadFullContext` extraction, (b) `buildInheritedContext` formatting, (c) the relevant prompt template. All three. Never skip one.
-
-6. **CIS decisions are versioned, never deleted.** `recordDecision()` marks old versions as `is_current=false` and inserts a new version. Full history is preserved.
-
-7. **12 capture points** exist across Creative, Merchandising, Design, and Marketing blocks. Each one calls `recordDecision()` when the user confirms a decision. Adding new blocks must include CIS capture.
-
-### CIS Presets (compilePromptContext)
-
-| Preset | Domains/Tags | Used By |
-|--------|-------------|---------|
-| `editorial_prompt` | `affects_photography` | Editorial, Still Life |
-| `still_life_prompt` | `affects_photography` | Still Life |
-| `copy_prompt` | `affects_content` | Copy, SEO |
-| `seo_prompt` | `affects_seo` | SEO |
-| `story_generation` | creative, merchandising, design | Stories |
-| `sales_forecast` | merchandising, sales, finance | Sales Dashboard |
-| `web_design` | `affects_web` | POS |
-| `wholesale_pitch` | creative, merchandising, design, sales | Wholesale |
-| `content_calendar` | `affects_content` | Calendar |
-| `launch_strategy` | creative, merchandising, marketing, sales | Launch |
-| `paid_campaign` | marketing, merchandising | Paid Ads |
-| `full` | (everything) | Default |
-
-## 19c. EDITORIAL AI PIPELINE UPDATES (2026-04-12)
-
-- **Editorial endpoint** (`/api/ai/freepik/editorial`) supports 3 reference images:
-  1. Product render (preserve exactly)
-  2. Style reference (face-blurred via `src/lib/face-blur.ts` for pose/lighting/composition only)
-  3. Model headshot (28 aimily model roster — face identity)
-- **Model casting selectors**: complexion, age, hair in editorial prompt
-- **Face blur preprocessing**: `src/lib/face-blur.ts` — blurs face in style reference so Nano Banana uses only the aimily model's headshot for face identity
-- **28 aimily models**: stored in `aimily_models` table (migration 020), rendered via `ModelRosterPicker` component
-- **3 visual categories = 3 endpoints** (architecture lock):
-  - `/api/ai/freepik/still-life` — object, no humans
-  - `/api/ai/freepik/editorial` — on-model narrative
-  - `/api/ai/freepik/tryon` — brand-model catalog
-
----
-
-## 20. GOING LIVE CHECKLIST (When Stripe verified)
-
-1. Create Starter + Professional products/prices in Stripe LIVE mode
-2. Swap test keys → live keys (`sk_live_`, `pk_live_`)
-3. Create new webhook endpoint with live secret
-4. Update all STRIPE_* env vars in `.env.local` and Vercel
-5. Enable Stripe Tax in live mode
-6. Configure Customer Portal branding in Stripe Dashboard
-7. Wire feature gating into actual AI routes (`trackAIUsage` exists but not called yet)
-8. Implement collection count limit enforcement
-9. Implement user count limit enforcement
-10. Implement trial expiry logic (14-day countdown)
-
----
-
-## 21. NOT YET IMPLEMENTED (audit refreshed 2026-05-06)
-
-### ✅ Resolved since 2026-04-12 audit
-- ✅ Stripe LIVE mode (April 2026) — all plans verified, branded checkout, refund flow
-- ✅ Customer Portal configured (April 2026)
-- ✅ Trial 30-day no-card flow (May 2026 pricing rebrand)
-- ✅ Pricing v5 LIVE — Founder/Team/Team Pro/Student tiers (May 2026)
-- ✅ Imagery quota atomic via `consume_imagery_units` RPC + per-user rate limit (April 2026)
-- ✅ Web (Ecom Storefront) + SEO Research module SHIPPED (May 2026 · sections 22+23)
-- ✅ Wholesale moved to Block 2 (May 2026 · section 24)
-- ✅ Vercel Analytics on storefronts (per-host event tagging, GDPR-default)
-
-### Billing & Limits (still pending)
-- Feature gating not wired into actual AI routes for collaboration/multi-brand limits
-- No collection count limit enforcement (Founder/Team plan caps)
-- No user count limit enforcement (Team plan: 10 users)
-- Storefront quota IS enforced via `can_publish_storefront` RPC (Sprint 1 Ecom)
-
-### Creative Block Gaps
-- Creative Synthesis step is placeholder (no consolidation logic)
-- Pinterest integration: button exists, no backend
-- No DB persistence for Creative block data (in-memory only, lost on navigation)
-- Moodboard images use blob URLs (not persisted to Supabase)
-
-### Merchandising Block Gaps
-- No DB persistence for Merchandising card data (in-memory only)
-
-### Design & Dev Block Gaps (workspaces funcionales, consolidación pendiente)
-- Design workspace: Lasts/Forms, Design Review, Patterns use localStorage (3/4 secciones sin DB; Colorways sí usa DB)
-- `/api/ai/design-generate` endpoint exists (4 types) but NO UI buttons call it
-- Prototyping (641 LOC), Sampling (904 LOC), Production (1,201 LOC) are **fully functional with DB hooks** (useSampleReviews, useProductionOrders, useColorways)
-- Each workspace tracks its own milestones correctly (Design: dd-1→dd-6, Proto: dd-7→dd-10, Sampling: dd-11→dd-14, Production: dd-15→dd-18)
-- Plan to consolidate all 4 as Collection Builder layers NOT executed — remain as separate workspace routes
-- No image upload (URL paste only in Design Review)
-
-### Other
-- `password_hibp_enabled` requires Supabase Pro plan
-
----
-
-## 22. ECOM BLOCK · DTC STOREFRONT GENERATOR (NEW · 2026-05-05)
-
-**Status**: ✅ SHIPPED end-to-end · 12 PRs · Sprints 1-10. Marketing copy "Web · landing · DTC + integración" + "SEO · research · on-page" en `PoweredBy.tsx` ahora 100% honesto.
-
-### 22.1 Quick reference
-- **Card location**: `04.4 Ecom` inside Marketing & Sales (renamed from Point of Sale)
-- **Public route**: `<sub>.aimily.shop` per brand (custom domain V2)
-- **Hosting**: Vercel Pro wildcard CNAME · per-subdomain SSL via Vercel API on publish
-- **12 themes** (all working): editorial-heritage · minimal-architect · streetwear-drop · romantic-feminine · resort-luxe · sustainable-craft · workwear-heritage · performance-tech · y2k-digital-native · avant-garde-concept · drop-lookbook (single-page) · linkinbio-plus (single-page mobile-first)
-- **Payment providers**: Stripe Buy Button · Shopify Buy SDK · Lookbook-only (default). Aimily NEVER touches money.
-
-### 22.2 DB tables (migration 046_ecom_storefronts.sql)
-```
-storefronts             1 row per published collection · UNIQUE(collection_plan_id) · subdomain UNIQUE
-storefront_overrides    copy edits per page (page_id + field_overrides JSONB) · clone of presentation_deck_overrides pattern
-storefront_publishes    audit trail (publish/unpublish/rebuild/domain_change/theme_change)
-subscriptions.storefront_quota   ALTER · 1/5/25/999 per plan
-can_publish_storefront(uuid)     RPC · enforced by /api/ecom/publish
-storefronts_unpublish_on_collection_delete   trigger · cascades soft-delete
-```
-
-### 22.3 SSR pipeline
-```
-Visitor https://slaiz.aimily.shop/shop/sku123
-  → DNS *.aimily.shop → Vercel
-    → middleware: extractStorefrontHost(host) → rewrite /storefront/<encoded-host>/shop/sku123
-      → layout.tsx: loadStorefrontByHost (decodes URL) + loadTheme + injects CSS tokens
-        → page.tsx: loadStorefrontData (CIS canonical, throws StorefrontDataMissingError if missing)
-          → applyOverrides → theme.pages.pdp(data, skuId)
-            → BuyButton renders <stripe-buy-button> | Shopify Buy SDK | Coming Soon
-```
-
-### 22.4 CIS-canonical loader (NO fallbacks · throws on missing data)
-```
-creative.identity.brand_name        → brand.name
-creative.identity.collection_vibe   → tagline (1st line) + manifesto (full)
-creative.identity.typography        → parsed display + body fonts (regex)
-creative.color.primary_palette      → hex extraction from "#XXXXXX (note)" array
-marketing.voice.tone                → brand.voice.tone
-marketing.voice.personality         → brand.voice.keywords
-creative.inspiration.competitors    → brand.voice.values
-brand.contact.{email,instagram,address}  → opt-in (not fallbacks)
-```
-
-When required field is missing → `StorefrontDataMissingError` lists missing fields, publish endpoint surfaces "complete Block 1 Creative & Brand" message, SSR returns 404. **NO defaults silently mask incomplete CIS** (rule from `feedback_no-fallbacks-arreglar-origen.md`).
-
-### 22.5 EcomCard sub-sections (3, all DTC-pure)
-```
-src/components/marketing/EcomCard.tsx (47 LOC, cleaned Sprint 10)
-├── EcomHub          publish flow: subdomain input · 12 themes picker · payment connect (Stripe/Shopify wizards) · publish button · live preview iframe
-├── SeoResearchHub   4 tabs: Keywords · On-page meta · Competitors · Audit (see section 23)
-└── OverridesEditor  inline edit · 6 fields (hero.title, collection.narrative, brand.manifesto, contact.{email,instagram,address}) · save+republish in seconds
-```
-
-### 22.6 Per-subdomain SSL strategy (why not wildcard)
-- Cloudflare Free does NOT allow proxied wildcard records (Business+ only)
-- Vercel can't emit wildcard SSL without DNS-01 challenge access (Cloudflare DNS doesn't expose this externally)
-- Cloudflare Registrar locks NS to Cloudflare nameservers for 60 days post-registration (2026-05-05 → 2026-07-04)
-- **Solution**: per-subdomain SSL via Vercel API on publish. Same pattern as Linktree/Substack/Notion custom domains. Let's Encrypt 50 certs/week per registered domain (sufficient for 100s of brands publishing/republishing weekly).
-- **Migration path** (post 2026-07-04): can transfer aimily.shop to Vercel Domains for native wildcard SSL. The publish endpoint changes (Vercel API per-domain registration) become unnecessary at that point.
-
-### 22.7 Endpoints (new under `/api/ecom/`)
-```
-POST /api/ecom/publish                      upsert + Vercel registerStorefrontDomain + audit + revalidateTag
-POST /api/ecom/unpublish                    set published_at NULL + Vercel unregisterStorefrontDomain
-GET  /api/ecom/check-subdomain              live availability (regex + reserved + DB uniqueness)
-GET/PATCH /api/ecom/storefront/[id]         theme/payment/SEO edits (NOT subdomain — use /publish)
-GET  /api/ecom/storefront-by-collection/[planId]   hub UI hydration
-GET/POST /api/ecom/override                  per-page copy overrides upsert
-```
-
-### 22.8 Public storefront routes
-```
-src/app/(storefront)/storefront/[host]/
-├── layout.tsx                               theme tokens + Google Fonts + GdprBanner + Vercel Analytics
-├── page.tsx                                 Home + JSON-LD Organization
-├── shop/page.tsx                            PLP
-├── shop/[sku]/page.tsx                      PDP + JSON-LD Product
-├── lookbook/page.tsx
-├── about/page.tsx
-├── contact/page.tsx
-├── sitemap.xml/route.ts                     dynamic per-host XML
-├── robots.txt/route.ts                      allow + sitemap pointer
-├── og.png/route.tsx                         dynamic next/og 1200×630 with brand palette
-└── not-found.tsx
-```
-
-### 22.9 Theme system (factory pattern)
-- 5 themes use `createAllPages(visualConfig)` factory from `src/lib/storefront/shared/page-templates.tsx` (~70 LOC each)
-- 1 theme (editorial-heritage) has bespoke pages with custom Header/Footer/ProductCard
-- 2 themes (drop-lookbook, linkinbio-plus) are single-page bespoke layouts
-- Total: 12 themes in ~1100 LOC (vs ~5000 if each had its own pages)
-
-### 22.10 Reference docs
-- `memory/architecture-ecom.md` — full living doc (file map, decisions log, future migration)
-- `memory/credentials_cloudflare-aimily-shop.md` — Cloudflare token reference
-- `memory/feedback_no-fallbacks-arreglar-origen.md` — the rule that drove the CIS-canonical loader
-
----
-
-## 23. SEO RESEARCH MODULE (NEW · 2026-05-06 · Sprint 7)
-
-**5 endpoints + SeoResearchHub UI** — backs the "SEO ~€100/mo replaced" claim in PoweredBy.tsx.
-
-### 23.1 Endpoints (under `/api/ai/seo-*`)
-| Endpoint | Body | Returns |
+| Tool | Purpose | Config |
 |---|---|---|
-| `/seo-keywords`    | `{collectionPlanId}` | 18 keywords (6 transactional + 6 informational + 6 brand) with intent + difficulty_hint + rationale |
-| `/seo-onpage`      | `{collectionPlanId, page, skuId?}` | meta_title, meta_description, og_title, og_description, h1, image_alt_pattern (page-specific from CIS) |
-| `/seo-competitors` | `{collectionPlanId}` | 5-7 ranking brands with keywords sample + content_strengths + gaps_for_us |
-| `/seo-audit`       | `{storefrontId}` | fetches live storefront HTML + 12 heuristic checks (title, meta, OG, Twitter card, h1, JSON-LD, lang, viewport, sitemap, robots) → score + recommendations |
-| `/seo-copy`        | `{collectionPlanId, skuId}` | SEO-optimized 60-90w product description + primary/secondary keywords + suggested meta |
+| **PostHog** | Product funnel | `NEXT_PUBLIC_POSTHOG_KEY` · init in `src/lib/observability-bootstrap.tsx` · events in `src/lib/posthog.ts` |
+| **Sentry** | Errors + perf | `SENTRY_DSN` · `sentry.{client,server,edge}.config.ts` · 10% perf, 100% errors |
+| **Vercel Analytics** | Web Vitals | `<Analytics />` in root layout + per-storefront layout (host-tagged events) |
 
-All endpoints use `generateJSON` via Claude Haiku/Gemini fallback with rate limit per user.
-Throw `data_incomplete` if Brand DNA (creative.identity.brand_name) missing — same NO FALLBACKS rule as the storefront loader.
-
-### 23.2 UI · SeoResearchHub
-`src/components/ecom/SeoResearchHub.tsx` (~280 LOC) — 4 tabs (Keywords · On-page · Competitors · Audit) with editorial pill nav, per-tab generate button + loading + error inline. Lives inside EcomCard below EcomHub.
-
-### 23.3 Prompts library
-`src/lib/ai/seo/prompts.ts` — 4 prompt builders, all return JSON shape. Single-source; reused across endpoints.
+Tracked funnel events: `LANDING_VIEWED · CTA_CLICKED · AUTH_OPENED · SIGNUP_COMPLETED · COLLECTION_CREATED · AI_GENERATION_STARTED/SUCCEEDED/FAILED · IMAGERY_LIMIT_REACHED · CHECKOUT_OPENED · CREDIT_PACK_OPENED · SUBSCRIPTION_ACTIVATED`.
 
 ---
 
-## 24. WHOLESALE ORDERS (moved 2026-05-06 · Sprint 10)
+## 16. INFRASTRUCTURE & SERVICES
 
-Was inside EcomCard (Marketing 04.4). Moved to **Block 2 Merchandising > `?block=wholesale`** (semantically B2B distribution, not DTC ecom).
+### 16.1 Supabase
+- Project: `sbweszownvspzjfejmfx`
+- Auth: password ≥8 chars · letters+digits · email confirmation · MFA on admin · rate limits 30/hr email, 150/hr token refresh
+- SMTP: Resend (`smtp.resend.com:465`, sender `aimily <noreply@aimily.app>`)
+- Site URL: `https://www.aimily.app`
+- Redirect URLs: `https://www.aimily.app/**`, `http://localhost:3000/**`
+- Vault used for In-Season OAuth tokens (Shopify access tokens encrypted at rest; plaintext column dropped in migration 069)
 
-- Component: `src/components/merchandising/WholesaleOrdersCard.tsx` (self-contained: hooks + state + UI)
-- Page route: `/collection/[id]/merchandising?block=wholesale` renders dedicated workspace with hero header
-- Sidebar: new sub-block `wholesale` between `channels` and `budget` in Block 2
-- i18n: `wholesale: 'Wholesale'` key in 9 locales
+### 16.2 Stripe (LIVE)
+- Account `acct_1T9iqZQxnvnXDeja` · EUR · Statement descriptor `AIMILY APP`
+- Stripe Tax active (B2B reverse-charge · B2C EU per-country · outside EU 0%)
+- Customer Portal configured
+- Refund flow handled by `/api/webhooks/stripe`
+
+### 16.3 Resend (email)
+- Domain `aimily.app` verified (SPF, DKIM, DMARC via IONOS DNS)
+- Templates: `signup-confirmation.html` · `password-reset.html` · `magic-link.html` · `email-change.html` (dark editorial: `#282A29` bg, `#FAEFE0` text)
+
+### 16.4 Google OAuth
+- Cloud Project `Gemini API` (ID `936283260324`)
+- Client `aimily web`
+- JS origins: `https://www.aimily.app`, `http://localhost:3000`
+- Redirect URI: `https://sbweszownvspzjfejmfx.supabase.co/auth/v1/callback`
+
+### 16.5 DNS — IONOS (`aimily.app`)
+- API: `https://api.hosting.ionos.com/dns/v1/` · env vars `IONOS_DNS_API_KEY` + `IONOS_ZONE_ID_AIMILY`
+- Key records: `A aimily.app → 76.76.21.21` · `CNAME www → cname.vercel-dns.com` · SPF/DKIM/DMARC for Resend + IONOS
+
+### 16.6 DNS — Cloudflare (`aimily.shop`)
+- Account `77123e1e9e30bb61364a9f9009c498cc` · Zone `58392d7347415328aae1d8ae6c7ff338`
+- Env vars: `CLOUDFLARE_API_TOKEN` · `CLOUDFLARE_ACCOUNT_ID` · `CLOUDFLARE_ZONE_ID_AIMILY_SHOP`
+- Migration path: post 2026-07-04 (NS lock expiry) can transfer to Vercel Domains for native wildcard SSL
+
+### 16.7 Vercel
+- Pro plan · Fluid Compute · Team `team_kieSXcYQ6bbTv4a94IR2DN1e`
+- Domains: `aimily.app` · `www.aimily.app` · `*.aimily.shop`
+- Auto-deploy from GitHub `main`
+- `VERCEL_API_TOKEN` used by `/api/ecom/publish` to register per-subdomain SSL
+
+### 16.8 Shopify Partner App (live since 2026-05-20)
+- App "aimily In-Season" registered (client_id `9428e755ff23ab69e2a55affc7182c8b`, partner_org `4373888`)
+- 9 read scopes (incl `read_returns`); Protected Customer Data Access approved
+- Setup doc: [`shopify-partner-app-oauth.md`](memory/shopify-partner-app-oauth.md)
+
+### 16.9 AI providers (env vars confirmed in Vercel)
+`ANTHROPIC_API_KEY` · `GEMINI_API_KEY` · `OPENAI_API_KEY` · `PERPLEXITY_API_KEY` · `FREEPIK_API_KEY` (Mystic + Nano Banana + Kling)
+
+### 16.10 Google Search Console
+- Property `sc-domain:aimily.app` · DNS TXT verified
+- Sitemap `https://www.aimily.app/sitemap.xml` submitted 2026-05-05
+- Owner `felipe.studionn@gmail.com`
+
+---
+
+## 17. ENV VARS
+
+`.env.local` is gitignored. Vercel mirrors all of it except management-only vars.
+
+**Required everywhere**:
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+STRIPE_SECRET_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+STRIPE_WEBHOOK_SECRET
+ANTHROPIC_API_KEY · GEMINI_API_KEY · GEMINI_MODEL
+OPENAI_API_KEY · PERPLEXITY_API_KEY · FREEPIK_API_KEY
+RESEND_API_KEY
+GOOGLE_OAUTH_CLIENT_ID
+CRON_SECRET
+NEXT_PUBLIC_POSTHOG_KEY · SENTRY_DSN
+SHOPIFY_CLIENT_ID · SHOPIFY_CLIENT_SECRET · SHOPIFY_REDIRECT_URI
+```
+
+**Stripe price IDs** (one per plan × billing period · plus credit & studio packs):
+```
+STRIPE_FOUNDER_{MONTHLY,ANNUAL}_PRICE_ID
+STRIPE_TEAM_{MONTHLY,ANNUAL}_PRICE_ID
+STRIPE_TEAM_PRO_{MONTHLY,ANNUAL}_PRICE_ID
+STRIPE_CREDITS_PACK_{50,250,1000}_PRICE_ID
+STRIPE_STUDIO_PACK_{CAPSULE,EDITORIAL,FULL_CAMPAIGN}_PRICE_ID
+```
+
+**Management-only (local + ops, NOT in Vercel)**:
+```
+SUPABASE_MANAGEMENT_TOKEN
+IONOS_DNS_API_KEY · IONOS_ZONE_ID_AIMILY
+CLOUDFLARE_API_TOKEN · CLOUDFLARE_ACCOUNT_ID · CLOUDFLARE_ZONE_ID_AIMILY_SHOP
+VERCEL_API_TOKEN (per-subdomain SSL)
+```
+
+Full canonical registry: [`vercel-env-vars.md`](memory/vercel-env-vars.md).
+
+---
+
+## 18. KEY FILE INDEX (the files to know)
+
+### 18.1 Core infrastructure
+| File | Purpose |
+|---|---|
+| [`src/app/layout.tsx`](src/app/layout.tsx) | Root layout · AuthProvider · SubscriptionProvider · CookieConsent · Analytics |
+| [`src/middleware.ts`](src/middleware.ts) | Token refresh · route protection · marketing redirect · storefront wildcard rewrite |
+| [`src/lib/supabase/{client,server}.ts`](src/lib/supabase/) | SSR Supabase clients |
+| [`src/lib/supabase-admin.ts`](src/lib/supabase-admin.ts) | Service-role client |
+| [`src/lib/api-auth.ts`](src/lib/api-auth.ts) | `getAuthenticatedUser` · `checkImageryUsage` · `consumeCredits` · `verifyCollectionOwnership` |
+| [`src/lib/stripe.ts`](src/lib/stripe.ts) | `PLANS` · `CREDIT_COSTS` · `AIMILY_CREDITS_PACKS` · `getStripeServer` |
+| [`src/lib/rate-limit.ts`](src/lib/rate-limit.ts) | Per-IP throttle |
+
+### 18.2 AI architecture (locked)
+| File | Purpose |
+|---|---|
+| [`src/lib/ai/load-full-context.ts`](src/lib/ai/load-full-context.ts) | Server-side CIS + workspace + brief loader (the spine) |
+| [`src/lib/ai/prompt-foundations.ts`](src/lib/ai/prompt-foundations.ts) | `buildInheritedContext` formats CIS into prompts |
+| [`src/lib/ai/llm-client.ts`](src/lib/ai/llm-client.ts) | Haiku → Gemini fallback wrapper |
+| [`src/lib/ai/cis-prefix.ts`](src/lib/ai/cis-prefix.ts) | Compact prefix for brief endpoints |
+| [`src/lib/collection-intelligence.ts`](src/lib/collection-intelligence.ts) | `recordDecision` · `getIntelligence` · `compilePromptContext` (11 presets) |
+| [`src/lib/prompts/prompt-context.ts`](src/lib/prompts/prompt-context.ts) | Multi-table aggregator on top of CIS |
+
+### 18.3 Workspace components
+| File | Purpose |
+|---|---|
+| [`src/app/(app)/collection/[id]/CollectionOverview.tsx`](src/app/(app)/collection/[id]/CollectionOverview.tsx) | 4-block hub (gold standard pattern · sub-block scaling rules) |
+| `src/app/(app)/collection/[id]/{creative,merchandising,product,marketing/creation}/page.tsx` | Block 1–4 surfaces |
+| `src/components/workspace/{DecisionCard,WorkspaceShell,ViewPort}.tsx` | Workspace primitives |
+| `src/components/in-season/...` | In-Season visual layer |
+| `src/components/aimily-assistant/...` | In-app AI assistant |
+
+### 18.4 In-Season engine
+| File | Purpose |
+|---|---|
+| [`src/lib/in-season/orchestrator.ts`](src/lib/in-season/orchestrator.ts) | Run lifecycle controller |
+| [`src/lib/in-season/recommend.ts`](src/lib/in-season/recommend.ts) | 13-verb classifier |
+| [`src/lib/in-season/identity-graph.ts`](src/lib/in-season/identity-graph.ts) | Confidence-weighted lineage |
+| [`src/lib/in-season/parsers/`](src/lib/in-season/parsers/) | Shopify GraphQL/CSV · Stripe · Zara RNK PDF |
+| [`src/lib/in-season/materialize-sku-seeds.ts`](src/lib/in-season/materialize-sku-seeds.ts) | Verdict → seed materialization |
+| [`src/lib/in-season/sku-image-cropper.ts`](src/lib/in-season/sku-image-cropper.ts) | Aimily Design bridge — crop source-PDF photo |
+
+### 18.5 Storefront
+| File | Purpose |
+|---|---|
+| [`src/lib/storefront/load-storefront-data.ts`](src/lib/storefront/load-storefront-data.ts) | CIS-canonical loader (throws on missing) |
+| [`src/lib/storefront/validate.ts`](src/lib/storefront/validate.ts) | Pre-publish validator (single source for `/publish` + `/validate`) |
+| [`src/lib/storefront/theme-registry.ts`](src/lib/storefront/theme-registry.ts) | 12-theme dynamic-import registry |
+| [`src/lib/storefront/host.ts`](src/lib/storefront/host.ts) | `extractStorefrontHost` · `encodeHost` |
+| [`src/lib/storefront/vercel-domains.ts`](src/lib/storefront/vercel-domains.ts) | Vercel API client for SSL provisioning |
+
+---
+
+## 19. THE LOCKED RULES (don't violate)
+
+1. **Reuse ONLY canonical components.** Before writing any UI, read `memory/design-components-canonical.md`. If a pattern isn't there, ask.
+2. **All API routes use `getAuthenticatedUser()`** from `@/lib/auth-guard` (alias of `api-auth.ts`).
+3. **Verify ownership before data access**: `user_id === collection.user_id`.
+4. **Never use `supabaseAdmin` where user-scoped access works.**
+5. **Every `git commit` is followed by `git push`.** No exceptions.
+6. **AI context is server-side.** Frontend sends `collectionPlanId` only. Don't touch `load-full-context.ts`, `prompt-foundations.ts`, `prompt-context.ts`, `collection-intelligence.ts`, or any `/api/ai/*` during UI work.
+7. **i18n is mandatory.** Zero hardcoded user-facing strings — 9 locales × ~2200 keys.
+8. **Hook error contract**: writes throw via `hook-errors.ts#backendError`. Reads set local `error`. Never silent-fail.
+9. **TS enum changes ship with the matching SQL migration.**
+10. **3 visual categories = 3 endpoints**: `/api/ai/freepik/still-life` + `/editorial` + `/tryon`. Never merge.
+11. **3D render mandatory** for Still Life / Try-On. Buttons disabled without it.
+12. **Honest test E2E before saying ready.** API checks alone ≠ ready.
+13. **No false doors.** Every link in the UI resolves to a working route — no dead pages, no zombie paths.
+14. **Structural fix, not patch.** When something is broken, ship the migration-aware fix, not the case-only quick reset.
+
+Full rules with rationale: see `MEMORY.md` → "🔒 Behavioral Rules".
+
+---
+
+## 20. THE LANDSCAPE OUTSIDE THIS DOC
+
+What the Bible doesn't cover in depth — go to the companion doc:
+
+| Topic | Companion doc |
+|---|---|
+| In-Season pipeline (parsers, scoring, scenarios, OAuth) | [`architecture_in-season-feedback-loop.md`](memory/architecture_in-season-feedback-loop.md) |
+| In-Season product spec (cardinal rules, 13 verbs, 5 KPIs) | [`product-spec_aimily-in-season-2026-05-17.md`](memory/product-spec_aimily-in-season-2026-05-17.md) |
+| Aimily Design module (In-Season → design phase bridge) | [`aimily-design-architecture-2026-05-19.md`](memory/aimily-design-architecture-2026-05-19.md) |
+| Aimily Studio state | `state_aimily-studio-2026-05-16.md` (lives in user memory, not repo) |
+| Ecom storefront generator | [`architecture-ecom.md`](memory/architecture-ecom.md) |
+| Presentation deck (21 slides × 10 themes) | [`architecture-presentation.md`](memory/architecture-presentation.md) |
+| Block × mini-block × micro-block tree | [`architecture-tree-rubik-cube.md`](memory/architecture-tree-rubik-cube.md) |
+| Design & Development block (Block 3 deep map) | [`architecture-block-3.md`](memory/architecture-block-3.md) |
+| Per-endpoint AI provider map | [`ai-generation-bible.md`](memory/ai-generation-bible.md) |
+| Component canon | [`design-components-canonical.md`](memory/design-components-canonical.md) |
+| Retailer-agnostic engine framework | `framework_retailer-agnostic-in-season-engine.md` (lives in user memory, not repo) |
+| Shopify lane feasibility (13/13 verbs) | [`shopify-lane-feasibility-2026-05-19.md`](memory/shopify-lane-feasibility-2026-05-19.md) |
+| Shopify Partner App OAuth setup | [`shopify-partner-app-oauth.md`](memory/shopify-partner-app-oauth.md) |
+| 45-milestone calendar | [`calendar-4-blocks.md`](memory/calendar-4-blocks.md) |
+| Security / AI / privacy audit | `security-ai-privacy.md` (lives in user memory, not repo) |
+| Running UI changelog per session | [`changelog.md`](memory/changelog.md) |
+| Service credentials (point to `.env.local`) | [`credentials.md`](memory/credentials.md) + [`credentials_cloudflare-aimily-shop.md`](memory/credentials_cloudflare-aimily-shop.md) |
+| Vercel env var registry | `vercel-env-vars.md` (lives in user memory, not repo) |
+| Stripe products/prices live state | `stripe-billing.md` (lives in user memory, not repo) |
+
+---
+
+## 21. HOW TO KEEP THIS DOC HONEST
+
+The Bible drifted because nobody updated it on the way through 4 feature waves. To prevent that:
+
+1. **When you change shipping code that contradicts a claim here, update that claim in the same PR.** It's a 30-second edit; doing it later means doing it never.
+2. **When you ship a new feature, decide where it belongs**: a brand-new product gets a top-level section (like §6 In-Season, §7 Studio); a sub-feature of an existing product gets a companion doc with a one-line pointer in §20.
+3. **Quote code, not memory.** When unsure if a fact is still true, grep — don't lean on the doc.
+4. **Don't fold companion docs in.** The 4 architecture docs (in-season, ecom, presentation, tree-rubik) are deep specs; the Bible is the index. Keep them split.
+5. **The version banner at the top is mandatory.** Every meaningful edit bumps the "Last verified" date and adds a one-line "what changed since" note.
+
+---
+
+*Last verified 2026-05-21 against branch `cleanup/bible-deep-rewrite-2026-05-21` · commit pending.*
