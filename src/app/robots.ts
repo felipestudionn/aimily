@@ -12,7 +12,6 @@ const APP_DISALLOW = [
   '/p/',
   '/presentation/',
   '/tech-pack/',
-  '/icon-test',
 ];
 
 // Wave 0a — explicit allowlist for major LLM crawlers. Same disallow rules

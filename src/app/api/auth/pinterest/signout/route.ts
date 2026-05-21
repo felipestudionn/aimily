@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Pinterest Sign Out handler
- * Clears the Pinterest access token cookie and redirects to Creative Space
+ * Clears the Pinterest access token cookie and redirects to My Collections.
  */
 export async function POST(req: NextRequest) {
   const response = NextResponse.json({ success: true });
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const response = NextResponse.redirect(
-    new URL('/creative-space?pinterest_disconnected=true', req.url)
+    new URL('/my-collections?pinterest_disconnected=true', req.url)
   );
   
   // Clear the Pinterest access token cookie

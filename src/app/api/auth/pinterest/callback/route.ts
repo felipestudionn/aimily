@@ -11,9 +11,11 @@ export async function GET(req: NextRequest) {
   const error = searchParams.get('error');
   const state = searchParams.get('state') || '';
 
-  // Extract return path from state (format: "random_return_/path/to/page")
+  // Extract return path from state (format: "random_return_/path/to/page").
+  // Fallback to /my-collections — the canonical landing for logged-in users.
+  // (/creative-space was retired in the pre-2026-04-15 cleanup.)
   const returnMatch = state.match(/_return_(.+)$/);
-  const returnPath = returnMatch ? decodeURIComponent(returnMatch[1]) : '/creative-space';
+  const returnPath = returnMatch ? decodeURIComponent(returnMatch[1]) : '/my-collections';
 
   if (error) {
     return NextResponse.redirect(
