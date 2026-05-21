@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { isValidShopDomain, signOAuthState, SHOPIFY_OAUTH_SCOPES } from '@/lib/shopify/oauth-state';
 
 export const runtime = 'nodejs';

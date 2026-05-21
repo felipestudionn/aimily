@@ -20,7 +20,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   resolveSkuVerdict,
@@ -31,7 +31,7 @@ import {
   appendAmplifyNextSeasonAction,
   appendAmplifyDistributionAction,
   appendPullForwardIntakeAction,
-} from '@/lib/strategy/sku-verdict-resolver';
+} from '@/lib/in-season/sku-verdict-resolver';
 import {
   enrichVerdict,
   DEFAULT_TARGET_ROTATION_DAYS,
@@ -40,25 +40,25 @@ import {
   type SkuVerdictAction,
   type LineageColorWinner,
   type LineageColorLoser,
-} from '@/lib/strategy/sku-verdict-resolver';
+} from '@/lib/in-season/sku-verdict-resolver';
 import {
   appendInvestigateAbsoluteTriggers,
   appendHeroFallback,
-} from '@/lib/strategy/d9-and-hero-appenders';
-import { getDialesForScenario, type ScenarioId } from '@/lib/strategy/scenario-diales';
-import { applyScenarioToVerdict } from '@/lib/strategy/scenario-modulator';
+} from '@/lib/in-season/d9-and-hero-appenders';
+import { getDialesForScenario, type ScenarioId } from '@/lib/in-season/scenario-diales';
+import { applyScenarioToVerdict } from '@/lib/in-season/scenario-modulator';
 import {
   modulateSkuVerdicts,
   type ArchetypeContext,
   type BudgetContext,
   type BriefContext,
   type PerSkuFinancials,
-} from '@/lib/strategy/sku-verdict-modulator';
-import { computeHeadlineKpis, type HeadlineKpis } from '@/lib/strategy/headline-kpis';
+} from '@/lib/in-season/sku-verdict-modulator';
+import { computeHeadlineKpis, type HeadlineKpis } from '@/lib/in-season/headline-kpis';
 import {
   buildTaxonomyNameToHex,
   resolveColorStory,
-} from '@/lib/strategy/color-name-hex-fallback';
+} from '@/lib/in-season/color-name-hex-fallback';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -91,8 +91,8 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 // applyScenarioToVerdict para que los escenarios no destapen stacks
 // contradictorios. Esta función es un wrapper que adapta la firma con
 // Map (route) a la firma con v2 directa (módulo).
-import { applyExclusionRules as applyExclusionRulesCore } from '@/lib/strategy/exclusion-rules';
-import { neutralizeRationale } from '@/lib/strategy/neutralize-source-copy';
+import { applyExclusionRules as applyExclusionRulesCore } from '@/lib/in-season/exclusion-rules';
+import { neutralizeRationale } from '@/lib/in-season/neutralize-source-copy';
 function applyExclusionRules<V extends {
   actions: Array<{ action: string; evidence?: Record<string, unknown> }>;
   product_fact_id: string;

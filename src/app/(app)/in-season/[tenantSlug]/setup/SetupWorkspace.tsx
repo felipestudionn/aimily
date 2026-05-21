@@ -11,7 +11,7 @@
  * SegmentedPill centered below, content fills the rest.
  */
 
-import type { BuyStrategyArchetype } from '@/lib/strategy/sales-archetypes';
+import type { BuyStrategyArchetype } from '@/lib/in-season/sales-archetypes';
 import { useTranslation } from '@/i18n';
 import { CreativeBlock } from './CreativeBlock';
 import { BuyStrategyBlock } from './BuyStrategyBlock';

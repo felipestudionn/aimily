@@ -6,9 +6,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { generateRunSummary, generateScenarioNarrative } from '@/lib/strategy/narrative';
+import { generateRunSummary, generateScenarioNarrative } from '@/lib/in-season/narrative';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

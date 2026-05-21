@@ -20,11 +20,11 @@ import {
   localizeArchetypes,
   type BuyStrategyArchetype,
   type BuyStrategyArchetypeId,
-} from '@/lib/strategy/sales-archetypes';
+} from '@/lib/in-season/sales-archetypes';
 import type {
   BuyStrategyPrefillEditor,
   BuyStrategyAxis,
-} from '@/lib/strategy/buy-strategy-prompts';
+} from '@/lib/in-season/buy-strategy-prompts';
 import { ActionMixCard, type ActionMix } from '@/components/strategy/axis-cards/ActionMixCard';
 import { BudgetCard, type BudgetState } from '@/components/strategy/axis-cards/BudgetCard';
 import { LeadTimeCalendarCard, type BuyWave } from '@/components/strategy/axis-cards/LeadTimeCalendarCard';

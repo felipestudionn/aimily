@@ -1,5 +1,5 @@
 /**
- * GET /api/cron/strategy/sales-sync · Felipe 2026-05-19 Sprint 4.
+ * GET /api/cron/in-season/sales-sync · Felipe 2026-05-19 Sprint 4.
  *
  * Daily cron (registered in vercel.json) that iterates every active
  * tenant_sales_connections row whose next_sync_at <= now() and triggers
@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { syncSalesConnection } from '@/lib/strategy/sync-sales-connection';
+import { syncSalesConnection } from '@/lib/in-season/sync-sales-connection';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

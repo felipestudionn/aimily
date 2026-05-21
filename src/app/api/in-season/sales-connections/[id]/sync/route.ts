@@ -8,9 +8,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { syncSalesConnection } from '@/lib/strategy/sync-sales-connection';
+import { syncSalesConnection } from '@/lib/in-season/sync-sales-connection';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

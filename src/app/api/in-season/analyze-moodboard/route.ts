@@ -27,7 +27,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, enforceAiUserRateLimit } from '@/lib/api-auth';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import Anthropic from '@anthropic-ai/sdk';
 import { extractJSON } from '@/lib/ai/llm-client';
 import { normalizeAiError } from '@/lib/ai/error-messages';

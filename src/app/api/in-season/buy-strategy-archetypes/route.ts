@@ -14,8 +14,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
-import { BUY_STRATEGY_ARCHETYPES } from '@/lib/strategy/sales-archetypes';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
+import { BUY_STRATEGY_ARCHETYPES } from '@/lib/in-season/sales-archetypes';
 
 export const runtime = 'nodejs';
 

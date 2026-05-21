@@ -12,7 +12,7 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 import { PdfOverlayViewer } from './PdfOverlayViewer';
 
 export const dynamic = 'force-dynamic';

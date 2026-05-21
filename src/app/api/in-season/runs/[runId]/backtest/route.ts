@@ -6,10 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { runBacktest } from '@/lib/strategy/backtest';
-import type { ClassifierThresholds } from '@/lib/strategy/classifiers';
+import { runBacktest } from '@/lib/in-season/backtest';
+import type { ClassifierThresholds } from '@/lib/in-season/classifiers';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

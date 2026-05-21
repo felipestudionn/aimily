@@ -13,19 +13,19 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
+import { getStrategyDictForUser } from '@/lib/in-season/server-i18n';
 import {
   humanizeEvidence,
   resolveCandidateIdentity,
   type EvidenceLabels,
   type EvidenceRow,
-} from '@/lib/strategy/recommendation-presenter';
+} from '@/lib/in-season/recommendation-presenter';
 import { RunActionsClient } from './RunActionsClient';
 import { AllocateReplenishmentTrigger } from './AllocateReplenishmentTrigger';
 import { RunScenariosEditor } from './RunScenariosEditor';
-import { BUY_STRATEGY_ARCHETYPES, type BuyStrategyArchetypeId } from '@/lib/strategy/sales-archetypes';
+import { BUY_STRATEGY_ARCHETYPES, type BuyStrategyArchetypeId } from '@/lib/in-season/sales-archetypes';
 import {
   CheckCircle2,
   Clock3,

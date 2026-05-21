@@ -16,9 +16,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { allocateReplenishment } from '@/lib/strategy/replenishment';
+import { allocateReplenishment } from '@/lib/in-season/replenishment';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;

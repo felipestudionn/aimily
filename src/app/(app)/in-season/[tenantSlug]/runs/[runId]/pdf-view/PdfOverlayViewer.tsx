@@ -1542,7 +1542,7 @@ function SkuDetailInline({
       } else if (pdfSignedUrl) {
         // Modo Zara · extracción client-side desde el canvas del PDF.
         const { getSkuReferenceImage, uploadCroppedSkuImage } = await import(
-          '@/lib/strategy/sku-image-cropper'
+          '@/lib/in-season/sku-image-cropper'
         );
         const result = await getSkuReferenceImage(
           pdfSignedUrl,

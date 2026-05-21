@@ -17,7 +17,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ArrowRight, BarChart3, Building2, ShieldCheck, FileSearch } from 'lucide-react';
 

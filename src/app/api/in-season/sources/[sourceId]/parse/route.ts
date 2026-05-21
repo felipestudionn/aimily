@@ -15,13 +15,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { parseZaraRnkPdf } from '@/lib/strategy/parsers/zara-rnk-pdf';
-import { parseShopifyCsvOrXlsx } from '@/lib/strategy/parsers/shopify-csv';
-import { persistParserResult } from '@/lib/strategy/etl/persist';
-import { buildIdentityGraphForTenant } from '@/lib/strategy/identity-graph';
-import type { ParserResult } from '@/lib/strategy/parsers/types';
+import { parseZaraRnkPdf } from '@/lib/in-season/parsers/zara-rnk-pdf';
+import { parseShopifyCsvOrXlsx } from '@/lib/in-season/parsers/shopify-csv';
+import { persistParserResult } from '@/lib/in-season/etl/persist';
+import { buildIdentityGraphForTenant } from '@/lib/in-season/identity-graph';
+import type { ParserResult } from '@/lib/in-season/parsers/types';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

@@ -19,13 +19,13 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
+import { getStrategyDictForUser } from '@/lib/in-season/server-i18n';
 import {
   humanizeEvidence,
   resolveCandidateIdentity,
-} from '@/lib/strategy/recommendation-presenter';
+} from '@/lib/in-season/recommendation-presenter';
 import { DecisionPackPrintTrigger } from './DecisionPackPrintTrigger';
 
 export const dynamic = 'force-dynamic';

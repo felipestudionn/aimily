@@ -98,7 +98,6 @@ const publicApiPrefixes = [
   '/api/chat-faq',           // Public FAQ chat — anyone can ask, per-IP rate limit
   '/api/vendor-portal/',     // Phase 5 vendor portal (token-validated internally)
   '/api/ai/translate',       // Phase 5 vendor translation (token-validated internally)
-  '/api/promo/',             // Public launch-promo counter for pricing page
   '/api/academic-domains/',  // Public list of supported universities (Student page)
 ];
 
