@@ -1,83 +1,96 @@
-# Fashion Trend Analyzer
+# aimily
 
-A visually elegant, scalable fashion trend analysis web application built with Next.js, React, Tailwind CSS v3, and shadcn UI. This application analyzes data from platforms like Google, Pinterest, Instagram, and TikTok, presenting results in a user-friendly dashboard.
+AI-native operating system for fashion brands. Plan, design, and launch collections — and close the loop with real sales data through aimily In-Season.
 
-## Features
+- **App**: https://www.aimily.app
+- **Storefront wildcard**: `*.aimily.shop`
+- **Company**: StudioNN Agency S.L. · NIF B42978130
 
-- **Multi-Platform Analysis**: Analyze fashion trends from Google, Pinterest, Instagram, and TikTok in one unified dashboard
-- **Visual Analytics**: Beautiful charts and visualizations to understand trend patterns
-- **Detailed Trend Reports**: Comprehensive analysis of each trend with growth metrics, platform distribution, and demographics
-- **Responsive Design**: Fully responsive UI that works on desktop, tablet, and mobile devices
-- **Modern UI**: Built with shadcn UI components and Tailwind CSS for a clean, modern interface
+aimily ships as three coupled products that share one account, brand identity, and Aimily Credits bucket:
 
-## Tech Stack
+1. **aimily 360** — collection lifecycle workspace. 4 blocks × 5 mini-blocks with AI assistance at every step, backed by the Collection Intelligence System (CIS).
+2. **Aimily Studio** — standalone AI image + video studio (`/studio`). Editorial, still-life, try-on, video.
+3. **aimily In-Season** — daily in-season sales management for fashion buyers and commercials. Shopify OAuth or PDF/CSV intake; 13 decision verbs (REPLENISH / KILL / RESIZE / RECOLOR / CARRY_OVER / MARKDOWN / INVESTIGATE / AMPLIFY_DISTRIBUTION / EXTEND_COLORS / AMPLIFY_NEXT_SEASON / PROMOTE_PUSH / PULL_FORWARD_INTAKE / WAIT); seeds feed back into the next collection.
 
-- **Next.js**: React framework for server-rendered applications
-- **React**: JavaScript library for building user interfaces
-- **TypeScript**: Typed JavaScript for better developer experience
-- **Tailwind CSS v3**: Utility-first CSS framework
-- **shadcn UI**: High-quality UI components built with Radix UI and Tailwind CSS
+## Tech stack
 
-## Getting Started
+- **Framework**: Next.js 16 (App Router) · React 19 · TypeScript 5.8
+- **Styling**: Tailwind CSS 4.2 + shadcn/ui (Radix) + Lucide icons
+- **i18n**: next-intl · 9 locales (en, es, fr, it, de, pt, nl, no, sv)
+- **Auth & DB**: Supabase (PostgreSQL + RLS + Vault for encrypted tokens)
+- **Payments**: Stripe (LIVE) · Aimily Credits bucket model
+- **Text AI**: Claude Haiku 4.5 primary · Gemini 2.5 Flash fallback · Claude Sonnet 4.5 for heavy text · Perplexity Sonar for live search
+- **Image AI**: OpenAI gpt-image-1.5 (design renders) · Freepik Nano Banana (still life / try-on / editorial) · Freepik Mystic (28-model brand roster)
+- **Video AI**: Freepik Kling 2.1 Pro/Std (async polling)
+- **Hosting**: Vercel (Pro, Fluid Compute) · auto-deploy from `main`
+- **Observability**: PostHog (funnel) · Sentry (errors + perf) · Vercel Analytics (Web Vitals)
 
-### Prerequisites
+## Getting started
 
-- Node.js 18.x or higher
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/fashion-trend-analyzer.git
-cd fashion-trend-analyzer
-```
-
-2. Install dependencies:
-```bash
+git clone git@github.com:felipestudionn/aimily.git
+cd aimily
 npm install
-# or
-yarn install
-```
 
-3. Run the development server:
-```bash
+# Copy the env template and request the secrets from Felipe
+cp .env.local.example .env.local
+
+# Run the dev server on http://localhost:3000
 npm run dev
-# or
-yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+Run the test suite:
 
-## Project Structure
-
-```
-fashion-trend-analyzer/
-├── src/
-│   ├── app/               # Next.js App Router
-│   ├── components/        # React components
-│   │   ├── ui/            # UI components (shadcn)
-│   │   └── layout/        # Layout components
-│   ├── lib/               # Utility functions
-│   ├── services/          # API services
-│   ├── styles/            # Global styles
-│   ├── types/             # TypeScript type definitions
-│   ├── utils/             # Helper functions
-│   └── hooks/             # Custom React hooks
-├── public/                # Static assets
-├── tailwind.config.js     # Tailwind CSS configuration
-├── tsconfig.json          # TypeScript configuration
-└── package.json           # Project dependencies
+```bash
+npm run test         # one-shot
+npm run test:watch   # watch mode
 ```
 
-## Future Enhancements
+Production build:
 
-- Integration with real data sources via APIs
-- AI-powered trend prediction models
-- User authentication and personalized dashboards
-- Advanced filtering and search capabilities
-- Export functionality for reports and visualizations
+```bash
+npm run build
+```
+
+## Project layout
+
+```
+src/
+├── app/
+│   ├── [locale]/      # public marketing (next-intl) — 9 locales
+│   ├── (app)/         # authenticated dashboard
+│   ├── (storefront)/  # *.aimily.shop SSR storefronts
+│   └── api/           # 212 route handlers
+├── components/        # workspace cards + 14 shadcn primitives
+├── contexts/          # AuthContext · SubscriptionContext · LanguageContext
+├── hooks/             # 14 typed hooks (REST → CRUD pattern)
+├── i18n/              # 9 locale dictionaries + next-intl config
+├── lib/
+│   ├── ai/            # loadFullContext (CIS spine) · llm-client · prompts
+│   ├── in-season/     # 13-verb engine + Shopify/Stripe/PDF parsers
+│   ├── storefront/    # 12 themes + Vercel-domains client + validator
+│   ├── studio/        # video pipeline + format export
+│   └── stripe.ts      # PLANS + CREDIT_COSTS (single source of truth)
+├── messages/          # next-intl stub files (content lives in src/i18n/)
+├── styles/            # Tailwind globals
+└── types/             # 13 type files (one per domain)
+
+supabase/
+└── migrations/        # 75 SQL migrations, in sync with the Supabase project
+```
+
+## Source of truth
+
+**`memory/full-project-documentation.md`** — the Bible. Every infrastructure, frontend, backend, and AI architecture decision is documented and code-verified there. Read it before touching anything.
+
+Companion docs (deep specs) under `memory/`:
+
+- `architecture_in-season-feedback-loop.md` · `architecture-ecom.md` · `architecture-presentation.md`
+- `architecture-tree-rubik-cube.md` · `architecture-block-3.md`
+- `design-components-canonical.md` (MANDATORY component inventory)
+- `ai-generation-bible.md` (per-endpoint AI provider map)
+- `shopify-partner-app-oauth.md` · `product-spec_aimily-in-season-2026-05-17.md`
 
 ## License
 
-This project is licensed under the ISC License.
+Proprietary · © StudioNN Agency S.L.

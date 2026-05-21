@@ -39,12 +39,12 @@ Llamada: `mcp__gbrain__add_timeline_entry slug=aimily-events date=YYYY-MM-DD sum
 Páginas canónicas en gbrain (consultar antes de afirmar estado actual): `aimily-product-context` · `aimily-pricing-current` · `aimily-seo-status` · `aimily-marketing-context` · `aimily-marketing-status` · `aimily-ecom-shop` · `aimily-events` · `gbrain-convention-studionn-aimily`.
 
 ## Tech Stack
-- **Framework**: Next.js 16 (App Router) + React 19 + TypeScript
-- **Styling**: Tailwind CSS 4.2 + shadcn/ui (radix-nova) + Lucide icons
-- **UI Library**: shadcn/ui — Card, Button, Input, Label, Badge, Separator, Switch, Toggle, Slider, Accordion, Collapsible, Progress, Tooltip
-- **Backend**: Supabase (PostgreSQL + Auth), project ID `sbweszownvspzjfejmfx`
-- **AI**: Google Gemini 2.5 Flash Lite, Anthropic Claude Sonnet (SketchFlow)
-- **Deployment**: Vercel
+- **Framework**: Next.js 16 (App Router) + React 19 + TypeScript 5.8
+- **Styling**: Tailwind CSS 4.2 + shadcn/ui (Radix) + Lucide icons
+- **UI Library**: shadcn/ui — 14 primitives: badge, button, card, confirm-dialog, input, label, segmented-pill, select, separator, slider, svg-icon, switch, textarea, toast, toggle. Add fresh from CLI when needed; never reintroduce orphan templates.
+- **Backend**: Supabase (PostgreSQL + Auth + Vault), project ID `sbweszownvspzjfejmfx`
+- **AI**: Claude Haiku 4.5 (primary text) · Gemini 2.5 Flash (fallback) · Claude Sonnet 4.5 (SEO/heavy text) · OpenAI gpt-image-1.5 (design renders) · Freepik Nano Banana + Mystic + Kling 2.1 Pro (visuals/video)
+- **Deployment**: Vercel (Pro, Fluid Compute)
 
 ## Security
 - ALL API routes MUST use `getAuthenticatedUser()` from `@/lib/auth-guard`
@@ -63,9 +63,8 @@ Páginas canónicas en gbrain (consultar antes de afirmar estado actual): `aimil
 - Plan: `.planning/ecom/` (6 docs) + `memory/architecture-ecom.md`
 
 ## 🚨 AI CONTEXT ARCHITECTURE — DO NOT TOUCH
-All 16 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/lib/ai/load-full-context.ts`. This reads CIS + Creative workspace + Brief answers + Collection plan. The 3 brief endpoints (`analyze`, `scenarios`, `generate`) accept `collectionPlanId` OPTIONALLY — if present they prepend CIS context via `formatCisPrefix()` from `src/lib/ai/cis-prefix.ts`. Frontend-only changes MUST NOT modify:
+The 32 AI endpoints under `/api/ai/*` (plus the 36 under `/api/in-season/*`) load context SERVER-SIDE via `loadFullContext()` from `src/lib/ai/load-full-context.ts`. This reads CIS + Creative workspace + Brief answers + Collection plan. Frontend sends `collectionPlanId` only; the server fills everything else from the DB. Frontend-only changes MUST NOT modify:
 - `src/lib/ai/load-full-context.ts`
-- `src/lib/ai/cis-prefix.ts`
 - `src/lib/ai/prompt-foundations.ts`
 - `src/lib/prompts/prompt-context.ts`
 - `src/lib/collection-intelligence.ts`
@@ -166,7 +165,7 @@ The 4 big block cards (01 Creative & Brand · 02 Merchandising · 03 Design & De
 
 The `3xl: 1920px` breakpoint is registered in `src/styles/globals.css` via `--breakpoint-3xl: 120rem`. At 2560 (Felipe's monitor) `3xl:` is active and the 5-card grid renders identical to the gold standard. At 1710 (MacBook 16") it scales down without clipping titles. This is THE canonical responsive pattern — replicate verbatim, do not invent variations.
 
-**Reference files**: `src/app/collection/[id]/CollectionOverview.tsx` lines 245-295 (block level) and 298-370 (sub-block level).
+**Reference files**: `src/app/(app)/collection/[id]/CollectionOverview.tsx` lines 245-295 (block level) and 298-370 (sub-block level).
 
 **DO NOT re-introduce**:
 - ❌ 2×2 grids (`grid-cols-1 md:grid-cols-2`) — always 4-col grid.
@@ -181,7 +180,7 @@ The `3xl: 1920px` breakpoint is registered in `src/styles/globals.css` via `--br
 
 ## 🥇 GOLD STANDARD: Family Card (Merchandising > Families) — REPLICATE EVERYWHERE
 
-The Family Card design in `src/app/collection/[id]/merchandising/page.tsx` (FamilyCardGrid) is the canonical reference. Every workspace card MUST follow this exact pattern:
+The Family Card design in `src/app/(app)/collection/[id]/merchandising/page.tsx` (FamilyCardGrid) is the canonical reference. Every workspace card MUST follow this exact pattern:
 
 - `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5` — the `lg:` step IS the gold standard 4-col layout. Mobile-first prefixes preserve it on desktop while stacking gracefully on phone (NEVER skip the prefixes — Family Cards become illegible at 63px wide otherwise).
 - Card: `bg-white rounded-[20px] p-10 md:p-14 min-h-[500px]` + `hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]`
@@ -274,52 +273,54 @@ All sub-blocks route through `creative/page.tsx` with `?block=` param:
 
 ## 🎯 CURRENT STATE & NEXT SESSION CONTEXT
 
-### What's Built & Working (as of 2026-04-14)
+### What's Built & Working (as of 2026-05-21)
 - **Family Card design GOLD STANDARD** in Merchandising > Families & Pricing — replicate everywhere
-- **CIS server-side** for ALL 13 AI endpoints via `loadFullContext()`
-- **WizardSidebar i18n** complete (23 keys × 9 languages)
+- **CIS server-side** for ALL 32 AI endpoints via `loadFullContext()`
+- **WizardSidebar i18n** complete (3.543 keys × 9 languages, all symmetric)
 - **Playwright MCP** active for visual iteration on `localhost:3000` at 2560×1440
 - **WorkspaceShell**: state-based navigation, sidebar active state syncs
-- **shadcn/ui**: Fully installed with Tailwind v4.2
+- **shadcn/ui**: 14 primitives installed with Tailwind v4.2
 
 ### What Still Needs the Template Treatment
 Apply the Family Card gold standard pattern to:
-- `src/app/collection/[id]/merchandising/page.tsx` — Channels & Markets, Budget & Financials
-- `src/app/collection/[id]/creative/page.tsx` — Consumer, Moodboard & Research, Brand Identity, Creative Overview
-- All marketing cards in `src/components/marketing/` (Sales Dashboard, Content Studio, Communications, Point of Sale)
+- `src/app/(app)/collection/[id]/merchandising/page.tsx` — Channels & Markets, Budget & Financials
+- `src/app/(app)/collection/[id]/creative/page.tsx` — Consumer, Moodboard & Research, Brand Identity, Creative Overview
+- All marketing cards in `src/components/marketing/` (Sales Dashboard, Content Studio, Communications, Ecom)
 - Design & Development sub-blocks
 
 ### Visual Iteration Workflow (Playwright MCP)
 - Dev server: `npm run dev` on `localhost:3000`
 - Felipe's test collection: `60652ef7-1b06-4be4-9a61-31357be0be65` (SS27 SLAIZ, English locked)
 - Use `mcp__playwright__browser_navigate` + `browser_take_screenshot` for verification
-- See `feedback_visual-iteration-with-playwright.md`
 
 ### Felipe's Rules (HARD)
 1. **ALL workspace content uses the 4-card grid** — gold standard = Merchandising > Families
-2. **Use shadcn/ui exclusively** — Card, CardHeader, CardTitle, CardContent, Input, Button, Badge, Label, Separator, Switch, Toggle, Slider
+2. **Use shadcn/ui exclusively** — only the 14 primitives below; add fresh from CLI if a new one is needed
 3. **NEVER raw `<input>`, `<button>`, `<label>`, `<textarea>`** — always shadcn
 4. **Anti-Excel**: shadcn Slider instead of number inputs for percentages, visual bars, big numbers
 5. **i18n MANDATORY** — zero hardcoded strings, all 9 languages
 6. **AI context architecture LOCKED** — never modify during frontend work
 7. **Effort=High + Thinking=ON** always
 
-### shadcn Component Reference (installed & ready)
+### shadcn Component Reference (14 installed primitives)
 ```tsx
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { Toggle } from '@/components/ui/toggle'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Slider } from '@/components/ui/slider'
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Progress } from '@/components/ui/progress'
+import { Toggle } from '@/components/ui/toggle'
+import { SegmentedPill } from '@/components/ui/segmented-pill'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast'
+// + SvgIcon (custom shadcn-style helper)
 ```
+Orphan templates (accordion, animate-on-scroll, collapsible, colored-svg, progress, tabs, toggle-group, tooltip) were removed 2026-05-21 — re-add fresh via shadcn CLI if needed.
 
 ### Design Reference: Sub-Dashboard Cards (THE GOLD STANDARD)
 The 4 sub-block cards in CollectionOverview (01.1, 01.2, etc.) define the visual standard:
