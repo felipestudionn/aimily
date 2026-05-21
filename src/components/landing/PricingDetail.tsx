@@ -155,7 +155,7 @@ const STUDIO_I18N: Record<Language, {
 };
 
 interface PricingDetailProps {
-  openAuth: () => void;
+  openAuth: (mode?: 'signin' | 'signup') => void;
 }
 
 export function PricingDetail({ openAuth }: PricingDetailProps) {

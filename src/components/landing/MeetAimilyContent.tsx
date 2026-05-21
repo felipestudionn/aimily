@@ -105,7 +105,7 @@ function BlockHeading({
 }
 
 interface MeetAimilyContentProps {
-  openAuth: () => void;
+  openAuth: (mode?: 'signin' | 'signup') => void;
 }
 
 export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
@@ -146,7 +146,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
         <Reveal delay={700}>
           <div className="mt-14 flex flex-col sm:flex-row items-center gap-3">
             <button
-              onClick={openAuth}
+              onClick={() => openAuth('signup')}
               className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
             >
               {h.meet.cta}

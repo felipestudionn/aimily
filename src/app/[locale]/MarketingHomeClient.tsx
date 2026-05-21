@@ -109,15 +109,21 @@ export default function MarketingHomeClient() {
 
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up animate-delay-200">
             <button
-              onClick={openAuth}
+              onClick={() => openAuth('signup')}
               className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
             >
               {t.common.startFreeTrial}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
+            <button
+              onClick={() => openAuth('signin')}
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-crema/20 text-crema/85 text-[14px] font-medium hover:border-crema/40 hover:text-crema transition-all"
+            >
+              {t.common.signIn}
+            </button>
             <a
               href="#pricing"
-              className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-crema/20 text-crema/85 text-[14px] font-medium hover:border-crema/40 hover:text-crema transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full text-crema/55 text-[13px] font-medium hover:text-crema transition-all underline-offset-4 hover:underline"
             >
               {t.common.seePricing}
             </a>
@@ -179,7 +185,7 @@ export default function MarketingHomeClient() {
           </p>
           <div className="mt-12 flex justify-center">
             <button
-              onClick={openAuth}
+              onClick={() => openAuth('signup')}
               className="group inline-flex items-center gap-3 px-9 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
             >
               {h.finalCta.button}
