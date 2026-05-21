@@ -4,25 +4,44 @@
    SiteFooter — single footer component used across all public pages.
 
    Replaces the per-page inline footers (each one had different links,
-   different copy, different sizes). One source of truth: same five
-   links in the same order, same copyright, same DWP disclaimer.
+   different copy, different sizes). One source of truth: same links
+   in the same order, same copyright, same DWP disclaimer.
+
+   2026-05-21 fixes:
+     - All hrefs auto-prefixed with the active locale so a click from
+       /es/... doesn't strand visitors back on the English homepage.
+     - Sign in / My collections entry exposed in the footer for the
+       case where the visitor scrolled past the persistent nav and
+       wants to log in from the bottom of the page.
    ═══════════════════════════════════════════════════════════════════ */
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/i18n';
 
 interface SiteFooterProps {
   variant?: 'dark' | 'light';
+  /** Callback to open the auth modal (only used when no user is signed in). */
+  onAuth?: (mode: 'signin' | 'signup') => void;
 }
 
-export function SiteFooter({ variant = 'dark' }: SiteFooterProps) {
+export function SiteFooter({ variant = 'dark', onAuth }: SiteFooterProps) {
   const isDark = variant === 'dark';
   const text = isDark ? 'text-crema/55' : 'text-carbon/55';
   const textHover = isDark ? 'hover:text-crema' : 'hover:text-carbon';
   const border = isDark ? 'border-crema/[0.08]' : 'border-carbon/[0.08]';
   const logoSrc = isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png';
+  const params = useParams<{ locale?: string }>();
+  const locale = params?.locale ?? 'en';
+  const { user } = useAuth();
+  const t = useTranslation();
+  const withLocale = (href: string) => `/${locale}${href === '/' ? '' : href}`;
 
   const links = [
+    { href: '/in-season', label: 'In-Season' },
+    { href: '/studio', label: 'Studio' },
     { href: '/contact', label: 'Contact' },
     { href: '/trust', label: 'Trust' },
     { href: '/privacy', label: 'Privacy' },
@@ -49,17 +68,42 @@ export function SiteFooter({ variant = 'dark' }: SiteFooterProps) {
             </span>
           </div>
 
-          {/* Right — links */}
+          {/* Right — links + auth entry */}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center">
             {links.map((link) => (
               <Link
                 key={link.href}
-                href={link.href}
+                href={withLocale(link.href)}
                 className={`text-[12px] ${text} ${textHover} tracking-[0.15em] uppercase font-medium transition-colors`}
               >
                 {link.label}
               </Link>
             ))}
+            {/* Auth pivot — second findable entry to sign in (the persistent
+                nav has the primary one). Falls back to a regular link when
+                no onAuth handler is wired, e.g. on legal pages. */}
+            {user ? (
+              <Link
+                href="/my-collections"
+                className={`text-[12px] ${text} ${textHover} tracking-[0.15em] uppercase font-medium transition-colors`}
+              >
+                {t.common.myCollections}
+              </Link>
+            ) : onAuth ? (
+              <button
+                onClick={() => onAuth('signin')}
+                className={`text-[12px] ${text} ${textHover} tracking-[0.15em] uppercase font-medium transition-colors`}
+              >
+                {t.common.signIn}
+              </button>
+            ) : (
+              <Link
+                href={withLocale('/')}
+                className={`text-[12px] ${text} ${textHover} tracking-[0.15em] uppercase font-medium transition-colors`}
+              >
+                {t.common.signIn}
+              </Link>
+            )}
           </div>
         </div>
 

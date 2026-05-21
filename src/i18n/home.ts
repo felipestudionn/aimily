@@ -220,6 +220,45 @@ export type HomeDict = {
     contentTitle: string;
     tier: string;
   };
+  // Block 05 — In-Season (the loop closes). Optional so existing 9-locale
+  // bundles don't break — locales without it get the EN fallback at runtime.
+  block5?: {
+    label: string;
+    titleStart: string;
+    titleItalic: string;
+    titleEnd: string;
+    description: string;
+    before: string;
+    after: string;
+    verdictEyebrow: string;
+    verdictTitle: string;
+    verdictReplenish: string;
+    verdictKill: string;
+    verdictMarkdown: string;
+    verdictAmplify: string;
+    verdictRecolor: string;
+    verdictResize: string;
+    verdictPullForward: string;
+    verdictInvestigate: string;
+    verdictCarryOver: string;
+    confidenceEyebrow: string;
+    confidenceTitle: string;
+    confidenceData: string;
+    confidenceIdentity: string;
+    confidenceDemand: string;
+    confidenceMargin: string;
+    confidenceCreative: string;
+    confidenceAction: string;
+    seedsEyebrow: string;
+    seedsTitle: string;
+    seedsBody: string;
+    loopCaption: string;
+    integrationsEyebrow: string;
+    integrationShopify: string;
+    integrationStripe: string;
+    integrationPdf: string;
+    integrationErp: string;
+  };
   // Enterprise artifacts
   artifacts: {
     eyebrow: string;
@@ -337,6 +376,27 @@ export type HomeDict = {
     countImg: string; // placeholder: "{n} img"
     footerNote: string;
     manage: string;
+    // 2026-05-21 — added so a visitor understands the unified bundle
+    // (360 + Studio + In-Season + shared credits bucket) and what each
+    // action costs before they swipe a card. Optional so legacy bundles
+    // pass type-check; rendered conditionally in PricingDetail.
+    trialBannerTitle?: string;
+    trialBannerBody?: string;
+    includedEyebrow?: string;
+    includedTitle?: string;
+    includedBody?: string;
+    creditsEyebrow?: string;
+    creditsTitle?: string;
+    creditsLead?: string;
+    creditCostSketch?: string; // "1 credit"
+    creditCostStillLife?: string; // "3 credits"
+    creditCostTryon?: string; // "3 credits"
+    creditCostEditorial?: string; // "5 credits"
+    creditCostInSeason?: string; // "10 credits"
+    creditCostVideo?: string; // "30 credits"
+    creditActionStillLife?: string;
+    creditActionTryon?: string;
+    creditActionInSeason?: string;
   };
   // Powered by — AI provider transparency block
   poweredBy: {
@@ -591,6 +651,43 @@ const en: HomeDict = {
     contentTitle: 'One SKU. Every visual format. One click.',
     tier: 'Tier',
   },
+  block5: {
+    label: 'In-Season · the loop closes',
+    titleStart: 'The season that ended ',
+    titleItalic: 'designs',
+    titleEnd: ' the next.',
+    description: 'A collection doesn\'t end on launch day — it ends on its 50th day of trading, with a row of verdicts on every SKU. aimily In-Season ingests your live sales (Shopify OAuth, Stripe, or weekly PDF), runs 10 deterministic classifiers each morning, and walks you into the daily trading meeting with an evidence-backed action pack: replenish, kill, resize, recolor, mark down, amplify distribution, pull forward intake, investigate. Then it loops: the seeds you pin feed straight back into next season\'s Moodboard.',
+    before: 'Sales reports land Monday. Buyers re-key them into Excel, eyeball Top 50, argue about reorders. Half the action is missed. Next season starts from a moodboard nobody owns.',
+    after: 'Daily action pack at 6 am. Every SKU has a verdict + six confidence dimensions. Seeds pin straight to the next-season Moodboard with one click. Decisions reproduce by version, not by memory.',
+    verdictEyebrow: 'Daily action pack · sample SKU verdicts',
+    verdictTitle: '13 verbs. One pack. Every morning.',
+    verdictReplenish: 'Replenish',
+    verdictKill: 'Kill',
+    verdictMarkdown: 'Mark down',
+    verdictAmplify: 'Amplify distribution',
+    verdictRecolor: 'Recolor',
+    verdictResize: 'Resize',
+    verdictPullForward: 'Pull forward intake',
+    verdictInvestigate: 'Investigate',
+    verdictCarryOver: 'Carry over',
+    confidenceEyebrow: '6 confidence dimensions',
+    confidenceTitle: 'Calibrated uncertainty, not confident guessing.',
+    confidenceData: 'Data completeness',
+    confidenceIdentity: 'Identity match',
+    confidenceDemand: 'Demand signal',
+    confidenceMargin: 'Margin defense',
+    confidenceCreative: 'Creative fit',
+    confidenceAction: 'Action robustness',
+    seedsEyebrow: 'Seeds → next-season Moodboard',
+    seedsTitle: 'The loop closes here.',
+    seedsBody: 'Pin a verdict to seeds. Open next season\'s Moodboard. The winning palette, the lineage survivor, the color extension — already waiting. Block 5 hands back to Block 1, and the cycle compounds instead of resetting.',
+    loopCaption: 'Block 5 In-Season feeds Block 1 Creative & Brand for the next collection. The cycle compounds.',
+    integrationsEyebrow: 'Connect what you already run',
+    integrationShopify: 'Shopify OAuth · Partner App approved',
+    integrationStripe: 'Stripe · subscription / one-time',
+    integrationPdf: 'Weekly PDF · Inditex-style ranking',
+    integrationErp: 'Custom ERP · talk to us',
+  },
   artifacts: {
     eyebrow: 'Every artifact a fashion brand needs',
     titleItalic: 'Production-ready.',
@@ -712,6 +809,24 @@ const en: HomeDict = {
     countImg: '{n} img',
     footerNote: 'Prices excl. VAT · 30 days free, no credit card',
     manage: 'Manage my subscription',
+    // 2026-05-21 additions
+    trialBannerTitle: '30 days free, no credit card.',
+    trialBannerBody: 'Use the full platform for 30 days before any charge. We ask for a card only when you decide to keep your plan. Cancel from the dashboard at any time, no email required.',
+    includedEyebrow: 'Every plan, the whole platform',
+    includedTitle: 'aimily 360 · Content Studio · In-Season — one bundle.',
+    includedBody: 'You don\'t pick between the collection builder, the campaign studio and the in-season action pack. All three live in every plan, drawing from a single bucket of Aimily Credits. Founder ships you 100 credits / month, Team ships 1,000. Top-up packs available in-product if a campaign month spikes.',
+    creditsEyebrow: 'What an Aimily Credit buys you',
+    creditsTitle: 'One bucket. Every surface. Transparent costs.',
+    creditsLead: 'Same wallet across the 360 builder, the Studio campaigns and the In-Season classifier runs — so a heavy editorial week and a quiet trading week balance out automatically.',
+    creditCostSketch: '1 credit',
+    creditCostStillLife: '3 credits',
+    creditCostTryon: '3 credits',
+    creditCostEditorial: '5 credits',
+    creditCostInSeason: '10 credits',
+    creditCostVideo: '30 credits',
+    creditActionStillLife: 'Still life image',
+    creditActionTryon: 'Try-on image',
+    creditActionInSeason: 'In-Season daily run',
   },
   poweredBy: {
     eyebrow: 'Powered by',
@@ -964,6 +1079,43 @@ const es: HomeDict = {
     contentTitle: 'Un SKU. Cada formato visual. Un click.',
     tier: 'Tier',
   },
+  block5: {
+    label: 'In-Season · el bucle se cierra',
+    titleStart: 'La temporada que acaba ',
+    titleItalic: 'diseña',
+    titleEnd: ' la siguiente.',
+    description: 'Una colección no termina el día del lanzamiento — termina en su día 50 de venta, con un veredicto sobre cada SKU. aimily In-Season ingiere tus ventas vivas (Shopify OAuth, Stripe o PDF semanal), corre 10 clasificadores deterministas cada mañana y te lleva al daily trading meeting con un action pack respaldado por evidencia: reponer, matar, redimensionar, recolor, marcar abajo, amplificar distribución, adelantar intake, investigar. Y entonces hace el bucle: las semillas que pineas alimentan directamente el Moodboard de la siguiente temporada.',
+    before: 'Los informes de ventas llegan el lunes. Los buyers los re-meten en Excel, miran el Top 50 a ojo, discuten reorders. La mitad de las acciones se pierden. La siguiente temporada arranca desde un moodboard que no es de nadie.',
+    after: 'Action pack diario a las 6 am. Cada SKU con veredicto y seis dimensiones de confianza. Las semillas se pinean al Moodboard de la siguiente temporada con un click. Las decisiones se reproducen por versión, no por memoria.',
+    verdictEyebrow: 'Action pack diario · veredictos de muestra',
+    verdictTitle: '13 verbos. Un pack. Cada mañana.',
+    verdictReplenish: 'Reponer',
+    verdictKill: 'Matar',
+    verdictMarkdown: 'Marcar abajo',
+    verdictAmplify: 'Amplificar distribución',
+    verdictRecolor: 'Recolor',
+    verdictResize: 'Redimensionar',
+    verdictPullForward: 'Adelantar intake',
+    verdictInvestigate: 'Investigar',
+    verdictCarryOver: 'Carry over',
+    confidenceEyebrow: '6 dimensiones de confianza',
+    confidenceTitle: 'Incertidumbre calibrada, no adivinanza con seguridad.',
+    confidenceData: 'Completitud del dato',
+    confidenceIdentity: 'Match de identidad',
+    confidenceDemand: 'Señal de demanda',
+    confidenceMargin: 'Defensa de margen',
+    confidenceCreative: 'Encaje creativo',
+    confidenceAction: 'Robustez de la acción',
+    seedsEyebrow: 'Semillas → Moodboard siguiente temporada',
+    seedsTitle: 'El bucle se cierra aquí.',
+    seedsBody: 'Pinea un veredicto a semillas. Abre el Moodboard de la siguiente temporada. La paleta ganadora, el survivor del linaje, la extensión de color — ya están esperando. El Bloque 5 entrega al Bloque 1, y el ciclo compone en lugar de resetear.',
+    loopCaption: 'El Bloque 5 In-Season alimenta el Bloque 1 Creative & Brand de la siguiente colección. El ciclo compone.',
+    integrationsEyebrow: 'Conecta lo que ya usas',
+    integrationShopify: 'Shopify OAuth · Partner App aprobada',
+    integrationStripe: 'Stripe · suscripción / one-time',
+    integrationPdf: 'PDF semanal · ranking estilo Inditex',
+    integrationErp: 'ERP custom · háblanos',
+  },
   artifacts: {
     eyebrow: 'Cada artefacto que necesita una marca de moda',
     titleItalic: 'Listo para producción.',
@@ -1085,6 +1237,24 @@ const es: HomeDict = {
     countImg: '{n} img',
     footerNote: 'Precios sin IVA · 30 días gratis sin tarjeta',
     manage: 'Gestionar mi suscripción',
+    // 2026-05-21 additions
+    trialBannerTitle: '30 días gratis, sin tarjeta.',
+    trialBannerBody: 'Usa toda la plataforma durante 30 días antes de pagar nada. Te pedimos la tarjeta solo cuando decidas seguir con tu plan. Cancela desde el dashboard cuando quieras, sin emails.',
+    includedEyebrow: 'Cada plan, la plataforma entera',
+    includedTitle: 'aimily 360 · Content Studio · In-Season — un único bundle.',
+    includedBody: 'No eliges entre el constructor de colección, el studio de campañas y el action pack in-season. Los tres viven en cada plan, tirando de un único bucket de Aimily Credits. Founder te trae 100 credits / mes, Team 1.000. Si una semana de campaña se dispara, hay top-up packs disponibles dentro del producto.',
+    creditsEyebrow: 'Qué te compra un Aimily Credit',
+    creditsTitle: 'Un bucket. Cada superficie. Costes transparentes.',
+    creditsLead: 'La misma cartera para el constructor 360, las campañas de Studio y las corridas diarias del clasificador In-Season — así una semana editorial fuerte y una semana de trading tranquila se compensan solas.',
+    creditCostSketch: '1 credit',
+    creditCostStillLife: '3 credits',
+    creditCostTryon: '3 credits',
+    creditCostEditorial: '5 credits',
+    creditCostInSeason: '10 credits',
+    creditCostVideo: '30 credits',
+    creditActionStillLife: 'Imagen still life',
+    creditActionTryon: 'Imagen try-on',
+    creditActionInSeason: 'Corrida diaria In-Season',
   },
   poweredBy: {
     eyebrow: 'Construido con',

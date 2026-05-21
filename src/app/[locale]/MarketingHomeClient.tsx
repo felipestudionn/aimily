@@ -28,6 +28,7 @@ import { track, Events } from '@/lib/posthog';
 import { MeetAimilyContent } from '@/components/landing/MeetAimilyContent';
 import { PricingDetail } from '@/components/landing/PricingDetail';
 import { PoweredBy } from '@/components/landing/PoweredBy';
+import { TrustStrip } from '@/components/landing/TrustStrip';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useHomeTranslation } from '@/i18n/home';
 import FaqWidget from '@/components/faq/FaqWidget';
@@ -41,6 +42,7 @@ export default function MarketingHomeClient() {
   const t = useTranslation();
   const h = useHomeTranslation();
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
 
   useEffect(() => {
     track(Events.LANDING_VIEWED, { page: 'home' });
@@ -62,11 +64,12 @@ export default function MarketingHomeClient() {
     router.push('/my-collections');
   }, [user, router]);
 
-  const openAuth = () => {
+  const openAuth = (mode: 'signin' | 'signup' = 'signup') => {
     track(Events.CTA_CLICKED, { source: 'home', authed: !!user });
     if (user) router.push('/my-collections');
     else {
-      track(Events.AUTH_OPENED, { source: 'home' });
+      track(Events.AUTH_OPENED, { source: 'home', mode });
+      setAuthMode(mode);
       setAuthOpen(true);
     }
   };
@@ -106,15 +109,21 @@ export default function MarketingHomeClient() {
 
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up animate-delay-200">
             <button
-              onClick={openAuth}
+              onClick={() => openAuth('signup')}
               className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
             >
               {t.common.startFreeTrial}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
+            <button
+              onClick={() => openAuth('signin')}
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-crema/20 text-crema/85 text-[14px] font-medium hover:border-crema/40 hover:text-crema transition-all"
+            >
+              {t.common.signIn}
+            </button>
             <a
               href="#pricing"
-              className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-crema/20 text-crema/85 text-[14px] font-medium hover:border-crema/40 hover:text-crema transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-full text-crema/55 text-[13px] font-medium hover:text-crema transition-all underline-offset-4 hover:underline"
             >
               {t.common.seePricing}
             </a>
@@ -144,10 +153,13 @@ export default function MarketingHomeClient() {
         </a>
       </section>
 
-      {/* ═══════════════════════ LAYER 2 — MEET AIMILY (DWP narrative + AZUR) ═══════════════════════ */}
+      {/* ═══════════════════════ LAYER 2 — MEET AIMILY (DWP narrative + AZUR + In-Season loop) ═══════════════════════ */}
       <div id="meet-aimily">
         <MeetAimilyContent openAuth={openAuth} />
       </div>
+
+      {/* ═══════════════════════ LAYER 2.5 — TRUST (Shopify Partner + Vault + EU AI Act + EU hosting) ═══════════════════════ */}
+      <TrustStrip />
 
       {/* ═══════════════════════ LAYER 3 — POWERED BY (AI provider transparency + cost comparison) ═══════════════════════ */}
       <PoweredBy />
@@ -173,7 +185,7 @@ export default function MarketingHomeClient() {
           </p>
           <div className="mt-12 flex justify-center">
             <button
-              onClick={openAuth}
+              onClick={() => openAuth('signup')}
               className="group inline-flex items-center gap-3 px-9 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
             >
               {h.finalCta.button}
@@ -221,14 +233,17 @@ export default function MarketingHomeClient() {
       </section>
 
       {/* ═══════════════════════ LAYER 5 — FOOTER ═══════════════════════ */}
-      <SiteFooter variant="dark" />
+      <SiteFooter
+        variant="dark"
+        onAuth={(mode) => openAuth(mode)}
+      />
 
       {/* Auth modal */}
       <AuthModal
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         onSuccess={() => router.push('/my-collections')}
-        defaultMode="signup"
+        defaultMode={authMode}
       />
 
       {/* FAQ chat widget — public, RAG over Privacy/Terms/Pricing/MeetAimily/FAQ */}

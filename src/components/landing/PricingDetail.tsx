@@ -24,7 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useHomeTranslation } from '@/i18n/home';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
-import { ArrowRight, Check, GraduationCap } from 'lucide-react';
+import { ArrowRight, Check, GraduationCap, Sparkles, Wallet } from 'lucide-react';
 
 type PlanId = 'founder' | 'team' | 'enterprise';
 
@@ -155,7 +155,7 @@ const STUDIO_I18N: Record<Language, {
 };
 
 interface PricingDetailProps {
-  openAuth: () => void;
+  openAuth: (mode?: 'signin' | 'signup') => void;
 }
 
 export function PricingDetail({ openAuth }: PricingDetailProps) {
@@ -227,6 +227,43 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
           </p>
         </div>
 
+        {/* 30-day trial band — surfaces what was buried as small print at the
+            bottom of the section. Cold paid traffic reads the title of pricing
+            sections and decides in a second whether to scroll the cards or
+            bounce. "30 days free, no credit card" deserves the same prominence
+            as the eyebrow. */}
+        {p.trialBannerTitle && (
+          <div className="max-w-3xl mx-auto mb-10 rounded-[18px] border border-carbon/10 bg-white/60 p-6 md:p-7 flex items-start gap-4">
+            <Sparkles className="w-5 h-5 mt-0.5 shrink-0 text-carbon/70" />
+            <div>
+              <div className="text-[15px] md:text-[16px] font-semibold text-carbon tracking-[-0.01em] mb-1">
+                {p.trialBannerTitle}
+              </div>
+              <p className="text-[13.5px] text-carbon/65 leading-[1.55]">
+                {p.trialBannerBody}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* "Every plan includes the whole platform" band — kills the recurring
+            confusion where visitors see Founder + Team + Content Studio and
+            assume the Studio card is the only place to do content, or that
+            In-Season is a separate enterprise SKU. It's all the same bundle. */}
+        {p.includedTitle && (
+          <div className="max-w-4xl mx-auto mb-12 text-center">
+            <div className="text-[11px] tracking-[0.25em] uppercase text-carbon/45 font-medium mb-3">
+              {p.includedEyebrow}
+            </div>
+            <p className="text-[18px] md:text-[20px] font-light text-carbon leading-[1.4] tracking-[-0.015em] mb-3 italic">
+              {p.includedTitle}
+            </p>
+            <p className="text-[14px] text-carbon/65 leading-[1.65] max-w-[680px] mx-auto">
+              {p.includedBody}
+            </p>
+          </div>
+        )}
+
         {/* Plans grid — 3 cards: Founder · Team · Content Studio */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-stretch">
           {/* ─── Founder ─── */}
@@ -261,6 +298,50 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
         <p className="text-center text-[15px] md:text-[16px] font-medium text-carbon mb-16">
           {p.noCardNoteGlobal}
         </p>
+
+        {/* Credit costs table — transparency on what each surface consumes.
+            We removed the loud top-up packs upsell (felt like "you'll run
+            out") but cold visitors still ask "what does an editorial cost".
+            This is the answer: the canonical CREDIT_COSTS table from
+            src/lib/stripe.ts, surfaced as a quiet reference grid. */}
+        {p.creditsTitle && p.creditCostSketch && (
+          <div className="max-w-5xl mx-auto mb-16 rounded-[20px] border border-carbon/[0.08] bg-white p-8 md:p-10">
+            <div className="flex items-start gap-3 mb-6">
+              <Wallet className="w-5 h-5 mt-0.5 shrink-0 text-carbon/65" />
+              <div>
+                <div className="text-[11px] tracking-[0.25em] uppercase text-carbon/45 font-medium mb-2">
+                  {p.creditsEyebrow}
+                </div>
+                <h3 className="text-[20px] md:text-[24px] font-light text-carbon tracking-[-0.02em] leading-[1.2] mb-3 italic">
+                  {p.creditsTitle}
+                </h3>
+                <p className="text-[13.5px] text-carbon/65 leading-[1.6] max-w-3xl">
+                  {p.creditsLead}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+              {[
+                { action: p.countSketch, cost: p.creditCostSketch },
+                { action: p.creditActionStillLife ?? 'Still life', cost: p.creditCostStillLife },
+                { action: p.creditActionTryon ?? 'Try-on', cost: p.creditCostTryon },
+                { action: p.countEditorial, cost: p.creditCostEditorial },
+                { action: p.creditActionInSeason ?? 'In-Season run', cost: p.creditCostInSeason },
+                { action: p.countVideo, cost: p.creditCostVideo },
+              ].map((row) => (
+                <div
+                  key={row.action}
+                  className="flex items-baseline justify-between rounded-[12px] bg-carbon/[0.03] px-4 py-3"
+                >
+                  <span className="text-[13.5px] text-carbon/85">{row.action}</span>
+                  <span className="text-[12px] text-carbon/55 font-medium tracking-[-0.005em] tabular-nums">
+                    {row.cost}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Enterprise band — discreet, separate from main grid */}
         <div className="border border-carbon/10 rounded-[20px] p-6 md:p-8 mb-16 bg-white/40">
