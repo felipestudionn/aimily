@@ -1,4 +1,4 @@
-/* /strategy/[tenantSlug]/runs/new — create a new analysis run */
+/* /in-season/[tenantSlug]/runs/new — create a new analysis run */
 
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -48,7 +48,7 @@ export default async function NewRunPage({ params }: PageProps) {
     <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
       <div className="mx-auto max-w-3xl">
         <Link
-          href={`/strategy/${tenant.slug}`}
+          href={`/in-season/${tenant.slug}`}
           className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em] mb-3 inline-block"
         >
           ← {tenant.display_name}

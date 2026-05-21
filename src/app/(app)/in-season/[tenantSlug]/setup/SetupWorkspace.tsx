@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SetupWorkspace — client shell for /strategy/[tenantSlug]/setup
+ * SetupWorkspace — client shell for /in-season/[tenantSlug]/setup
  *
  * SegmentedPill switches between the two sub-blocks (Creative direction ·
  * Buy strategy). The two child components own their own state machines;
@@ -96,7 +96,7 @@ export function SetupWorkspace({
       {/* Back to tenant hub · the only nav out of a block */}
       <div className="max-w-7xl mx-auto">
         <a
-          href={`/strategy/${tenant.slug}`}
+          href={`/in-season/${tenant.slug}`}
           className="inline-flex items-center gap-1.5 text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em]"
           title={t.inSeason.hub.back.replace('{name}', tenant.display_name)}
         >
@@ -124,7 +124,7 @@ export function SetupWorkspace({
             {t.inSeason.setup.gating.uploadFirstBody}
           </p>
           <a
-            href={`/strategy/${tenant.slug}/upload`}
+            href={`/in-season/${tenant.slug}/upload`}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-carbon hover:underline"
           >
             {t.inSeason.setup.gating.uploadNow}
@@ -150,7 +150,7 @@ export function SetupWorkspace({
             {t.inSeason.setup.gating.runBaselineBody}
           </p>
           <a
-            href={`/strategy/${tenant.slug}/runs/new`}
+            href={`/in-season/${tenant.slug}/runs/new`}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-amber-900 hover:underline"
           >
             {t.inSeason.setup.gating.startRun}
@@ -167,7 +167,7 @@ export function SetupWorkspace({
           onSaved={() => {
             // After saving creative direction, return to the tenant hub
             // so the user re-enters via the 4 Gold Standard cards.
-            window.location.href = `/strategy/${tenant.slug}`;
+            window.location.href = `/in-season/${tenant.slug}`;
           }}
         />
       )}

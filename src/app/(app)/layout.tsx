@@ -2,9 +2,9 @@
    (app)/layout.tsx — root layout for the AUTHENTICATED APP.
 
    Houses every route the user only reaches after login: account,
-   my-collections, collection, calendar, new-collection, planner, p,
-   presentation, tech-pack, welcome, video-reel, color-palettes,
-   library, vendor, auth, icon-test.
+   my-collections, collection, new-collection, planner, p, presentation,
+   tech-pack, welcome, video-reel, library, vendor, auth, in-season,
+   studio.
 
    Marketing pages live in [locale]/layout.tsx (with dynamic html lang
    for SEO). The (app) route group keeps its existing English-default

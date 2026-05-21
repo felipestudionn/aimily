@@ -1,14 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   /strategy — Aimily Strategy dashboard.
+   /in-season — aimily In-Season dashboard (auth-gated).
 
-   The authenticated landing for Aimily Strategy users. Lists the enterprise
-   tenants the user is a member of, with their role + tier + recent activity.
+   The authenticated landing for In-Season users. Lists the tenants the
+   user is a member of, with their role + tier + recent activity.
 
-   Aimily Strategy is the third product in the family (after aimily 360 +
-   Aimily Studio). Wedge B2B for tier-2/tier-1 fashion brands. Forensic
-   merchandising intelligence layer with creative modulation.
-
-   See business-plan_aimily-strategy-2026-05-15.md for the full thesis.
+   In-Season is the daily in-season sales-management surface — daily
+   trading meeting cadence, 13 verbs per SKU, 10 deterministic
+   classifiers, 6 confidence dimensions per recommendation. Two surfaces
+   share the same engine: standalone Shopify/Stripe connector + Block 5
+   of the aimily 360 builder.
 
    Server Component: resolves auth + tenant membership server-side so the
    HTML reaches the browser populated, no skeleton flash.
@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
 import { listUserTenants } from '@/lib/strategy/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { ArrowRight, Plus, BarChart3, Building2, ShieldCheck, FileSearch } from 'lucide-react';
+import { ArrowRight, BarChart3, Building2, ShieldCheck, FileSearch } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +37,7 @@ const ROLE_LABELS: Record<string, string> = {
   viewer: 'Lectura',
 };
 
-export default async function StrategyDashboardPage() {
+export default async function InSeasonDashboardPage() {
   const { user } = await getServerSession();
   if (!user) redirect('/');
 
@@ -48,13 +48,13 @@ export default async function StrategyDashboardPage() {
     tenants.map(async (t) => {
       const [runsRes, sourcesRes] = await Promise.all([
         supabaseAdmin
-          .from('strategy_analysis_runs')
+          .from('in_season_analysis_runs')
           .select('id, run_status, created_at', { count: 'exact', head: false })
           .eq('tenant_id', t.id)
           .order('created_at', { ascending: false })
           .limit(1),
         supabaseAdmin
-          .from('strategy_sources')
+          .from('in_season_sources')
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', t.id),
       ]);
@@ -88,15 +88,10 @@ export default async function StrategyDashboardPage() {
               opcional modula la recomendación.
             </p>
           </div>
-          {tenants.length > 0 && (
-            <Link
-              href="/in-season/new"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo análisis
-            </Link>
-          )}
+          {/* "Nuevo análisis" button removed 2026-05-21 — pointed to
+              /in-season/new which never existed. New analyses need
+              tenant context; users pick a tenant card → tenant page →
+              start run from there. */}
         </header>
 
         {tenants.length === 0 && <EmptyState />}
@@ -196,18 +191,18 @@ function EmptyState() {
   return (
     <div className="bg-white rounded-[20px] p-12 md:p-16 text-center max-w-3xl mx-auto">
       <h2 className="text-[28px] md:text-[32px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
-        You are not yet a member of any Strategy tenant
+        You are not yet a member of any In-Season tenant
       </h2>
       <p className="text-[14px] text-carbon/50 leading-[1.7] max-w-xl mx-auto mb-8">
-        Aimily Strategy is invite-only for enterprise customers. If you are
-        evaluating Strategy for your brand, reach out to{' '}
+        aimily In-Season is invite-only for enterprise customers. If you are
+        evaluating In-Season for your brand, reach out to{' '}
         <a href="mailto:hello@aimily.app" className="text-carbon underline underline-offset-2">
           hello@aimily.app
         </a>{' '}
         to schedule a pilot scoping call.
       </p>
       <Link
-        href="mailto:hello@aimily.app?subject=Aimily%20Strategy%20pilot%20enquiry"
+        href="mailto:hello@aimily.app?subject=aimily%20In-Season%20pilot%20enquiry"
         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-all"
       >
         Request a pilot scoping call
