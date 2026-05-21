@@ -376,6 +376,27 @@ export type HomeDict = {
     countImg: string; // placeholder: "{n} img"
     footerNote: string;
     manage: string;
+    // 2026-05-21 — added so a visitor understands the unified bundle
+    // (360 + Studio + In-Season + shared credits bucket) and what each
+    // action costs before they swipe a card. Optional so legacy bundles
+    // pass type-check; rendered conditionally in PricingDetail.
+    trialBannerTitle?: string;
+    trialBannerBody?: string;
+    includedEyebrow?: string;
+    includedTitle?: string;
+    includedBody?: string;
+    creditsEyebrow?: string;
+    creditsTitle?: string;
+    creditsLead?: string;
+    creditCostSketch?: string; // "1 credit"
+    creditCostStillLife?: string; // "3 credits"
+    creditCostTryon?: string; // "3 credits"
+    creditCostEditorial?: string; // "5 credits"
+    creditCostInSeason?: string; // "10 credits"
+    creditCostVideo?: string; // "30 credits"
+    creditActionStillLife?: string;
+    creditActionTryon?: string;
+    creditActionInSeason?: string;
   };
   // Powered by — AI provider transparency block
   poweredBy: {
@@ -788,6 +809,24 @@ const en: HomeDict = {
     countImg: '{n} img',
     footerNote: 'Prices excl. VAT · 30 days free, no credit card',
     manage: 'Manage my subscription',
+    // 2026-05-21 additions
+    trialBannerTitle: '30 days free, no credit card.',
+    trialBannerBody: 'Use the full platform for 30 days before any charge. We ask for a card only when you decide to keep your plan. Cancel from the dashboard at any time, no email required.',
+    includedEyebrow: 'Every plan, the whole platform',
+    includedTitle: 'aimily 360 · Content Studio · In-Season — one bundle.',
+    includedBody: 'You don\'t pick between the collection builder, the campaign studio and the in-season action pack. All three live in every plan, drawing from a single bucket of Aimily Credits. Founder ships you 100 credits / month, Team ships 1,000. Top-up packs available in-product if a campaign month spikes.',
+    creditsEyebrow: 'What an Aimily Credit buys you',
+    creditsTitle: 'One bucket. Every surface. Transparent costs.',
+    creditsLead: 'Same wallet across the 360 builder, the Studio campaigns and the In-Season classifier runs — so a heavy editorial week and a quiet trading week balance out automatically.',
+    creditCostSketch: '1 credit',
+    creditCostStillLife: '3 credits',
+    creditCostTryon: '3 credits',
+    creditCostEditorial: '5 credits',
+    creditCostInSeason: '10 credits',
+    creditCostVideo: '30 credits',
+    creditActionStillLife: 'Still life image',
+    creditActionTryon: 'Try-on image',
+    creditActionInSeason: 'In-Season daily run',
   },
   poweredBy: {
     eyebrow: 'Powered by',
@@ -1198,6 +1237,24 @@ const es: HomeDict = {
     countImg: '{n} img',
     footerNote: 'Precios sin IVA · 30 días gratis sin tarjeta',
     manage: 'Gestionar mi suscripción',
+    // 2026-05-21 additions
+    trialBannerTitle: '30 días gratis, sin tarjeta.',
+    trialBannerBody: 'Usa toda la plataforma durante 30 días antes de pagar nada. Te pedimos la tarjeta solo cuando decidas seguir con tu plan. Cancela desde el dashboard cuando quieras, sin emails.',
+    includedEyebrow: 'Cada plan, la plataforma entera',
+    includedTitle: 'aimily 360 · Content Studio · In-Season — un único bundle.',
+    includedBody: 'No eliges entre el constructor de colección, el studio de campañas y el action pack in-season. Los tres viven en cada plan, tirando de un único bucket de Aimily Credits. Founder te trae 100 credits / mes, Team 1.000. Si una semana de campaña se dispara, hay top-up packs disponibles dentro del producto.',
+    creditsEyebrow: 'Qué te compra un Aimily Credit',
+    creditsTitle: 'Un bucket. Cada superficie. Costes transparentes.',
+    creditsLead: 'La misma cartera para el constructor 360, las campañas de Studio y las corridas diarias del clasificador In-Season — así una semana editorial fuerte y una semana de trading tranquila se compensan solas.',
+    creditCostSketch: '1 credit',
+    creditCostStillLife: '3 credits',
+    creditCostTryon: '3 credits',
+    creditCostEditorial: '5 credits',
+    creditCostInSeason: '10 credits',
+    creditCostVideo: '30 credits',
+    creditActionStillLife: 'Imagen still life',
+    creditActionTryon: 'Imagen try-on',
+    creditActionInSeason: 'Corrida diaria In-Season',
   },
   poweredBy: {
     eyebrow: 'Construido con',
