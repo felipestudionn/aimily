@@ -75,7 +75,7 @@ function BlockHeading({
       </Reveal>
 
       <Reveal delay={250}>
-        <p className={`max-w-[680px] text-[16px] md:text-[19px] leading-[1.6] tracking-[-0.01em] mb-12 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
+        <p className={`max-w-[680px] text-[16px] md:text-[19px] leading-[1.65] tracking-[-0.01em] mb-12 ${isDark ? 'text-crema/80' : 'text-carbon/75'}`}>
           {description}
         </p>
       </Reveal>
@@ -138,7 +138,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
         </Reveal>
 
         <Reveal delay={500}>
-          <p className="mt-12 max-w-[680px] text-center text-[16px] md:text-[19px] text-crema/65 leading-[1.55] font-light tracking-[-0.01em]">
+          <p className="mt-12 max-w-[680px] text-center text-[16px] md:text-[19px] text-crema/80 leading-[1.6] font-light tracking-[-0.01em]">
             {h.meet.subtitle}
           </p>
         </Reveal>
@@ -290,7 +290,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
             </h2>
           </Reveal>
           <Reveal delay={250}>
-            <p className="max-w-[700px] mx-auto text-[16px] md:text-[18px] text-crema/65 leading-[1.65] tracking-[-0.01em] text-center mb-24">
+            <p className="max-w-[700px] mx-auto text-[16px] md:text-[18px] text-crema/80 leading-[1.7] tracking-[-0.01em] text-center mb-24">
               {h.thread.subtitle}
             </p>
           </Reveal>
@@ -313,7 +313,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                   <h3 className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] leading-[1.2] text-crema mb-6">
                     {step.title}
                   </h3>
-                  <p className="text-[14px] text-crema/65 leading-[1.6] tracking-[-0.005em] mb-6 flex-1">
+                  <p className="text-[14px] text-crema/75 leading-[1.65] tracking-[-0.005em] mb-6 flex-1">
                     {step.outputs}
                   </p>
                   <div className="text-[12px] tracking-[0.05em] text-crema/75 italic font-medium border-t border-crema/[0.08] pt-4">
@@ -351,7 +351,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
               <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                 {h.block1.brandDnaEyebrow}
               </div>
-              <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
+              <div className="text-[24px] md:text-[28px] font-medium tracking-[-0.02em] leading-[1.15] mb-6">
                 {h.block1.brandDnaTitle}
               </div>
               <div className="space-y-3 text-[14px] leading-[1.65]">
@@ -380,7 +380,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
               <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                 {h.block1.consumerEyebrow}
               </div>
-              <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
+              <div className="text-[24px] md:text-[28px] font-medium tracking-[-0.02em] leading-[1.15] mb-6">
                 {h.block1.consumerTitle}
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[14px] leading-[1.55]">
@@ -468,7 +468,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                   <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-2">
                     {h.block2.rangePlanEyebrow}
                   </div>
-                  <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] italic">
+                  <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em]">
                     {h.block2.rangePlanTitle}
                   </div>
                 </div>
@@ -519,7 +519,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
               <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                 {h.block2.channelEyebrow}
               </div>
-              <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+              <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em] mb-6">
                 {h.block2.channelTitle}
               </div>
               <div className="space-y-3">
@@ -551,7 +551,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
               <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                 {h.block2.budgetEyebrow}
               </div>
-              <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-8 italic">
+              <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em] mb-8">
                 {h.block2.budgetTitle}
               </div>
               <div className="space-y-4 text-[14px]">
@@ -659,7 +659,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                   <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-2">
                     {h.block3.techPackEyebrow}
                   </div>
-                  <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] italic">
+                  <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em]">
                     {h.block3.techPackTitle}
                   </div>
                 </div>
@@ -814,7 +814,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                 <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                   {h.block4.dropEyebrow}
                 </div>
-                <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+                <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em] mb-6">
                   {h.block4.dropTitle}
                 </div>
                 <div className="space-y-5">
@@ -843,7 +843,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                 <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                   {h.block4.salesEyebrow}
                 </div>
-                <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+                <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em] mb-6">
                   {h.block4.salesTitle}
                 </div>
                 <div className="grid grid-cols-2 gap-5">
@@ -871,7 +871,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
               <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                 {h.block4.contentEyebrow}
               </div>
-              <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+              <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em] mb-6">
                 {h.block4.contentTitle}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[13px]">
@@ -920,7 +920,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                 <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                   {h.block5.verdictEyebrow}
                 </div>
-                <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-8 italic">
+                <div className="text-[24px] md:text-[28px] font-medium tracking-[-0.02em] leading-[1.15] mb-8">
                   {h.block5.verdictTitle}
                 </div>
                 <div className="flex flex-wrap gap-2.5">
@@ -952,7 +952,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                 <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                   {h.block5.confidenceEyebrow}
                 </div>
-                <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
+                <div className="text-[20px] md:text-[24px] font-medium tracking-[-0.02em] leading-[1.15] mb-6">
                   {h.block5.confidenceTitle}
                 </div>
                 <ul className="space-y-2.5 text-[13.5px] text-crema/85 leading-[1.5]">
@@ -1014,7 +1014,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                     <h3 className="text-[28px] md:text-[36px] font-light tracking-[-0.025em] leading-[1.1] mb-5 italic">
                       {h.block5.seedsTitle}
                     </h3>
-                    <p className="text-[15px] text-crema/65 leading-[1.65] tracking-[-0.01em] max-w-[600px]">
+                    <p className="text-[15px] text-crema/80 leading-[1.7] tracking-[-0.01em] max-w-[600px]">
                       {h.block5.seedsBody}
                     </p>
                   </div>
@@ -1064,7 +1064,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                   <div className="text-[28px] md:text-[34px] font-light tracking-[-0.02em] leading-[1.15] mb-4 text-crema">
                     {item.title}
                   </div>
-                  <p className="text-[15px] text-crema/65 leading-[1.65] tracking-[-0.01em] mb-5 max-w-[360px]">
+                  <p className="text-[15px] text-crema/75 leading-[1.7] tracking-[-0.01em] mb-5 max-w-[360px]">
                     {item.desc}
                   </p>
                   <span className="inline-block text-[11px] tracking-[0.2em] uppercase text-crema/65 font-medium border-t border-crema/15 pt-3">
