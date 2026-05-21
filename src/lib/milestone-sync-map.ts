@@ -463,16 +463,25 @@ export async function loadSyncSnapshot(
       : client.from('sample_reviews').select('id', { count: 'exact', head: true }).in('sku_id', skuIds),
     client.from('production_orders').select('id, closed_at').eq('collection_plan_id', planId),
     client.from('drops').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('content_pillars').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('product_copy').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('email_templates_content').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('paid_campaigns').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('social_templates').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('content_calendar').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('lookbook_pages').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
-    client.from('launch_tasks').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
+    // 9 Wave 4 dropped tables (content_pillars, product_copy,
+    // email_templates_content, paid_campaigns, social_templates,
+    // content_calendar, lookbook_pages, launch_tasks, commercial_actions).
+    // Dropped 2026-05-21 — features never shipped. Their milestones in
+    // SYNC_MAP continue to predicate on count > 0, which is permanently
+    // false. The Block 4 milestones that ONLY depended on these tables
+    // are stuck as "pending" (same UX as today — tables were already
+    // empty). Time-based and ai_generations fallbacks keep gm-1, gm-3,
+    // gm-5, gm-12, gm-13, gm-14 reachable.
+    Promise.resolve({ count: 0 }),  // content_pillars  → contentPillarsRes
+    Promise.resolve({ count: 0 }),  // product_copy      → productCopyRes
+    Promise.resolve({ count: 0 }),  // email_templates_content → emailRes
+    Promise.resolve({ count: 0 }),  // paid_campaigns    → paidRes
+    Promise.resolve({ count: 0 }),  // social_templates  → socialRes
+    Promise.resolve({ count: 0 }),  // content_calendar  → contentCalRes
+    Promise.resolve({ count: 0 }),  // lookbook_pages    → lookbookRes
+    Promise.resolve({ count: 0 }),  // launch_tasks      → launchTasksRes
     client.from('ai_generations').select('id, generation_type').eq('collection_plan_id', planId),
-    client.from('commercial_actions').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
+    Promise.resolve({ count: 0 }),  // commercial_actions → commercialRes
     client.from('storefronts').select('published_at').eq('collection_plan_id', planId).maybeSingle(),
     client.from('brand_voice_config').select('id').eq('collection_plan_id', planId).maybeSingle(),
     // Final selection (legacy single-subdomain query) + canonical Block 2

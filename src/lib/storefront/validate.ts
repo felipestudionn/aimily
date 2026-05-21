@@ -168,18 +168,12 @@ export async function validateStorefront(
       if (meta?.sku_id) editorialBySku.add(meta.sku_id);
     }
 
-    // Product copy per SKU (live or draft)
-    const { data: copyRows } = await supabaseAdmin
-      .from('product_copy')
-      .select('sku_id')
-      .eq('collection_plan_id', collectionPlanId)
-      .eq('copy_type', 'product_description')
-      .neq('status', 'archived');
-
+    // Product copy per SKU — the `product_copy` table was dropped
+    // 2026-05-21 (Wave 4 cleanup, feature never shipped). Validator
+    // continues to surface skusWithCopy=0 so the storefront publish
+    // gate predicates on the falsy side, identical to previous behavior
+    // when the table was empty in production.
     const copyBySku = new Set<string>();
-    for (const c of (copyRows ?? [])) {
-      if (c.sku_id) copyBySku.add(c.sku_id as string);
-    }
 
     const provider = options.paymentProvider ?? 'lookbook_only';
     const paymentMap = options.skuPaymentMap ?? {};
