@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useParams } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
+import { locales } from '@/i18n/config';
 
 interface PublicNavProps {
   /** 'dark' for carbon pages, 'light' for legal pages (privacy/terms/cookies) */
@@ -17,18 +18,33 @@ interface PublicNavProps {
 
 // Nav reduced 2026-04-28: /discover and /how-it-works were retired —
 // the public landing now lives at `/` and tells the full story.
+// Added 2026-05-21: In-Season public landing — wedge B2B / Shopify connector.
 const NAV_LINKS = [
+  { href: '/in-season', key: 'inSeason' },
+  { href: '/studio', key: 'studio' },
   { href: '/contact', key: 'contact' },
   { href: '/trust', key: 'trust' },
 ];
 
+function stripLocale(pathname: string): string {
+  for (const locale of locales) {
+    if (pathname === `/${locale}`) return '/';
+    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(`/${locale}`.length);
+  }
+  return pathname;
+}
+
 export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const params = useParams<{ locale?: string }>();
+  const locale = params?.locale ?? 'en';
   const t = useTranslation();
   const { language, setLanguage } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const trust = (t as unknown as Record<string, Record<string, string>>).trust || {};
+  const normalized = stripLocale(pathname);
+  const withLocale = (href: string) => `/${locale}${href === '/' ? '' : href}`;
 
   const isDark = variant === 'dark';
   const logo = isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png';
@@ -36,6 +52,8 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
   const navLabelMap: Record<string, string> = {
     contact: t.common.contact,
     trust: trust.navLabel || 'Trust',
+    studio: 'Studio',
+    inSeason: 'In-Season',
   };
 
   // Colors
@@ -55,15 +73,15 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
       {/* Desktop */}
       <div className="hidden md:flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+          <Link href={withLocale('/')} className="flex items-center hover:opacity-80 transition-opacity">
             <Image src={logo} alt="aimily" width={774} height={96}
               className="object-contain h-5 w-auto" priority unoptimized />
           </Link>
           <div className="flex items-center gap-6">
             {NAV_LINKS.map((link) => {
-              const isActive = pathname === link.href;
+              const isActive = normalized === link.href;
               return (
-                <Link key={link.href} href={link.href}
+                <Link key={link.href} href={withLocale(link.href)}
                   className={`text-xs font-medium tracking-widest uppercase transition-colors ${
                     isActive ? textActive : `${textBase} ${textHover}`
                   }`}>
@@ -74,7 +92,7 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <select value={language} onChange={(e) => setLanguage(e.target.value as Language)}
             className={`bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border ${selectBorder} rounded px-2 py-1 ${selectText} focus:outline-none ${optionBg}`}>
             <option value="en">EN</option><option value="es">ES</option><option value="fr">FR</option>
@@ -89,17 +107,18 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
             </Link>
           ) : onAuth ? (
             <>
+              {/* Sign in: outlined pill, much more findable than the old text-only link */}
               <button onClick={() => onAuth('signin')}
-                className={`text-xs font-medium tracking-widest uppercase ${textBase} ${textHover} transition-colors`}>
-                {t.common.logIn}
+                className={`text-[11px] font-semibold tracking-[0.15em] uppercase px-5 py-2.5 rounded-full border ${selectBorder} ${textActive} ${isDark ? 'hover:bg-crema/[0.06]' : 'hover:bg-carbon/[0.04]'} transition-colors`}>
+                {t.common.signIn}
               </button>
               <button onClick={() => onAuth('signup')}
-                className={`${btnFilled} text-xs font-medium tracking-widest uppercase px-5 py-2.5 transition-colors`}>
+                className={`${btnFilled} text-[11px] font-semibold tracking-[0.15em] uppercase px-5 py-2.5 rounded-full transition-colors`}>
                 {t.common.startFreeTrial}
               </button>
             </>
           ) : (
-            <Link href="/"
+            <Link href={withLocale('/')}
               className={`text-xs font-medium tracking-widest uppercase ${textBase} ${textHover} transition-colors`}>
               {t.common.home}
             </Link>
@@ -109,7 +128,7 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
 
       {/* Mobile */}
       <div className="md:hidden flex items-center justify-between">
-        <Link href="/" className="flex items-center">
+        <Link href={withLocale('/')} className="flex items-center">
           <Image src={logo} alt="aimily" width={774} height={96}
             className="object-contain h-4 w-auto" priority unoptimized />
         </Link>
@@ -131,9 +150,9 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
       {mobileOpen && (
         <div className={`md:hidden mt-4 ${isDark ? 'bg-carbon/95 border-gris/20' : 'bg-white/95 border-gray-200'} backdrop-blur-sm border rounded-xl p-5 flex flex-col gap-4`}>
           {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = normalized === link.href;
             return (
-              <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
+              <Link key={link.href} href={withLocale(link.href)} onClick={() => setMobileOpen(false)}
                 className={`text-sm font-medium tracking-widest uppercase transition-colors ${
                   isActive ? textActive : `${textBase} ${textHover}`
                 }`}>
@@ -156,16 +175,16 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
           ) : onAuth ? (
             <>
               <button onClick={() => { onAuth('signin'); setMobileOpen(false); }}
-                className={`text-sm font-medium tracking-widest uppercase ${textBase} ${textHover} transition-colors text-left`}>
-                {t.common.logIn}
+                className={`text-[12px] font-semibold tracking-[0.15em] uppercase px-5 py-2.5 rounded-full border ${selectBorder} ${textActive} text-center transition-colors`}>
+                {t.common.signIn}
               </button>
               <button onClick={() => { onAuth('signup'); setMobileOpen(false); }}
-                className={`${btnFilled} text-sm font-medium tracking-widest uppercase px-5 py-2.5 transition-colors text-center`}>
+                className={`${btnFilled} text-[12px] font-semibold tracking-[0.15em] uppercase px-5 py-2.5 rounded-full transition-colors text-center`}>
                 {t.common.startFreeTrial}
               </button>
             </>
           ) : (
-            <Link href="/" onClick={() => setMobileOpen(false)}
+            <Link href={withLocale('/')} onClick={() => setMobileOpen(false)}
               className={`text-sm font-medium tracking-widest uppercase ${textBase} ${textHover} transition-colors`}>
               {t.common.home}
             </Link>
