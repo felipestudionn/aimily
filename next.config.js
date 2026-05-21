@@ -37,12 +37,11 @@ const nextConfig = {
       { source: '/categories/:path*', destination: '/my-collections', permanent: true },
     ];
   },
-  // Felipe 2026-05-19 noche · Sprint A rename Strategy → In-Season.
-  // Source files YA MOVIDOS: src/app/(app)/strategy/ → in-season/ y
-  // src/app/api/strategy/ → in-season/. /in-season/* es la canónica
-  // ahora. Mantenemos rewrites de /strategy/* → /in-season/* para que
-  // los bookmarks externos sigan funcionando (back-compat). El siguiente
-  // sprint (DB rename) renombrará strategy_* tables → in_season_*.
+  // Sprint A rename Strategy → In-Season (2026-05-19). App routes, API
+  // routes, lib/ folder and DB tables (migration 068) are all on the
+  // canonical /in-season/ naming now. These rewrites stay as a safety
+  // net for any external bookmarks or inbound links that still use the
+  // old /strategy/ prefix.
   async rewrites() {
     return [
       { source: '/strategy/:path*', destination: '/in-season/:path*' },
