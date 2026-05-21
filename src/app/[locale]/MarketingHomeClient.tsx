@@ -42,6 +42,7 @@ export default function MarketingHomeClient() {
   const t = useTranslation();
   const h = useHomeTranslation();
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
 
   useEffect(() => {
     track(Events.LANDING_VIEWED, { page: 'home' });
@@ -63,11 +64,12 @@ export default function MarketingHomeClient() {
     router.push('/my-collections');
   }, [user, router]);
 
-  const openAuth = () => {
+  const openAuth = (mode: 'signin' | 'signup' = 'signup') => {
     track(Events.CTA_CLICKED, { source: 'home', authed: !!user });
     if (user) router.push('/my-collections');
     else {
-      track(Events.AUTH_OPENED, { source: 'home' });
+      track(Events.AUTH_OPENED, { source: 'home', mode });
+      setAuthMode(mode);
       setAuthOpen(true);
     }
   };
@@ -225,14 +227,17 @@ export default function MarketingHomeClient() {
       </section>
 
       {/* ═══════════════════════ LAYER 5 — FOOTER ═══════════════════════ */}
-      <SiteFooter variant="dark" />
+      <SiteFooter
+        variant="dark"
+        onAuth={(mode) => openAuth(mode)}
+      />
 
       {/* Auth modal */}
       <AuthModal
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         onSuccess={() => router.push('/my-collections')}
-        defaultMode="signup"
+        defaultMode={authMode}
       />
 
       {/* FAQ chat widget — public, RAG over Privacy/Terms/Pricing/MeetAimily/FAQ */}
