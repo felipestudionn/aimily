@@ -157,7 +157,7 @@ export default function TermsPage() {
               <li>{t.termsPage.s10Item5}</li>
               <li>{t.termsPage.s10Item6}</li>
             </ul>
-            <p className="text-sm text-gray-600 italic">{t.termsPage.s10Note}</p>
+            <p className="text-sm text-gray-600">{t.termsPage.s10Note}</p>
 
             {/* ─── Sección 11 ─── */}
             <h2 className="text-2xl font-semibold mt-10 mb-4">{t.termsPage.s11Title}</h2>
@@ -221,7 +221,7 @@ export default function TermsPage() {
             <h3 className="text-xl font-semibold mt-6 mb-3">{t.termsPage.s15_3Title}</h3>
             <p>{t.termsPage.s15_3Text}</p>
 
-            <p className="text-sm text-gray-600 italic mt-4">{t.termsPage.s15Note}</p>
+            <p className="text-sm text-gray-600 mt-4">{t.termsPage.s15Note}</p>
 
             {/* ─── Sección 16 ─── */}
             <h2 className="text-2xl font-semibold mt-10 mb-4">{t.termsPage.s16Title}</h2>

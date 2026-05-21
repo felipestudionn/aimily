@@ -110,7 +110,7 @@ export function SiteFooter({ variant = 'dark', onAuth }: SiteFooterProps) {
         {/* Bottom row — copyright + DWP disclaimer */}
         <div className={`mt-8 pt-6 border-t ${border} flex flex-col md:flex-row items-center justify-between gap-3 text-[12px] ${text} tracking-[-0.01em]`}>
           <span>© {new Date().getFullYear()} aimily — StudioNN Agency S.L. · NIF B42978130</span>
-          <span className="italic text-center md:text-right">
+          <span className="text-center md:text-right">
             Not affiliated with The Devil Wears Prada or NBCUniversal.
           </span>
         </div>
