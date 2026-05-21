@@ -1,5 +1,5 @@
 /**
- * Lightweight smoke test for the 32 AI endpoints — NO real
+ * Lightweight smoke test for the live AI endpoints — NO real
  * generations, NO Freepik / Anthropic / OpenAI calls. Sends an empty
  * body to each route and checks the response is a clean 4xx
  * validation error rather than a 5xx crash.
@@ -39,24 +39,14 @@ const ENDPOINTS: { path: string; bucket: 'image' | 'video' | 'text' }[] = [
   { path: '/api/ai/generate-skus', bucket: 'text' },
   { path: '/api/ai/creative-generate', bucket: 'text' },
   { path: '/api/ai/design-generate', bucket: 'text' },
-  { path: '/api/ai/gtm/generate', bucket: 'text' },
-  { path: '/api/ai/launch/generate', bucket: 'text' },
   { path: '/api/ai/post-launch/generate', bucket: 'text' },
-  { path: '/api/ai/content-calendar/generate', bucket: 'text' },
-  { path: '/api/ai/content-strategy/generate', bucket: 'text' },
-  { path: '/api/ai/paid/generate', bucket: 'text' },
-  { path: '/api/ai/propose-comments', bucket: 'text' },
   { path: '/api/ai/analyze-moodboard', bucket: 'text' },
-  { path: '/api/ai/detect-zones', bucket: 'text' },
   { path: '/api/ai/zones/detect', bucket: 'text' },
   { path: '/api/ai/colorize-sketch', bucket: 'image' },
   { path: '/api/ai/generate-sketch-options', bucket: 'image' },
   { path: '/api/ai/brand/visual-references', bucket: 'image' },
   { path: '/api/ai/merchandising/scenarios', bucket: 'text' },
-  { path: '/api/ai/market-prediction', bucket: 'text' },
-  { path: '/api/ai/market-trends', bucket: 'text' },
   { path: '/api/ai/explore-trends', bucket: 'text' },
-  { path: '/api/ai/vectorize', bucket: 'text' },
 ];
 
 interface Result {

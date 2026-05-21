@@ -7,16 +7,16 @@
  *
  * Reusable from:
  *   - Manual trigger endpoint POST /api/in-season/sales-connections/[id]/sync
- *   - Cron endpoint GET /api/cron/strategy/sales-sync (iterates all due)
+ *   - Cron endpoint GET /api/cron/in-season/sales-sync (iterates all due)
  *
  * Architecture: memory/architecture_in-season-feedback-loop.md §4 + Sprint 4
  * (this commit).
  */
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { parseShopifyGraphql } from '@/lib/strategy/parsers/shopify-graphql';
-import { parseStripeApi } from '@/lib/strategy/parsers/stripe-api';
-import { persistParserResult } from '@/lib/strategy/etl/persist';
+import { parseShopifyGraphql } from '@/lib/in-season/parsers/shopify-graphql';
+import { parseStripeApi } from '@/lib/in-season/parsers/stripe-api';
+import { persistParserResult } from '@/lib/in-season/etl/persist';
 
 export type SyncTrigger = 'cron' | 'manual' | 'webhook';
 

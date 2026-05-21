@@ -31,7 +31,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 
 const DESIGN_PLAN_NAME = 'Aimily Design — In-Season';

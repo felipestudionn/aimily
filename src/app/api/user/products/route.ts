@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/lib/api-auth';
 import { getUserProducts } from '@/lib/auth/getUserProducts';
 import { ADMIN_EMAILS } from '@/lib/stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 
 export const runtime = 'nodejs';
 

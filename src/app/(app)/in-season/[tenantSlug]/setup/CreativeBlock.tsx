@@ -37,7 +37,7 @@ import {
 import type {
   StrategyTrend,
   StrategyTrendDimension,
-} from '@/lib/strategy/market-trends-prompt';
+} from '@/lib/in-season/market-trends-prompt';
 
 interface Tenant {
   id: string;

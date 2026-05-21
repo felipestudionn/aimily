@@ -18,9 +18,9 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { BUY_STRATEGY_ARCHETYPES } from '@/lib/strategy/sales-archetypes';
+import { BUY_STRATEGY_ARCHETYPES } from '@/lib/in-season/sales-archetypes';
 import { SetupWorkspace } from './SetupWorkspace';
 
 export const dynamic = 'force-dynamic';

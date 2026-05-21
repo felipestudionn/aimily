@@ -9,11 +9,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import {
   discoverCreativeBrief,
   type SelectedTrend,
-} from '@/lib/strategy/creative-discovery';
+} from '@/lib/in-season/creative-discovery';
 
 const VALID_DIMS: SelectedTrend['dimension'][] = [
   'silhouette',

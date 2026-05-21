@@ -8,7 +8,7 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { TenantHubClient } from './TenantHubClient';
 

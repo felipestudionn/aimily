@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { uploadBase64, uploadFromUrl, saveAssetRecord, type AssetType } from '@/lib/storage';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 
 const VALID_ASSET_TYPES: AssetType[] = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model', 'still_life', 'editorial', 'tech_pack', 'material_swatch', 'callout'];
 

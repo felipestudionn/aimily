@@ -13,11 +13,11 @@
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/strategy/inventory-snapshot",
+      "path": "/api/cron/in-season/inventory-snapshot",
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/cron/strategy/sales-sync",
+      "path": "/api/cron/in-season/sales-sync",
       "schedule": "0 7 * * *"
     }
   ]

@@ -26,9 +26,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
-import { parseShopifyGraphql } from '@/lib/strategy/parsers/shopify-graphql';
-import { persistParserResult } from '@/lib/strategy/etl/persist';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
+import { parseShopifyGraphql } from '@/lib/in-season/parsers/shopify-graphql';
+import { persistParserResult } from '@/lib/in-season/etl/persist';
 
 export const maxDuration = 300;
 

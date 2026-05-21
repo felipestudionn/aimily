@@ -9,11 +9,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { generateJSON } from '@/lib/ai/llm-client';
-import { loadStrategyTenantContext } from '@/lib/strategy/context-loader';
-import { getBuyStrategyArchetype, type BuyStrategyArchetypeId } from '@/lib/strategy/sales-archetypes';
-import { buildBuyStrategyDeepenPrompt, type BuyStrategyAxis, type BuyStrategyPrefillEditor } from '@/lib/strategy/buy-strategy-prompts';
+import { loadStrategyTenantContext } from '@/lib/in-season/context-loader';
+import { getBuyStrategyArchetype, type BuyStrategyArchetypeId } from '@/lib/in-season/sales-archetypes';
+import { buildBuyStrategyDeepenPrompt, type BuyStrategyAxis, type BuyStrategyPrefillEditor } from '@/lib/in-season/buy-strategy-prompts';
 
 const VALID_AXES: BuyStrategyAxis[] = [
   'action_mix',

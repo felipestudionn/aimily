@@ -7,9 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { executeAnalysisRun } from '@/lib/strategy/orchestrator';
+import { executeAnalysisRun } from '@/lib/in-season/orchestrator';
 import { consumeCredits, refundCredits } from '@/lib/api-auth';
 import { CREDIT_COSTS } from '@/lib/stripe';
 

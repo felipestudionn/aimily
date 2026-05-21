@@ -14,9 +14,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import type { ScenarioId } from '@/lib/strategy/scenario-diales';
+import type { ScenarioId } from '@/lib/in-season/scenario-diales';
 
 export const runtime = 'nodejs';
 

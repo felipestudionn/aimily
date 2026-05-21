@@ -15,14 +15,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireStrategyAccess } from '@/lib/strategy/auth-guard';
-import { loadStrategyTenantContext } from '@/lib/strategy/context-loader';
+import { requireStrategyAccess } from '@/lib/in-season/auth-guard';
+import { loadStrategyTenantContext } from '@/lib/in-season/context-loader';
 import {
   buildStrategyMarketTrendsPrompt,
   type StrategyMarketTrendsResponse,
   type StrategyTrend,
   type StrategyTrendDimension,
-} from '@/lib/strategy/market-trends-prompt';
+} from '@/lib/in-season/market-trends-prompt';
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;

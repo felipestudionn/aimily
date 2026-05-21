@@ -8,8 +8,8 @@
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
-import { listUserTenants } from '@/lib/strategy/tenant-context';
-import { getStrategyDictForUser } from '@/lib/strategy/server-i18n';
+import { listUserTenants } from '@/lib/in-season/tenant-context';
+import { getStrategyDictForUser } from '@/lib/in-season/server-i18n';
 import { UploadSourceClient } from './UploadSourceClient';
 
 export const dynamic = 'force-dynamic';
