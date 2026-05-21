@@ -1,5 +1,5 @@
 /**
- * /strategy/[tenantSlug]/setup — unified Setup workspace
+ * /in-season/[tenantSlug]/setup — unified Setup workspace
  *
  * Replaces the legacy /briefs/new + /constraints/new routes. Single
  * URL hosts two sub-blocks via ?block= query param:
@@ -96,7 +96,7 @@ export default async function SetupPage({ params, searchParams }: PageProps) {
     <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
       <div className="mx-auto max-w-[1600px]">
         <Link
-          href={`/strategy/${tenant.slug}`}
+          href={`/in-season/${tenant.slug}`}
           className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em] mb-3 inline-block"
         >
           ← {tenant.display_name}

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   /strategy/[tenantSlug]/runs/[runId]/decision-pack — printable decision pack.
+   /in-season/[tenantSlug]/runs/[runId]/decision-pack — printable decision pack.
 
    Customer-facing pilot deliverable per BP §10 ("Season Performance
    Intelligence Pack"). User clicks "Print" / Cmd+P → Save as PDF, gets a
@@ -175,13 +175,13 @@ export default async function DecisionPackPage({ params }: PageProps) {
       {/* Print trigger toolbar (hidden on print) */}
       <div className="no-print fixed top-4 right-4 z-50 flex gap-2 bg-white shadow-lg rounded-full px-4 py-2 border border-carbon/10">
         <Link
-          href={`/strategy/${tenant.slug}/runs/${run.id}`}
+          href={`/in-season/${tenant.slug}/runs/${run.id}`}
           className="text-[12px] text-carbon/60 hover:text-carbon px-3 py-1"
         >
           ← Back to run
         </Link>
         <Link
-          href={`/strategy/${tenant.slug}/runs/${run.id}/pdf-view`}
+          href={`/in-season/${tenant.slug}/runs/${run.id}/pdf-view`}
           className="text-[12px] text-white bg-carbon hover:bg-carbon/90 px-3 py-1 rounded-full"
         >
           PDF · verdicts por SKU →

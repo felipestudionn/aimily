@@ -1,5 +1,5 @@
 /**
- * /strategy/[tenantSlug]/briefs/new — REDIRECT to the unified setup workspace
+ * /in-season/[tenantSlug]/briefs/new — REDIRECT to the unified setup workspace
  *
  * The old standalone brief editor (custom MoodboardBriefUploader + form
  * with a Brand-DNA fallback) was rejected by Felipe — Strategy is not
@@ -24,5 +24,5 @@ interface PageProps {
 
 export default async function NewBriefRedirect({ params }: PageProps) {
   const { tenantSlug } = await params;
-  redirect(`/strategy/${tenantSlug}/setup?block=creative`);
+  redirect(`/in-season/${tenantSlug}/setup?block=creative`);
 }

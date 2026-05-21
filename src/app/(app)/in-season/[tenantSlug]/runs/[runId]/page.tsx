@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   /strategy/[tenantSlug]/runs/[runId] — analysis run detail.
+   /in-season/[tenantSlug]/runs/[runId] — analysis run detail.
 
    The corona of Aimily Strategy. Shows:
      - Run status + algorithm version + coverage
@@ -234,7 +234,7 @@ export default async function RunDetailPage({ params }: PageProps) {
     <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
       <div className="mx-auto max-w-[2200px]">
         <Link
-          href={`/strategy/${tenant.slug}`}
+          href={`/in-season/${tenant.slug}`}
           className="text-[12px] text-carbon/40 hover:text-carbon/70 transition-colors uppercase tracking-[0.08em] mb-3 inline-block"
         >
           ← {tenant.display_name}
@@ -265,7 +265,7 @@ export default async function RunDetailPage({ params }: PageProps) {
           <div className="flex items-center gap-3">
             {run.run_status === 'complete' && (
               <Link
-                href={`/strategy/${tenant.slug}/runs/${run.id}/pdf-view`}
+                href={`/in-season/${tenant.slug}/runs/${run.id}/pdf-view`}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-medium hover:bg-carbon/90 transition-colors"
               >
                 PDF · verdicts por SKU →

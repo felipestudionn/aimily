@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   /strategy/[tenantSlug] — tenant workspace · server data fetch.
+   /in-season/[tenantSlug] — tenant workspace · server data fetch.
 
    Server component: RLS-gated queries against Supabase + auth check.
    Render is delegated to TenantHubClient.tsx so the 4 Gold Standard cards
@@ -75,7 +75,7 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
     {
       number: 1,
       kind: 'sources' as const,
-      href: `/strategy/${tenant.slug}/upload`,
+      href: `/in-season/${tenant.slug}/upload`,
       progress: sourcesProcessed > 0 ? 100 : sources.length > 0 ? 50 : 0,
       status:
         sources.length === 0
@@ -87,7 +87,7 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
     {
       number: 2,
       kind: 'creative' as const,
-      href: `/strategy/${tenant.slug}/setup?block=creative`,
+      href: `/in-season/${tenant.slug}/setup?block=creative`,
       progress: brief ? 100 : 0,
       status: brief
         ? ({ kind: 'briefConfirmed', label: brief.name } as const)
@@ -96,7 +96,7 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
     {
       number: 3,
       kind: 'buyStrategy' as const,
-      href: `/strategy/${tenant.slug}/setup?block=buy-strategy`,
+      href: `/in-season/${tenant.slug}/setup?block=buy-strategy`,
       progress: constraint?.chosen_archetype_id ? 100 : 0,
       status: constraint?.chosen_archetype_id
         ? ({ kind: 'archetypeConfirmed', id: constraint.chosen_archetype_id } as const)
@@ -106,10 +106,10 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
       number: 4,
       kind: 'analysis' as const,
       href: runInFlight
-        ? `/strategy/${tenant.slug}/runs/${runInFlight.id}`
+        ? `/in-season/${tenant.slug}/runs/${runInFlight.id}`
         : latestCompletedRun
-        ? `/strategy/${tenant.slug}/runs/${latestCompletedRun.id}`
-        : `/strategy/${tenant.slug}/runs/new`,
+        ? `/in-season/${tenant.slug}/runs/${latestCompletedRun.id}`
+        : `/in-season/${tenant.slug}/runs/new`,
       progress: runsCompleted > 0 ? 100 : runInFlight ? 50 : 0,
       status:
         runsCompleted > 0

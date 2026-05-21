@@ -6,7 +6,7 @@
  * strict: a user can belong to multiple tenants, but every request operates
  * against exactly ONE tenant at a time. The tenant_id is resolved from:
  *
- *   1. The URL path segment (`/strategy/[tenantSlug]/...`)
+ *   1. The URL path segment (`/in-season/[tenantSlug]/...`)
  *   2. A `?tenant` query string
  *   3. A `aimily_strategy_tenant` cookie last touched in this session
  *   4. The user's only-tenant if they have exactly one (auto-pick)

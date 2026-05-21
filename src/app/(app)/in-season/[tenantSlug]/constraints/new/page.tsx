@@ -1,5 +1,5 @@
 /**
- * /strategy/[tenantSlug]/constraints/new — REDIRECT to the unified setup workspace
+ * /in-season/[tenantSlug]/constraints/new — REDIRECT to the unified setup workspace
  *
  * The old flat constraints form (raw inputs for SKUs, budget, margin %,
  * positioning, family_share_targets as JSON) is replaced by the
@@ -22,5 +22,5 @@ interface PageProps {
 
 export default async function NewConstraintsRedirect({ params }: PageProps) {
   const { tenantSlug } = await params;
-  redirect(`/strategy/${tenantSlug}/setup?block=buy-strategy`);
+  redirect(`/in-season/${tenantSlug}/setup?block=buy-strategy`);
 }

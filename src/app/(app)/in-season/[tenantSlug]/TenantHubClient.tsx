@@ -238,7 +238,7 @@ export function TenantHubClient({ tenant, cards, latestCompletedRunId }: Props) 
         {/* Output band */}
         {allFour && latestCompletedRunId ? (
           <Link
-            href={`/strategy/${tenant.slug}/runs/${latestCompletedRunId}/decision-pack`}
+            href={`/in-season/${tenant.slug}/runs/${latestCompletedRunId}/decision-pack`}
             className="group block bg-white rounded-[20px] p-10 md:p-14 transition-all duration-300 hover:scale-[1.005] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-6">

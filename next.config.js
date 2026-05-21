@@ -16,7 +16,13 @@ const nextConfig = {
       { source: '/meet-aimily', destination: '/en', permanent: true },
       { source: '/how-it-works', destination: '/en', permanent: true },
       { source: '/discover', destination: '/en', permanent: true },
-      { source: '/pricing', destination: '/en#pricing', permanent: true },
+      // /pricing must include ?pricing=1 so the home page server-side
+      // gate lets logged-in users see the pricing section (they'd
+      // otherwise be redirected to /my-collections — see
+      // [locale]/page.tsx). Without the query param, in-app links from
+      // CreditMeter / Paywall / TrialBanner would be 308'd to /en
+      // then 307'd back to /my-collections, dead-ending the user.
+      { source: '/pricing', destination: '/en?pricing=1#pricing', permanent: true },
       /* Zombie routes from the pre-2026-04-15 cleanup — survived
          /trends, /categories/*, /svg-test, /analytics, /creative-space.
          None are linked from the active sidebar; they shipped with
