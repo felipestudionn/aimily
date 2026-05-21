@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/in-season/sales-sync",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/post-launch-analysis",
+      "schedule": "0 8 * * *"
     }
   ]
 }

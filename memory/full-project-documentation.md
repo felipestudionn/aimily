@@ -48,7 +48,7 @@ The platform ships as **three coupled products** that share the same account, br
 |---|---|---|
 | Framework | Next.js | 16.1.6 · App Router · React 19.2 · TypeScript 5.8 |
 | Styling | Tailwind CSS | 4.2.2 (Tailwind v4 with `@tailwindcss/postcss`) |
-| Components | shadcn/ui (Radix) + Lucide icons | `src/components/ui/` only — see `design-components-canonical.md` |
+| Components | shadcn/ui (Radix) + Lucide icons | 14 primitives in `src/components/ui/` — see `design-components-canonical.md` |
 | Auth & DB | Supabase | `@supabase/ssr` 0.9 · `@supabase/supabase-js` 2.84 · cookies-based SSR |
 | Payments | Stripe | server SDK 20.4 · API version `2026-02-25.clover` · LIVE mode |
 | Email | Resend | SPF/DKIM/DMARC verified · sender `aimily <noreply@aimily.app>` |
@@ -242,7 +242,7 @@ src/lib/prompts/prompt-context.ts     buildPromptContext — reads CIS + DB tabl
 public.collection_decisions           domain/subdomain/key/value JSONB/tags/version/rationale
 ```
 
-**ARCHITECTURE LOCK (rule of the project)**: frontend changes must NEVER modify these 5 files. UI work sends `collectionPlanId` only; the server loads everything else from the DB. Any new AI endpoint must call `loadFullContext()` — no endpoint-specific loaders.
+**ARCHITECTURE LOCK (rule of the project)**: frontend changes must NEVER modify these 4 files. UI work sends `collectionPlanId` only; the server loads everything else from the DB. Any new AI endpoint must call `loadFullContext()` — no endpoint-specific loaders.
 
 The 32 routes under `/api/ai/*` that currently consume CIS context are listed in §9.
 
@@ -564,7 +564,7 @@ Full list at `/tmp/all-routes.txt` (regenerable from `find src/app/api -name rou
 |---|---|---|
 | `/api/ai/*` | 32 | CIS-consuming generators + standalone tools |
 | `/api/in-season/*` | 36 | OAuth, sync, runs, scenarios, seeds, briefs |
-| `/api/cron/*` | 9 | 5 active (Vercel) + 3 pg_cron (cleanup × 2, trial-emails) + 1 unscheduled (`post-launch-analysis`) |
+| `/api/cron/*` | 9 | 6 active (Vercel) + 3 pg_cron (cleanup × 2, trial-emails) |
 | `/api/studio/*` | 12 | generate, variation, video, downloads, projects |
 | `/api/ecom/*` | 8 | publish/unpublish/validate/override/storefront |
 | `/api/tech-pack/*` | 7 | revisions, comments, diff, decide, submit, export |
@@ -584,6 +584,7 @@ Full list at `/tmp/all-routes.txt` (regenerable from `find src/app/api -name rou
 0 3  * * *  /api/cron/expire-student-verifications  12-mo student access expiry
 0 6  * * *  /api/cron/in-season/inventory-snapshot  daily stock+price freeze
 0 7  * * *  /api/cron/in-season/sales-sync     pull sales from all active connectors
+0 8  * * *  /api/cron/post-launch-analysis     auto-retrospective ≥7d after launch_date
 ```
 
 Routes scheduled via `pg_cron` (Supabase, not Vercel): `trial-emails`, `cleanup-deleted-collections`, `cleanup-storage-trash`. Lesson learned 2026-05-21: do NOT also add these to `vercel.json` — they'd run twice.
@@ -653,7 +654,7 @@ workspace/           DecisionCard + WorkspaceShell + ViewPort
 
 ### 12.4 shadcn/ui inventory (`src/components/ui/`)
 
-`accordion` · `animate-on-scroll` · `badge` · `button` · `card` · `collapsible` · `colored-svg` · `confirm-dialog` · `input` · `label` · `progress` · `segmented-pill` · `select` · `separator` · `slider` · `svg-icon` · `switch` · `tabs` · `textarea` · `toast` · `toggle` · `toggle-group` · `tooltip` · `index.ts` (24 components)
+`badge` · `button` · `card` · `confirm-dialog` · `input` · `label` · `segmented-pill` · `select` · `separator` · `slider` · `svg-icon` · `switch` · `textarea` · `toast` · `toggle` (14 primitives; the previous 10 unused shadcn-template files were dropped in the 2026-05-21 final sweep — re-add fresh from shadcn CLI if needed)
 
 **LAW**: never raw `<input>`, `<button>`, `<label>`, `<textarea>` — always shadcn. Full design rules in `design-components-canonical.md` and `CLAUDE.md` §🚨 DESIGN SYSTEM V2.
 
@@ -843,7 +844,6 @@ Full canonical registry: [`vercel-env-vars.md`](memory/vercel-env-vars.md).
 | [`src/lib/ai/load-full-context.ts`](src/lib/ai/load-full-context.ts) | Server-side CIS + workspace + brief loader (the spine) |
 | [`src/lib/ai/prompt-foundations.ts`](src/lib/ai/prompt-foundations.ts) | `buildInheritedContext` formats CIS into prompts |
 | [`src/lib/ai/llm-client.ts`](src/lib/ai/llm-client.ts) | Haiku → Gemini fallback wrapper |
-| [`src/lib/ai/cis-prefix.ts`](src/lib/ai/cis-prefix.ts) | Compact prefix for brief endpoints |
 | [`src/lib/collection-intelligence.ts`](src/lib/collection-intelligence.ts) | `recordDecision` · `getIntelligence` · `compilePromptContext` (11 presets) |
 | [`src/lib/prompts/prompt-context.ts`](src/lib/prompts/prompt-context.ts) | Multi-table aggregator on top of CIS |
 
