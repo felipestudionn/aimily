@@ -28,6 +28,7 @@ import { track, Events } from '@/lib/posthog';
 import { MeetAimilyContent } from '@/components/landing/MeetAimilyContent';
 import { PricingDetail } from '@/components/landing/PricingDetail';
 import { PoweredBy } from '@/components/landing/PoweredBy';
+import { TrustStrip } from '@/components/landing/TrustStrip';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useHomeTranslation } from '@/i18n/home';
 import FaqWidget from '@/components/faq/FaqWidget';
@@ -144,10 +145,13 @@ export default function MarketingHomeClient() {
         </a>
       </section>
 
-      {/* ═══════════════════════ LAYER 2 — MEET AIMILY (DWP narrative + AZUR) ═══════════════════════ */}
+      {/* ═══════════════════════ LAYER 2 — MEET AIMILY (DWP narrative + AZUR + In-Season loop) ═══════════════════════ */}
       <div id="meet-aimily">
         <MeetAimilyContent openAuth={openAuth} />
       </div>
+
+      {/* ═══════════════════════ LAYER 2.5 — TRUST (Shopify Partner + Vault + EU AI Act + EU hosting) ═══════════════════════ */}
+      <TrustStrip />
 
       {/* ═══════════════════════ LAYER 3 — POWERED BY (AI provider transparency + cost comparison) ═══════════════════════ */}
       <PoweredBy />
