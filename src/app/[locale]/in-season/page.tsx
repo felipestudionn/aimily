@@ -40,41 +40,45 @@ export default async function InSeasonLandingPage(props: {
 
   return (
     <main className="min-h-screen bg-shade">
-      {/* Hero */}
-      <section className="px-6 pt-32 pb-20 md:px-12 md:pt-40 md:pb-32">
+      {/* Editorial portada — dark carbon · DNA moment.
+         Replaces the previous all-light template hero. The italic accent
+         on "designs" carries the brand frame from /en into this page so
+         /in-season doesn't feel like a generic SaaS landing. */}
+      <section className="bg-carbon text-crema px-6 pt-36 pb-24 md:px-12 md:pt-44 md:pb-32">
         <div className="mx-auto max-w-5xl">
-          <p className="text-[11px] font-medium tracking-[0.18em] uppercase text-carbon/45 mb-6">
+          <p className="text-[11px] font-medium tracking-[0.3em] uppercase text-crema/55 mb-10">
             aimily In-Season
           </p>
-          <h1 className="text-[44px] md:text-[64px] font-medium text-carbon tracking-[-0.035em] leading-[1.02] mb-6 max-w-[14ch]">
-            In-Season Sales Management &amp; Actions
+          <h1 className="text-[44px] md:text-[72px] lg:text-[88px] font-light tracking-[-0.04em] leading-[1.0] max-w-[1100px]">
+            The season that ends{' '}
+            <span className="italic text-crema/85">designs</span>{' '}
+            the next.
           </h1>
-          <p className="text-[16px] md:text-[18px] text-carbon/55 leading-[1.55] max-w-2xl">
-            Daily in-season decisions backed by your own SKU data — what to
-            replenish, kill, resize, recolor, carry over, mark down, or
-            investigate. Connect Shopify in two clicks, or drop a weekly PDF.
-            Walk into your daily trading meeting with an evidence-backed action
-            pack.{' '}
-            <strong className="text-carbon">No black-box AI</strong>. Six
+          <p className="mt-10 max-w-[680px] text-[17px] md:text-[19px] text-crema/80 leading-[1.7] font-light tracking-[-0.01em]">
+            Daily in-season sales management for fashion buyers and
+            commercials. Connect Shopify in two clicks, or drop a weekly
+            PDF — walk into your daily trading meeting with an
+            evidence-backed action pack of 13 verbs per SKU.{' '}
+            <span className="text-crema">No black-box AI</span>. Six
             confidence dimensions per recommendation. Backtested before we
             recommend.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-3">
+          <div className="mt-12 flex flex-wrap items-center gap-3">
             <Link
               href="/in-season"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-carbon text-white text-[14px] font-semibold tracking-[-0.01em] hover:bg-carbon/90"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-colors"
             >
               Start the connector
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="#methodology"
-              className="text-[13px] text-carbon/60 hover:text-carbon underline-offset-4 hover:underline px-4 py-3"
+              className="text-[13px] text-crema/65 hover:text-crema underline-offset-4 hover:underline px-4 py-3 transition-colors"
             >
               How the engine works ↓
             </Link>
           </div>
-          <p className="mt-6 text-[12px] text-carbon/35">
+          <p className="mt-8 text-[12px] text-crema/45">
             Included in every aimily plan. Pilot available for enterprise
             volume — reach out for a 30-minute scoping call.
           </p>
@@ -88,7 +92,8 @@ export default async function InSeasonLandingPage(props: {
             Two surfaces, same engine
           </p>
           <h2 className="text-[28px] md:text-[36px] font-medium text-carbon tracking-[-0.025em] leading-[1.15] mb-8 max-w-[24ch]">
-            Daily decisions today. The next collection, smarter.
+            Daily decisions today. The next collection,{' '}
+            <span className="italic font-light">smarter</span>.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="rounded-[18px] bg-shade p-7">
@@ -286,7 +291,8 @@ export default async function InSeasonLandingPage(props: {
             Trust
           </p>
           <h2 className="text-[28px] md:text-[36px] font-medium text-carbon tracking-[-0.025em] leading-[1.15] mb-10 max-w-[22ch]">
-            Calibrated uncertainty over confident guessing.
+            <span className="italic font-light">Calibrated</span>{' '}
+            uncertainty over confident guessing.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <TrustCard

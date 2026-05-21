@@ -361,31 +361,35 @@ export default function StudioLandingClient() {
 
   return (
     <main className="min-h-screen bg-shade">
-      {/* Hero */}
-      <section className="px-6 pt-32 pb-20 md:px-12 md:pt-40 md:pb-32">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="text-[13px] font-medium text-carbon/50 tracking-[-0.02em] mb-6">
+      {/* Editorial portada — dark carbon · DNA moment.
+         Replaces the template centered-hero with an editorial dark portada
+         that mirrors the home-page voice. titleLine2 ("brand-locked," in
+         every locale) becomes the italic accent — it's the wedge claim of
+         Studio, so it earns the ornament. */}
+      <section className="bg-carbon text-crema px-6 pt-36 pb-24 md:px-12 md:pt-44 md:pb-32">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-[11px] font-medium tracking-[0.3em] uppercase text-crema/55 mb-10">
             {t.eyebrow}
           </p>
-          <h1 className="text-[44px] md:text-[64px] lg:text-[80px] font-medium text-carbon tracking-[-0.04em] leading-[1.02] mb-6">
+          <h1 className="text-[44px] md:text-[72px] lg:text-[88px] font-light tracking-[-0.04em] leading-[1.0] text-crema max-w-[1100px]">
             {t.titleLine1}<br />
-            {t.titleLine2}<br />
-            <span className="text-carbon/40">{t.titleLine3}</span>
+            <span className="italic text-crema/85">{t.titleLine2}</span><br />
+            <span className="text-crema/55">{t.titleLine3}</span>
           </h1>
-          <p className="text-[16px] md:text-[18px] text-carbon/55 max-w-2xl mx-auto leading-[1.6] mb-10">
+          <p className="mt-10 max-w-[680px] text-[17px] md:text-[19px] text-crema/80 leading-[1.7] font-light tracking-[-0.01em]">
             {t.subtitle}
           </p>
-          <div className="flex justify-center gap-3">
+          <div className="mt-12 flex flex-wrap items-center gap-3">
             <button
               onClick={() => openSignup()}
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-carbon text-white text-[14px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-colors"
             >
               {t.ctaStart}
               <ArrowRight className="h-4 w-4" />
             </button>
             <a
               href="#pricing"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-white border border-carbon/[0.1] text-[14px] font-semibold text-carbon hover:bg-carbon/[0.04] transition-all"
+              className="text-[13px] text-crema/65 hover:text-crema underline-offset-4 hover:underline px-4 py-3 transition-colors"
             >
               {t.ctaPricing}
             </a>
