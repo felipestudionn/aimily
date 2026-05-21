@@ -837,10 +837,14 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   // Block 2 hub lives at /collection/[id]?block=merchandising rendered by
   // CollectionOverview's sub-block grid. Sidebar mini-block links pass
   // ?block=scenarios|families|channels|budget so they bypass this redirect.
+  //
+  // 2026-05-21 cleanup: tightened to also catch the case where the
+  // WorkspaceShell passes blockParamOverride=null explicitly. Any unknown
+  // block value also redirects, so a typo in the URL doesn't surface the
+  // dead legacy view.
+  const CANONICAL_BLOCKS = new Set(['scenarios', 'families', 'channels', 'budget', 'wholesale']);
   useEffect(() => {
-    const block = searchParams?.get('block');
-    const isHubRoute = !block || block === 'merchandising';
-    if (blockParamOverride === undefined && isHubRoute) {
+    if (!blockParam || !CANONICAL_BLOCKS.has(blockParam)) {
       router.replace(`/collection/${collectionId}?block=merchandising`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -999,6 +1003,11 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
       </div>
     );
   }
+
+  // No canonical block selected → the useEffect above already triggered a
+  // redirect to /collection/{id}?block=merchandising. Return null so we
+  // never flash the legacy 4-card overview that was retired.
+  if (!blockParam || !CANONICAL_BLOCKS.has(blockParam)) return null;
 
   /* ── Card name map for clean workspace header ── */
   const m = t.merchandising as Record<string, string>;
@@ -1159,294 +1168,8 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
     );
   }
 
-  /* ═══ LEGACY VIEW (direct access, no blockParam) ═══ */
-  return (
-    <div className="min-h-[80vh]">
-      <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
-        {/* Header */}
-        <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
-          <Button variant="ghost" onClick={() => router.push(`/collection/${id}`)} className="rounded-full text-[13px] font-medium text-muted-foreground mb-3 px-0 hover:bg-transparent hover:text-foreground">
-            <ArrowLeft className="h-3 w-3 mr-2" /> {t.merchandising.overview}
-          </Button>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-            {t.merchandising.title} <span className="italic">{t.merchandising.titleItalic}</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-carbon/60 mt-2 max-w-lg">
-            {t.merchandising.subtitle}
-          </p>
-        </div>
-
-        {/* Validation Progress — pill stepper (matches Creative) */}
-        <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] rounded-full w-fit overflow-x-auto max-w-full">
-          {MERCH_CARDS.map((card, idx) => {
-            const state = getCardState(card.id);
-            const locked = isLocked(card);
-            const isActive = expandedCard === card.id;
-            return (
-              <Button
-                key={card.id}
-                variant="ghost"
-                onClick={() => { if (!locked && !expandedCard) setExpandedCard(card.id); }}
-                disabled={locked || !!expandedCard}
-                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase rounded-full transition-all ${
-                  isActive
-                    ? 'bg-carbon text-white hover:bg-carbon/90'
-                    : state.confirmed
-                      ? 'text-foreground/70'
-                      : 'text-muted-foreground'
-                }`}
-              >
-                <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 rounded-full ${
-                  isActive ? 'bg-white/20' : state.confirmed ? 'bg-carbon text-white' : 'bg-carbon/[0.06]'
-                }`}>
-                  {state.confirmed ? <Check className="h-3 w-3" /> : locked ? <Lock className="h-2.5 w-2.5" /> : idx + 1}
-                </span>
-                <span className="whitespace-nowrap">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</span>
-              </Button>
-            );
-          })}
-        </div>
-
-        <div className="relative">
-          {/* ─── EXPANDED VIEW ─── */}
-          {expandedCard && (
-            <div className="flex gap-4">
-              {/* Collapsed sidebar icons — hidden on mobile */}
-              <div className="hidden sm:flex flex-col gap-3 pt-1 w-14 shrink-0">
-                {MERCH_CARDS.map((card) => {
-                  if (card.id === expandedCard) return null;
-                  const Icon = card.icon;
-                  const state = getCardState(card.id);
-                  const locked = isLocked(card);
-                  return (
-                    <Button
-                      key={card.id}
-                      variant="outline"
-                      size="icon"
-                      onClick={() => { if (!locked) { handleCollapse(); setTimeout(() => handleExpand(card.id), 350); } }}
-                      disabled={locked}
-                      className={`group/icon relative w-12 h-12 rounded-[12px] transition-all duration-300 ${
-                        locked ? 'bg-carbon/[0.02] border-carbon/[0.04]'
-                        : state.confirmed ? 'bg-carbon/[0.04] border-carbon/[0.12]'
-                        : 'bg-white border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm'
-                      }`}
-                      title={t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}
-                    >
-                      {locked ? <Lock className="h-3.5 w-3.5 text-carbon/15" /> : state.confirmed ? <Check className="h-4 w-4 text-carbon/60" /> : <Icon className="h-4 w-4 text-carbon/35 group-hover/icon:text-carbon/60 transition-colors" />}
-                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-white rounded-full text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</div>
-                    </Button>
-                  );
-                })}
-              </div>
-
-              {/* Expanded content */}
-              <div className="flex-1 bg-white border border-carbon/[0.06] rounded-[20px] overflow-visible flex flex-col" style={{ animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards', minHeight: 'calc(100vh - 260px)' }}>
-                {(() => {
-                  const card = MERCH_CARDS.find((c) => c.id === expandedCard);
-                  if (!card) return null;
-                  const Icon = card.icon;
-                  const state = getCardState(card.id);
-                  return (
-                    <div className="p-4 sm:p-6 md:p-8 flex flex-col h-full min-h-[inherit]">
-                      <div className="flex items-start justify-between mb-6 sm:mb-8">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-carbon/[0.04] flex items-center justify-center"><Icon className="h-4 w-4 sm:h-5 sm:w-5 text-carbon/50" /></div>
-                          <div>
-                            <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
-                            <p className="text-[11px] sm:text-xs text-carbon/70 mt-0.5">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
-                          </div>
-                        </div>
-                        <Button variant="ghost" size="icon" onClick={handleCollapse} className="rounded-full w-9 h-9 text-muted-foreground"><X className="h-4 w-4" /></Button>
-                      </div>
-
-                      {/* Mode Pills — unified segmented control */}
-                      <div className="mb-6 sm:mb-8">
-                        <SegmentedPill
-                          options={INPUT_MODE_IDS.map((modeId) => ({
-                            id: modeId,
-                            label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
-                          }))}
-                          value={state.mode}
-                          onChange={(modeId) => updateCardData(card.id, { mode: modeId })}
-                          description={t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}
-                          size="md"
-                        />
-                      </div>
-
-                      <div className="flex-1">
-                        <ExpandedCardContent
-                          cardId={card.id} mode={state.mode} data={state.data}
-                          onChange={(newData) => updateCardData(card.id, { data: newData })}
-                          collectionContext={collectionContext} familiesData={familiesData}
-                          familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
-                          pricingData={(getCardState('pricing').data.pricing as PricingRow[]) || []}
-                          onPricingChange={(rows) => updateCardData('pricing', { data: { ...getCardState('pricing').data, pricing: rows } })}
-                        />
-                      </div>
-
-                      <div className="mt-auto flex items-center justify-between gap-3 pt-6 border-t border-carbon/[0.06]">
-                        <Button variant="ghost" onClick={handleCollapse} className="rounded-full text-[13px] text-muted-foreground">{t.merchandising.backToGrid}</Button>
-                        <Button onClick={() => handleConfirm(card.id)} className="rounded-full px-8">
-                          <Check className="h-3.5 w-3.5 mr-2" /> {t.merchandising.validateContinue}
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
-
-          {/* ─── GRID VIEW (2x2) ─── */}
-          {!expandedCard && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5" style={isAnimating ? { animation: 'gridIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards' } : undefined}>
-              {MERCH_CARDS.map((card) => {
-                const Icon = card.icon;
-                const locked = isLocked(card);
-                const state = getCardState(card.id);
-                return (
-                  <div
-                    key={card.id}
-                    onClick={() => { if (!locked) handleExpand(card.id); }}
-                    className={`group relative bg-white rounded-[20px] p-5 sm:p-6 md:p-8 transition-all duration-300 overflow-hidden border shadow-sm flex flex-col ${
-                      locked ? 'border-carbon/[0.04] opacity-50 cursor-not-allowed' : state.confirmed ? 'border-carbon/[0.12] bg-carbon/[0.01] cursor-pointer hover:shadow-md' : 'border-carbon/[0.06] cursor-pointer hover:shadow-md'
-                    }`}
-                  >
-                    {state.confirmed && <div className="absolute top-0 left-0 right-0 h-[3px] bg-carbon" />}
-                    {state.confirmed && <div className="absolute top-5 right-5 w-7 h-7 bg-carbon flex items-center justify-center"><Check className="h-3.5 w-3.5 text-crema" /></div>}
-                    <div className="flex items-start justify-between mb-4 sm:mb-6">
-                      <div>
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-[10px] flex items-center justify-center mb-3 sm:mb-4 ${locked ? 'bg-carbon/[0.02]' : 'bg-carbon/[0.04]'}`}>
-                          {locked ? <Lock className="h-5 w-5 text-carbon/20" /> : <Icon className="h-5 w-5 text-carbon/50" />}
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
-                      </div>
-                    </div>
-                    <p className="text-sm text-carbon/70 leading-relaxed flex-1">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
-                    {!locked && (
-                      <div className="mt-4 sm:mt-6">
-                        <SegmentedPill
-                          preview
-                          options={INPUT_MODE_IDS.map((modeId) => ({
-                            id: modeId,
-                            label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
-                          }))}
-                          value={state.mode}
-                          onChange={() => {}}
-                        />
-                      </div>
-                    )}
-                    <div className="mt-5 flex justify-center">
-                    <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-8 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-colors ${
-                      locked ? 'bg-carbon/[0.04] text-carbon/20' : state.confirmed ? 'bg-carbon/[0.05] text-carbon/35' : 'bg-carbon text-crema group-hover:bg-carbon/90'
-                    }`}>
-                      {locked ? (<><Lock className="h-3 w-3" /> {t.merchandising.requires} {card.lockedBy ? t.merchandising[(language === 'es' ? CARD_KEYS[card.lockedBy].nameEs : CARD_KEYS[card.lockedBy].name) as keyof typeof t.merchandising] as string : ''}</>) :
-                        state.confirmed ? (<>{t.merchandising.edit} <ArrowRight className="h-3.5 w-3.5" /></>) : Object.keys(state.data || {}).length > 0 ? (<>{t.merchandising.continueAction} <ArrowRight className="h-3.5 w-3.5" /></>) : (<>{t.merchandising.start} <ArrowRight className="h-3.5 w-3.5" /></>)}
-                    </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Collection Builder CTA */}
-        {!expandedCard && (
-          <div className={`mt-6 sm:mt-8 p-4 sm:p-8 border rounded-[20px] transition-all ${allValidated ? 'bg-white border-carbon/[0.06] hover:shadow-lg cursor-pointer' : 'bg-carbon/[0.02] border-carbon/[0.04] cursor-not-allowed'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 sm:gap-5">
-                <div className={`w-12 h-12 flex items-center justify-center ${allValidated ? 'bg-carbon/[0.04]' : 'bg-carbon/[0.02]'}`}>
-                  {allValidated ? <LayoutGrid className="h-6 w-6 text-carbon/50" /> : <Lock className="h-5 w-5 text-carbon/15" />}
-                </div>
-                <div>
-                  <h3 className={`text-lg sm:text-xl font-light tracking-tight ${allValidated ? 'text-carbon' : 'text-carbon/25'}`}>{t.merchandising.collectionBuilder}</h3>
-                  <p className={`text-sm mt-1 ${allValidated ? 'text-carbon/60' : 'text-carbon/15'}`}>
-                    {allValidated ? t.merchandising.allCardsValidated : t.merchandising.validateAllCards}
-                  </p>
-                </div>
-              </div>
-              {allValidated && (
-                <Button onClick={() => router.push(`/collection/${id}/product`)} className="rounded-full">
-                  {t.merchandising.openBuilder} <ArrowRight className="h-3.5 w-3.5 ml-2" />
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Celebration Overlay */}
-      {showCelebration && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ animation: 'fadeIn 0.6s ease-out forwards' }}
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-carbon/95" style={{ animation: 'fadeIn 0.4s ease-out forwards' }} />
-
-          {/* Content */}
-          <div className="relative z-10 text-center px-6 max-w-2xl" style={{ animation: 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
-            <div className="w-16 h-16 mx-auto mb-8 border border-crema/20 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both' }}>
-              <Check className="h-7 w-7 text-crema/80" />
-            </div>
-
-            <div className="text-[10px] font-medium tracking-[0.4em] uppercase text-crema/30 mb-4" style={{ animation: 'fadeIn 0.6s ease-out 0.8s both' }}>
-              {collectionContext.collectionName} · {collectionContext.season}
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
-              {t.merchandising.celebrationTitle}<br /><span className="italic">{t.merchandising.celebrationTitleItalic}</span>.
-            </h2>
-
-            <p className="text-sm sm:text-base font-light text-crema/60 leading-relaxed max-w-lg mx-auto mb-4" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
-              {t.merchandising.celebrationBody}
-            </p>
-
-            <p className="text-xs text-crema/30 italic mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
-              {t.merchandising.celebrationQuote}
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
-              <Button
-                onClick={() => router.push(`/collection/${collectionId}/product`)}
-                className="rounded-full px-8 py-3.5 bg-crema text-carbon hover:bg-white"
-              >
-                {t.merchandising.celebrationCta} <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/collection/${collectionId}`)}
-                className="rounded-full px-6 py-3 text-crema/50 border-crema/15 hover:text-crema/80 hover:border-crema/30 bg-transparent"
-              >
-                {t.merchandising.celebrationBack}
-              </Button>
-            </div>
-
-            {/* Dismiss */}
-            <Button
-              variant="ghost"
-              onClick={() => setShowCelebration(false)}
-              className="mt-8 rounded-full text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 hover:bg-transparent"
-            >
-              {t.merchandising.celebrationDismiss}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Animations */}
-      <style jsx>{`
-        @keyframes expandIn {
-          0% { opacity: 0; transform: scale(0.92) translateY(-8px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes gridIn {
-          0% { opacity: 0; transform: scale(1.02); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
-    </div>
-  );
+  // Unreachable: the redirect useEffect catches any non-canonical blockParam
+  // and the early-return null bails before this point. Keep an explicit
+  // return so the function is exhaustive.
+  return null;
 }

@@ -5003,6 +5003,19 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
   const [isAnimating, setIsAnimating] = useState(false);
   const [collectionContext, setCollectionContext] = useState({ season: '', collectionName: '' });
 
+  // 2026-05-21 cleanup: /collection/{id}/creative without ?block= is not a
+  // canonical UI entry. CollectionOverview always sends users with a
+  // ?block= param. The old "legacy when direct" header (italic H2 +
+  // breadcrumb + step nav) is dead in canonical navigation, so we
+  // redirect rather than render it. Also catches the X-close edge case
+  // where blockParam goes null mid-session — user lands back on
+  // /collection/{id} overview as expected.
+  useEffect(() => {
+    if (!blockParam && !blockParamOverride) {
+      router.replace(`/collection/${collectionId}`);
+    }
+  }, [blockParam, blockParamOverride, collectionId, router]);
+
   // Persist block data + active step to Supabase (auto-save with 1s debounce)
   const { data: persisted, save: persistData, loading: persistLoading } =
     useWorkspaceData<{ blockData: BlockData; activeStep: number }>(
@@ -5206,63 +5219,24 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     );
   }
 
+  // No block selected → the useEffect above already triggered a redirect
+  // to /collection/{id}. Return null so we never flash the legacy header.
+  if (!blockParam) return null;
+
   return (
     <div className="min-h-[80vh]">
-      <div className={`${blockParam ? 'px-6 md:px-16 lg:px-24 pt-12 md:pt-16' : 'px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12'}`}>
-        {/* Header — centered when coming from sidebar, legacy when direct */}
-        {blockParam ? (
-          <div className="text-center mb-10">
-            <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-              {blockNameMap[blockParam] || t.creative.consumerDefinition}
-            </h1>
-            {blockDescMap[blockParam] && (
-              <p className="mt-3 text-[14px] md:text-[15px] text-carbon/45 max-w-[520px] mx-auto leading-relaxed">
-                {blockDescMap[blockParam]}
-              </p>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
-              <button
-                onClick={() => router.push(`/collection/${id}`)}
-                className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
-              >
-                <ArrowLeft className="h-3 w-3" /> {t.creative.overview}
-              </button>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-                {t.creative.title.split(' & ')[0]} & <span className="italic">{t.creative.title.split(' & ')[1] || 'Brand'}</span>
-              </h2>
-              <p className="text-xs sm:text-sm text-carbon/60 mt-2 max-w-lg">
-                {t.creative.subtitle}
-              </p>
-            </div>
-
-            {/* Step Navigation — only when NOT coming from sidebar */}
-            <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
-              {STEPS.map((s, i) => (
-                <button
-                  key={s.id}
-                  onClick={() => { if (!expandedBlock) setActiveStep(i); }}
-                  className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
-                    activeStep === i
-                      ? 'bg-carbon text-crema'
-                      : expandedBlock
-                        ? 'bg-white text-carbon/15 cursor-not-allowed'
-                        : 'bg-white text-carbon/40 hover:text-carbon/60'
-                  }`}
-                >
-                  <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 ${
-                    activeStep === i ? 'bg-white/20' : 'bg-carbon/[0.06]'
-                  }`}>
-                    {i + 1}
-                  </span>
-                  <span className="whitespace-nowrap">{stepNameMap[s.id] || s.name}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+      <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16">
+        {/* Header — centered title pulled from blockNameMap */}
+        <div className="text-center mb-10">
+          <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+            {blockNameMap[blockParam] || t.creative.consumerDefinition}
+          </h1>
+          {blockDescMap[blockParam] && (
+            <p className="mt-3 text-[14px] md:text-[15px] text-carbon/45 max-w-[520px] mx-auto leading-relaxed">
+              {blockDescMap[blockParam]}
+            </p>
+          )}
+        </div>
 
         {/* Step Content */}
         {/* ─── SYNTHESIS VIEW (Creative Overview from sidebar) ─── */}
@@ -5385,126 +5359,6 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
               );
             })()}
 
-            {/* ─── LEGACY EXPANDED VIEW (direct access, no blockParam) ─── */}
-            {!blockParam && expandedBlock && (
-              <div className="flex gap-4">
-                {/* Collapsed sidebar icons — hidden on mobile */}
-                <div className="hidden sm:flex flex-col gap-3 pt-1 w-14 shrink-0">
-                  {step.blocks.map((block) => {
-                    if (block.id === expandedBlock) return null;
-                    const Icon = block.icon;
-                    const state = getBlockState(block.id);
-                    return (
-                      <button
-                        key={block.id}
-                        onClick={() => {
-                          handleCollapse();
-                          setTimeout(() => handleExpand(block.id), 350);
-                        }}
-                        className={`group/icon relative w-12 h-12 flex items-center justify-center border transition-all duration-300 ${
-                          state.confirmed
-                            ? 'bg-carbon/[0.04] border-carbon/[0.12]'
-                            : 'bg-white border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm'
-                        }`}
-                        title={blockNameMap[block.id] || block.name}
-                      >
-                        {state.confirmed ? (
-                          <Check className="h-4 w-4 text-carbon/60" />
-                        ) : (
-                          <Icon className="h-4.5 w-4.5 text-carbon/35 group-hover/icon:text-carbon/60 transition-colors" />
-                        )}
-                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">
-                          {blockNameMap[block.id] || block.name}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Expanded content */}
-                <div
-                  className="flex-1 bg-white border border-carbon/[0.06] overflow-hidden flex flex-col"
-                  style={{
-                    animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                    minHeight: 'calc(100vh - 260px)',
-                  }}
-                >
-                  {(() => {
-                    const block = step.blocks.find((b) => b.id === expandedBlock);
-                    if (!block) return null;
-                    const Icon = block.icon;
-                    const state = getBlockState(block.id);
-                    return (
-                      <div className="p-4 sm:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
-                        <div className="flex items-start justify-between mb-6 sm:mb-8">
-                          <div className="flex items-center gap-3 sm:gap-4">
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-carbon/[0.04] flex items-center justify-center shrink-0">
-                              <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-carbon/50" />
-                            </div>
-                            <div>
-                              <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">
-                                {blockNameMap[block.id] || block.name}
-                              </h3>
-                              <p className="text-[11px] sm:text-xs text-carbon/70 mt-0.5">{blockDescMap[block.id] || block.description}</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={handleCollapse}
-                            className="w-9 h-9 flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:bg-carbon/[0.04] transition-all"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-
-                        {!hideModePills && (
-                          <div className="mb-6 sm:mb-8">
-                            <SegmentedPill
-                              options={INPUT_MODES.map((m) => ({
-                                id: m.id,
-                                label: modeNameMap[m.id] || m.label,
-                              }))}
-                              value={state.mode}
-                              onChange={(modeId) => updateBlockData(block.id, { mode: modeId })}
-                              description={modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
-                              size="md"
-                            />
-                          </div>
-                        )}
-
-                        <div className="flex-1">
-                          <ExpandedBlockContent
-                            blockId={block.id}
-                            stepId={step.id}
-                            mode={state.mode}
-                            data={state.data}
-                            onChange={(newData) => updateBlockData(block.id, { data: newData })}
-                            collectionContext={collectionContext}
-                            consumerProfile={consumerProfile}
-                            vibeText={vibeText}
-                          />
-                        </div>
-
-                        <div className="mt-auto flex items-center justify-between pt-4 sm:pt-6 border-t border-carbon/[0.06] gap-3">
-                          <button
-                            onClick={handleCollapse}
-                            className="text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors shrink-0"
-                          >
-                            {`← ${t.creative.backToGrid}`}
-                          </button>
-                          <button
-                            onClick={() => handleConfirm(block.id)}
-                            className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.1em] sm:tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors"
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            {t.creative.confirmContinue}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
 
             {/* ─── GRID VIEW (2x2) ─── */}
             {!expandedBlock && (
