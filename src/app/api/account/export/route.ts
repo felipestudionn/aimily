@@ -48,16 +48,16 @@ export async function GET() {
 
       // Related collection data.
       //
-      // 2026-05-21: replaced 'tech_packs' (dropped, old flat schema) with
-      // the canonical PLM-parity trio 'tech_pack_data' + 'tech_pack_revisions'
-      // + 'tech_pack_comments'. GDPR export now surfaces the user's
-      // current tech-pack state + full revision history + threaded
-      // comments, matching what they see in /tech-pack/[skuId].
+      // 2026-05-21: aligned to current canonical schema after the
+      // orphan-tables cleanup —
+      //   · 'tech_packs' (old flat schema) → tech_pack_data + tech_pack_revisions + tech_pack_comments
+      //   · 'market_predictions', 'brand_models', 'pr_contacts' dropped (never shipped)
+      // GDPR export now mirrors what the user sees in the active product.
       const tables = [
         'collection_skus', 'collection_timelines', 'drops',
-        'commercial_actions', 'market_predictions', 'ai_generations',
-        'brand_models', 'brand_profiles', 'content_calendar',
-        'lookbook_pages', 'pr_contacts', 'product_copy',
+        'commercial_actions', 'ai_generations',
+        'brand_profiles', 'content_calendar',
+        'lookbook_pages', 'product_copy',
         'production_orders', 'sample_reviews', 'sku_colorways',
         'tech_pack_data', 'tech_pack_revisions', 'tech_pack_comments',
       ];
