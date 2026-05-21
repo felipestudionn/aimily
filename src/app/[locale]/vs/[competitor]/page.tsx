@@ -139,10 +139,7 @@ export default async function ComparisonPage({
 
       <article className="bg-carbon text-crema min-h-screen">
         <header className="px-6 pt-32 pb-16 md:pt-40 md:pb-20 max-w-3xl mx-auto">
-          <p
-            className="font-display text-[22px] md:text-[28px] italic text-crema/70 leading-snug mb-8"
-            style={{ fontFamily: 'var(--font-display), serif' }}
-          >
+          <p className="text-[22px] md:text-[28px] font-light text-crema/80 leading-snug mb-8 tracking-[-0.01em]">
             {fm.hero}
           </p>
           <h1 className="font-display text-[40px] md:text-[64px] leading-[1.05] tracking-[-0.02em] mb-10">

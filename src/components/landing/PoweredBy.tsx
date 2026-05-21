@@ -52,7 +52,7 @@ export function PoweredBy() {
             {pb.eyebrow}
           </div>
           <h2 className="text-[40px] md:text-[56px] font-light tracking-[-0.03em] leading-[1.05] max-w-[780px] mx-auto mb-6">
-            {pb.titleStart}<span className="italic">{pb.titleItalic}</span>{pb.titleEnd}
+            {pb.titleStart}<span className="font-extrabold text-carbon">{pb.titleItalic}</span>{pb.titleEnd}
           </h2>
           <p className="max-w-[640px] mx-auto text-[15px] text-carbon/65 leading-[1.7]">
             {pb.subtitle}
@@ -72,7 +72,7 @@ export function PoweredBy() {
               <div className="text-[12px] text-carbon/55 font-mono tracking-[0.01em] mb-4">
                 {provider.models}
               </div>
-              <p className="text-[13.5px] italic text-carbon/65 leading-[1.6] mt-auto">
+              <p className="text-[13.5px] text-carbon/65 leading-[1.6] mt-auto">
                 {pb[provider.use]}
               </p>
             </div>
@@ -86,7 +86,7 @@ export function PoweredBy() {
               {pb.compareLabel}
             </div>
             <h3 className="text-[26px] md:text-[32px] font-light tracking-[-0.02em] leading-[1.15] max-w-[680px] mx-auto">
-              {pb.compareTitleStart}<span className="italic">{pb.compareTitleItalic}</span>{pb.compareTitleEnd}
+              {pb.compareTitleStart}<span className="font-extrabold text-carbon">{pb.compareTitleItalic}</span>{pb.compareTitleEnd}
             </h3>
           </div>
 
@@ -109,7 +109,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category1}</span>
                   <span className="text-carbon font-mono tabular-nums text-[14px]">€133</span>
                 </div>
-                <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
+                <p className="text-[11.5px] text-carbon/45 leading-[1.4]">
                   Claude Pro €18 · ChatGPT Plus €18 · Gemini Advanced €18 · Perplexity Pro €18 · Freepik Premium+ €27 · Kling AI Pro €34.
                 </p>
               </div>
@@ -120,7 +120,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category2}</span>
                   <span className="text-carbon font-mono tabular-nums text-[14px]">€124</span>
                 </div>
-                <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
+                <p className="text-[11.5px] text-carbon/45 leading-[1.4]">
                   {pb.productivityCaveat}
                 </p>
               </div>
@@ -131,7 +131,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category3}</span>
                   <span className="text-carbon font-mono tabular-nums text-[14px]">~€400</span>
                 </div>
-                <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
+                <p className="text-[11.5px] text-carbon/45 leading-[1.4]">
                   {pb.webCaveat}
                 </p>
               </div>
@@ -142,7 +142,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category4}</span>
                   <span className="text-carbon font-mono tabular-nums text-[14px]">~€100</span>
                 </div>
-                <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
+                <p className="text-[11.5px] text-carbon/45 leading-[1.4]">
                   {pb.seoCaveat}
                 </p>
               </div>
@@ -153,14 +153,14 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category5}</span>
                   <span className="text-carbon font-mono tabular-nums text-[14px]">~€2.000</span>
                 </div>
-                <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
+                <p className="text-[11.5px] text-carbon/45 leading-[1.4]">
                   {pb.photoshootCaveat}
                 </p>
               </div>
 
               {/* Chaos note — descriptive UX before the total */}
               <div className="border-t border-carbon/[0.08] pt-4 mb-5">
-                <p className="text-[13px] italic text-carbon/65 leading-[1.55]">
+                <p className="text-[13px] text-carbon/65 leading-[1.55]">
                   {pb.chaosNote}
                 </p>
               </div>
@@ -193,7 +193,7 @@ export function PoweredBy() {
                   </span>
                   <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
-                <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
+                <p className="text-[11.5px] text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyAiCaveat}
                 </p>
               </div>
@@ -206,7 +206,7 @@ export function PoweredBy() {
                   </span>
                   <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
-                <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
+                <p className="text-[11.5px] text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyProductivityCaveat}
                 </p>
               </div>
@@ -219,7 +219,7 @@ export function PoweredBy() {
                   </span>
                   <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
-                <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
+                <p className="text-[11.5px] text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyWebCaveat}
                 </p>
               </div>
@@ -232,7 +232,7 @@ export function PoweredBy() {
                   </span>
                   <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
-                <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
+                <p className="text-[11.5px] text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilySeoCaveat}
                 </p>
               </div>
@@ -245,14 +245,14 @@ export function PoweredBy() {
                   </span>
                   <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
-                <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
+                <p className="text-[11.5px] text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyEditorialCaveat}
                 </p>
               </div>
 
               {/* Flow note — mirror of chaos note on left */}
               <div className="border-t border-crema/15 pt-4 mb-5">
-                <p className="text-[13px] italic text-crema/75 leading-[1.55]">
+                <p className="text-[13px] text-crema/75 leading-[1.55]">
                   {pb.flowNote}
                 </p>
               </div>
@@ -269,11 +269,11 @@ export function PoweredBy() {
             </div>
           </div>
 
-          <p className="text-center text-[12px] italic text-carbon/55 mt-8 max-w-2xl mx-auto leading-[1.6]">
+          <p className="text-center text-[12px] text-carbon/55 mt-8 max-w-2xl mx-auto leading-[1.6]">
             {pb.optionACaveat}
           </p>
 
-          <p className="text-center text-[12px] text-carbon/45 mt-8 italic max-w-2xl mx-auto leading-[1.6]">
+          <p className="text-center text-[12px] text-carbon/45 mt-8 max-w-2xl mx-auto leading-[1.6]">
             {pb.footnote}
           </p>
         </div>

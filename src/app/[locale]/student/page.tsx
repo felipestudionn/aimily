@@ -112,7 +112,7 @@ export default function StudentPage() {
           aimily Student
         </div>
         <h1 className="text-[44px] md:text-[64px] font-light tracking-[-0.03em] leading-[1.05] mb-6">
-          12 meses gratis<span className="italic"> para estudiantes</span> de moda.
+          12 meses gratis<span className="font-bold"> para estudiantes</span> de moda.
         </h1>
         <p className="max-w-[620px] mx-auto text-[16px] text-carbon/65 leading-[1.7] mb-10">
           Si estudias moda en una de las universidades reconocidas, accede gratis a aimily durante un curso completo.
@@ -175,7 +175,7 @@ export default function StudentPage() {
             Universidades soportadas
           </div>
           <h2 className="text-[32px] md:text-[40px] font-light tracking-[-0.03em] leading-[1.1] mb-6">
-            <span className="italic">{loading ? '…' : schools.length}</span> escuelas y universidades reconocidas.
+            <span className="font-extrabold">{loading ? '…' : schools.length}</span> escuelas y universidades reconocidas.
           </h2>
           <p className="max-w-[560px] mx-auto text-[14px] text-carbon/65 leading-[1.6] mb-8">
             Tu universidad no está en la lista? Pídele a tu departamento que escriba a hello@aimily.app y la añadimos.
@@ -247,7 +247,7 @@ export default function StudentPage() {
       {/* Final CTA */}
       <section className="bg-carbon text-crema px-6 py-24 text-center">
         <h2 className="text-[32px] md:text-[44px] font-light tracking-[-0.03em] leading-[1.1] max-w-[640px] mx-auto mb-6">
-          Empieza ahora.<span className="italic"> No tienes nada que perder.</span>
+          Empieza ahora.<span className="font-bold text-crema"> No tienes nada que perder.</span>
         </h2>
         <p className="max-w-[480px] mx-auto text-[14px] text-crema/70 leading-[1.6] mb-8">
           12 meses gratis con tu email institucional. Cancela cuando termine el curso o pasa al plan Founder por €99/mes.

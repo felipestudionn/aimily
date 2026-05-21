@@ -220,7 +220,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
             {p.eyebrow}
           </div>
           <h2 className="text-[40px] md:text-[56px] font-light tracking-[-0.03em] leading-[1.05] max-w-[820px] mx-auto mb-6">
-            <span className="italic">{p.titleItalic}</span>{p.titleEnd}
+            <span className="font-extrabold text-carbon">{p.titleItalic}</span>{p.titleEnd}
           </h2>
           <p className="max-w-[520px] mx-auto text-[15px] text-carbon/65 leading-[1.6]">
             {p.subtitle}
@@ -255,7 +255,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
             <div className="text-[11px] tracking-[0.25em] uppercase text-carbon/45 font-medium mb-3">
               {p.includedEyebrow}
             </div>
-            <p className="text-[18px] md:text-[20px] font-light text-carbon leading-[1.4] tracking-[-0.015em] mb-3 italic">
+            <p className="text-[18px] md:text-[20px] font-bold text-carbon leading-[1.4] tracking-[-0.015em] mb-3">
               {p.includedTitle}
             </p>
             <p className="text-[14px] text-carbon/65 leading-[1.65] max-w-[680px] mx-auto">
@@ -312,7 +312,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                 <div className="text-[11px] tracking-[0.25em] uppercase text-carbon/45 font-medium mb-2">
                   {p.creditsEyebrow}
                 </div>
-                <h3 className="text-[20px] md:text-[24px] font-light text-carbon tracking-[-0.02em] leading-[1.2] mb-3 italic">
+                <h3 className="text-[20px] md:text-[24px] font-bold text-carbon tracking-[-0.02em] leading-[1.2] mb-3">
                   {p.creditsTitle}
                 </h3>
                 <p className="text-[13.5px] text-carbon/65 leading-[1.6] max-w-3xl">

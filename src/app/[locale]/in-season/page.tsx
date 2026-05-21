@@ -51,7 +51,7 @@ export default async function InSeasonLandingPage(props: {
           </p>
           <h1 className="text-[44px] md:text-[72px] lg:text-[88px] font-light tracking-[-0.04em] leading-[1.0] max-w-[1100px]">
             The season that ends{' '}
-            <span className="italic text-crema/85">designs</span>{' '}
+            <span className="font-extrabold text-crema">designs</span>{' '}
             the next.
           </h1>
           <p className="mt-10 max-w-[680px] text-[17px] md:text-[19px] text-crema/80 leading-[1.7] font-light tracking-[-0.01em]">
@@ -93,7 +93,7 @@ export default async function InSeasonLandingPage(props: {
           </p>
           <h2 className="text-[28px] md:text-[36px] font-medium text-carbon tracking-[-0.025em] leading-[1.15] mb-8 max-w-[24ch]">
             Daily decisions today. The next collection,{' '}
-            <span className="italic font-light">smarter</span>.
+            <span className="font-bold">smarter</span>.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="rounded-[18px] bg-shade p-7">
@@ -291,7 +291,7 @@ export default async function InSeasonLandingPage(props: {
             Trust
           </p>
           <h2 className="text-[28px] md:text-[36px] font-medium text-carbon tracking-[-0.025em] leading-[1.15] mb-10 max-w-[22ch]">
-            <span className="italic font-light">Calibrated</span>{' '}
+            <span className="font-bold">Calibrated</span>{' '}
             uncertainty over confident guessing.
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

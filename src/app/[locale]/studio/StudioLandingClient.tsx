@@ -373,7 +373,7 @@ export default function StudioLandingClient() {
           </p>
           <h1 className="text-[44px] md:text-[72px] lg:text-[88px] font-light tracking-[-0.04em] leading-[1.0] text-crema max-w-[1100px]">
             {t.titleLine1}<br />
-            <span className="italic text-crema/85">{t.titleLine2}</span><br />
+            <span className="font-extrabold text-crema">{t.titleLine2}</span><br />
             <span className="text-crema/55">{t.titleLine3}</span>
           </h1>
           <p className="mt-10 max-w-[680px] text-[17px] md:text-[19px] text-crema/80 leading-[1.7] font-light tracking-[-0.01em]">

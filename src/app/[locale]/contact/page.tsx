@@ -41,7 +41,7 @@ export default function ContactPage() {
           </p>
           <h1 className="text-crema text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.1] mb-8 animate-fade-in-up animate-delay-100">
             {t.contactPage.heroTitle1}{' '}
-            <span className="italic">{t.contactPage.heroTitle2}</span>
+            <span className="font-extrabold text-crema">{t.contactPage.heroTitle2}</span>
           </h1>
           <p className="text-gris text-lg font-light tracking-wide leading-relaxed max-w-xl mx-auto animate-fade-in-up animate-delay-200">
             {t.contactPage.heroDesc}
@@ -162,7 +162,7 @@ export default function ContactPage() {
           </p>
           <h2 className="text-carbon text-3xl sm:text-4xl font-light tracking-tight leading-[1.15] mb-8">
             {t.contactPage.studioNNTitle1}{' '}
-            <span className="italic">{t.contactPage.studioNNTitle2}</span>
+            <span className="font-bold text-carbon">{t.contactPage.studioNNTitle2}</span>
           </h2>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed mb-6">
             {t.contactPage.studioNNDesc1}

@@ -177,7 +177,7 @@ export default function MarketingHomeClient() {
           }}
         />
         <div className="max-w-5xl mx-auto text-center relative">
-          <h2 className="text-[60px] md:text-[120px] lg:text-[160px] font-light tracking-[-0.04em] leading-[0.92] italic">
+          <h2 className="text-[60px] md:text-[120px] lg:text-[160px] font-extrabold tracking-[-0.05em] leading-[0.92]">
             {h.finalCta.title}
           </h2>
           <p className="mt-12 max-w-[600px] mx-auto text-[16px] md:text-[19px] text-crema/65 leading-[1.55] font-light tracking-[-0.01em]">
