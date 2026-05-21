@@ -102,6 +102,28 @@ Status: never shipped to users. Schema + cron jobs existed; UI was never built.
 
 ---
 
+## Wave 3 — Scaffolded features that never shipped (8 tables)
+
+Dropped 2026-05-21 evening per Felipe explicit decision: *"tu recomendación hacia adelante: drop todas"*. Each was 0 rows, 0 external FKs, 0 code refs.
+
+If any feature returns, the rationale below documents the previous schema design + why it was retired so the next iteration can avoid the same dead-end.
+
+**`market_predictions`** — Weekly AI predictions per collection with `gaps_detected[]`, `recommendations[]`, `weekly_predictions JSONB`. Product pivoted to "actions NOW with real data" (aimily In-Season) instead of "future predictions with AI". More defensible (no black-box) and more vendible (Zara buys evidence-backed actions, not predictions).
+
+**`campaign_shoots`** — Physical photoshoot planning: photographer, stylist, models, location, budget, shot_list, deliverables. Aimily Studio = AI fashion content; product replaces shoots, doesn't plan them.
+
+**`paid_ad_sets`** — Paid ad sets (audience, creative_direction, creative_type). Marketing block has Content Studio + Sales Dashboard; paid-ads management goes via external integrations (Meta Ads MCP) instead of native DB.
+
+**`launch_checklist`** + **`launch_issues`** — Pre-launch task checklist + during-launch issue tracker. `launch_tasks` (kept, with active lib readers) covers task tracking; `collection_timelines` with milestones covers the checklist function. These were a parallel system that never replaced milestones.
+
+**`lessons_learned`** — Post-launch lessons in free text (category, type, description). `in_season_sku_seeds` (36 active rows) replaces this with structured verdicts that feed the next season's Moodboard automatically — better abstraction than free-text retrospectives.
+
+**`brand_models`** — User-trained Fal AI models (`fal_model_id`, body_type, ethnicity, style_vibe). Pivot to curated `aimily_models` (28 brand-safe models, audited) — enterprise-grade decision. Self-train was over-scope.
+
+**`pr_contacts`** — Full CRM for influencers/PR (followers, rate_range, outreach_date, ship_date, post_date, performance JSON). Out of scope: PR/influencer CRM is a dedicated tool category (Tribe Dynamics, AspireIQ, GRIN). Building it native was scope creep.
+
+---
+
 ## Audit history
 This cleanup was prompted by Felipe's directive "no quiero que haya puertas falsas, errores, landings que no existen" on 2026-05-21. Full audit chain:
 
