@@ -46,18 +46,16 @@ export async function GET() {
     if (plans && plans.length > 0) {
       const planIds = plans.map((p) => p.id);
 
-      // Related collection data.
-      //
-      // 2026-05-21: aligned to current canonical schema after the
-      // orphan-tables cleanup —
-      //   · 'tech_packs' (old flat schema) → tech_pack_data + tech_pack_revisions + tech_pack_comments
-      //   · 'market_predictions', 'brand_models', 'pr_contacts' dropped (never shipped)
-      // GDPR export now mirrors what the user sees in the active product.
+      // Related collection data. Aligned to the canonical schema after
+      // the 2026-05-21 orphan-tables cleanup (4 waves, 25 tables dropped):
+      //   · Wave 2: 'tech_packs' → tech_pack_data + tech_pack_revisions + tech_pack_comments
+      //   · Wave 3: dropped 'market_predictions', 'brand_models', 'pr_contacts'
+      //   · Wave 4: dropped 'commercial_actions', 'content_calendar',
+      //     'lookbook_pages', 'product_copy' (and others not in this array)
+      // GDPR export now mirrors exactly what the user sees in the active product.
       const tables = [
         'collection_skus', 'collection_timelines', 'drops',
-        'commercial_actions', 'ai_generations',
-        'brand_profiles', 'content_calendar',
-        'lookbook_pages', 'product_copy',
+        'ai_generations', 'brand_profiles',
         'production_orders', 'sample_reviews', 'sku_colorways',
         'tech_pack_data', 'tech_pack_revisions', 'tech_pack_comments',
       ];

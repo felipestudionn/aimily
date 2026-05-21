@@ -427,16 +427,15 @@ export async function getMarketingPresentationData(
       .eq('collection_plan_id', collectionPlanId)
       .order('sort_order', { ascending: true }),
 
-    supabaseAdmin
-      .from('content_pillars')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId),
+    // 8 Wave 4 dropped tables stubbed as empty (2026-05-21).
+    // Features never shipped — content_pillars, lookbook_pages,
+    // commercial_actions, content_calendar, paid_campaigns,
+    // launch_tasks, email_templates_content. Presentation slides
+    // for these surface empty / skip — same UX as today (the
+    // tables were empty in production).
+    Promise.resolve({ data: [], error: null }),  // content_pillars
 
-    supabaseAdmin
-      .from('lookbook_pages')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId)
-      .order('page_number', { ascending: true }),
+    Promise.resolve({ data: [], error: null }),  // lookbook_pages
 
     supabaseAdmin
       .from('drops')
@@ -444,34 +443,15 @@ export async function getMarketingPresentationData(
       .eq('collection_plan_id', collectionPlanId)
       .order('position', { ascending: true }),
 
-    supabaseAdmin
-      .from('commercial_actions')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId)
-      .order('start_date', { ascending: true }),
+    Promise.resolve({ data: [], error: null }),  // commercial_actions
 
-    supabaseAdmin
-      .from('content_calendar')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId)
-      .order('scheduled_date', { ascending: true }),
+    Promise.resolve({ data: [], error: null }),  // content_calendar
 
-    supabaseAdmin
-      .from('paid_campaigns')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId),
+    Promise.resolve({ data: [], error: null }),  // paid_campaigns
 
-    supabaseAdmin
-      .from('launch_tasks')
-      .select('id, title, category, status, priority, due_date')
-      .eq('collection_plan_id', collectionPlanId),
+    Promise.resolve({ data: [], error: null }),  // launch_tasks
 
-    supabaseAdmin
-      .from('email_templates_content')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId)
-      .not('sequence_id', 'is', null)
-      .order('sequence_position', { ascending: true }),
+    Promise.resolve({ data: [], error: null }),  // email_templates_content
 
     supabaseAdmin
       .from('collection_skus')

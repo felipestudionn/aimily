@@ -200,10 +200,12 @@ export async function buildPromptContext(
       .select('*')
       .eq('collection_plan_id', collectionPlanId)
       .order('sort_order'),
-    supabase
-      .from('content_pillars')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId),
+    // 5 Wave 4 dropped tables stubbed as empty (2026-05-21).
+    // Features never shipped — content_pillars, commercial_actions,
+    // product_copy, email_templates_content, content_calendar.
+    // The downstream prompt-context still surfaces the keys with empty
+    // arrays / zero counts so prompts don't change shape.
+    Promise.resolve({ data: [], error: null }),  // content_pillars → pillarsRes
     supabase
       .from('brand_voice_config')
       .select('*')
@@ -214,30 +216,14 @@ export async function buildPromptContext(
       .select('*')
       .eq('collection_plan_id', collectionPlanId)
       .order('drop_number'),
-    supabase
-      .from('commercial_actions')
-      .select('*')
-      .eq('collection_plan_id', collectionPlanId)
-      .order('start_date'),
+    Promise.resolve({ data: [], error: null }),  // commercial_actions → actionsRes
     supabase
       .from('ai_generations')
       .select('id, generation_type')
       .eq('collection_plan_id', collectionPlanId),
-    supabase
-      .from('product_copy')
-      .select('id')
-      .eq('collection_plan_id', collectionPlanId),
-    supabase
-      // The actual table is `email_templates_content`. The shorter
-      // name was a stale alias that returned 0 silently and made the
-      // launch / post-launch readiness checks underestimate content.
-      .from('email_templates_content')
-      .select('id')
-      .eq('collection_plan_id', collectionPlanId),
-    supabase
-      .from('content_calendar')
-      .select('id')
-      .eq('collection_plan_id', collectionPlanId),
+    Promise.resolve({ data: [], error: null }),  // product_copy → copyRes
+    Promise.resolve({ data: [], error: null }),  // email_templates_content → emailTemplatesRes
+    Promise.resolve({ data: [], error: null }),  // content_calendar → calendarRes
   ]);
 
   /* Surface query failures. The 11 reads run in parallel and used to
