@@ -204,7 +204,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
             investigate actions, grounded in the season&apos;s actual SKU
             performance.
           </p>
-          <div className="border-t border-b border-carbon/10 py-5 grid grid-cols-3 gap-6 text-[11px] uppercase tracking-[0.08em] text-carbon/50">
+          <div className="border-t border-b border-carbon/10 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-[11px] uppercase tracking-[0.08em] text-carbon/50">
             <div>
               <div className="text-[18px] font-medium text-carbon tracking-[-0.02em] normal-case">
                 {coverage.sku_count ?? '—'}
@@ -271,7 +271,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
               Each scenario is a deterministic assembly of recommendation candidates honouring
               Bucket A constraints. Pick one as the base; deviations are logged in the run.
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {scenarios.data.map((s: any) => (
                 <article
                   key={s.id}
@@ -452,7 +452,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
                 {backtest.data.scorecard_summary.skipped}
               </p>
             ) : (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Stat label={rs.heroPrecision} value={backtest.data.precision_heroes} />
                 <Stat label={rs.dogPrecision} value={backtest.data.precision_dogs} />
                 <Stat label={rs.carryoverPrecision} value={backtest.data.precision_carryover} />
