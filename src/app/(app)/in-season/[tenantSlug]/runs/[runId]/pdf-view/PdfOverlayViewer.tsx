@@ -2291,7 +2291,10 @@ function ShopifyProductGrid({
        *  el merch no podía "ver" la metodología. Añadimos las KPIs que
        *  diferencian arquetipos: rotación (productividad), días en tienda
        *  (lifecycle stage) y returns% (red flag).
+       *  Mobile: 10-col grid needs ~760px, so we wrap in overflow-x-auto.
        */}
+      <div className="overflow-x-auto">
+      <div className="min-w-[760px]">
       <div className="grid grid-cols-[40px_72px_1fr_72px_64px_64px_64px_56px_56px_56px] gap-3 px-6 py-2 border-b border-carbon/10 bg-carbon/[0.015] text-[10px] uppercase tracking-[0.08em] text-carbon/45">
         <span>#</span>
         <span>Foto</span>
@@ -2387,6 +2390,8 @@ function ShopifyProductGrid({
           </button>
           );
         })}
+      </div>
+      </div>
       </div>
     </div>
   );
