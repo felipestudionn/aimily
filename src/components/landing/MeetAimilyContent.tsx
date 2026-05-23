@@ -718,7 +718,8 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
           </Reveal>
 
           <Reveal delay={300}>
-            <div className="mt-8 bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
+            <div className="mt-8 bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8 overflow-x-auto">
+              <div className="min-w-[560px]">
               <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
                 <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium">
                   {h.block3.timelineEyebrow}
@@ -746,6 +747,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                     </div>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           </Reveal>
