@@ -244,7 +244,7 @@ export function UploadSourceClient({ tenantSlug, tenantId: _tenantId }: Props) {
               required
             />
           </Field>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Season tag">
               <input
                 type="text"
@@ -421,7 +421,7 @@ export function UploadSourceClient({ tenantSlug, tenantId: _tenantId }: Props) {
           <div className="flex-1 text-[13px] leading-[1.5]">
             <p className="font-medium">{phase === 'error' ? error : progress}</p>
             {parseSummary && phase === 'complete' && (
-              <div className="mt-2 grid grid-cols-2 gap-2 text-[12px] opacity-80">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12px] opacity-80">
                 <span>{parseSummary.persist?.raw_record_count} rows parsed</span>
                 <span>{parseSummary.persist?.product_fact_count} product_facts</span>
                 <span>{parseSummary.persist?.inventory_fact_count} inventory_facts</span>
