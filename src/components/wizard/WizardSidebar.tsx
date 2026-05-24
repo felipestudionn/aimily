@@ -1243,7 +1243,7 @@ export function WizardSidebar({
           width: asideWidth,
           background: (mode === 'calendar' || mode === 'presentation') ? '#F3F2F0' : undefined,
         }}
-        className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`fixed left-0 top-0 bottom-0 z-50 p-3 max-w-[calc(100vw-3rem)] md:max-w-none transition-[width] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           (mobileOpen || mode !== 'nav') ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
