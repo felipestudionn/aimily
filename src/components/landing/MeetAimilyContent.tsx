@@ -254,7 +254,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-20 max-w-4xl">
             {[
               { count: '14', label: h.problem.statSpreadsheets },
               { count: '~200', label: h.problem.statEmails },

@@ -308,7 +308,8 @@ export default async function DecisionPackPage({ params }: PageProps) {
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
               Heroes / dogs / saturation per family. ROI is post-returns, post-markdown.
             </p>
-            <table className="w-full text-[10px]">
+            <div className="overflow-x-auto">
+            <table className="w-full text-[10px] min-w-[520px]">
               <thead>
                 <tr className="border-b border-carbon/15">
                   <th className="text-left py-2 pr-3 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Family</th>
@@ -340,6 +341,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         )}
 
@@ -398,7 +400,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
                     </div>
                   </header>
                   {evidenceRows.length > 0 && (
-                    <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] mb-2">
+                    <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mb-2">
                       {evidenceRows.map((row) => (
                         <li key={row.key} className="flex items-baseline justify-between gap-2">
                           <span className="text-carbon/45 truncate">{row.label}</span>
