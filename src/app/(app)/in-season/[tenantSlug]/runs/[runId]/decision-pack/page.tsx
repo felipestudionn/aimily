@@ -204,7 +204,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
             investigate actions, grounded in the season&apos;s actual SKU
             performance.
           </p>
-          <div className="border-t border-b border-carbon/10 py-5 grid grid-cols-3 gap-6 text-[11px] uppercase tracking-[0.08em] text-carbon/50">
+          <div className="border-t border-b border-carbon/10 py-5 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-[11px] uppercase tracking-[0.08em] text-carbon/50">
             <div>
               <div className="text-[18px] font-medium text-carbon tracking-[-0.02em] normal-case">
                 {coverage.sku_count ?? '—'}
@@ -271,7 +271,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
               Each scenario is a deterministic assembly of recommendation candidates honouring
               Bucket A constraints. Pick one as the base; deviations are logged in the run.
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {scenarios.data.map((s: any) => (
                 <article
                   key={s.id}
@@ -308,7 +308,8 @@ export default async function DecisionPackPage({ params }: PageProps) {
             <p className="text-[11px] text-carbon/50 mb-5 leading-[1.5]">
               Heroes / dogs / saturation per family. ROI is post-returns, post-markdown.
             </p>
-            <table className="w-full text-[10px]">
+            <div className="overflow-x-auto">
+            <table className="w-full text-[10px] min-w-[520px]">
               <thead>
                 <tr className="border-b border-carbon/15">
                   <th className="text-left py-2 pr-3 text-[9px] uppercase tracking-[0.08em] text-carbon/50">Family</th>
@@ -340,6 +341,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
                 ))}
               </tbody>
             </table>
+            </div>
           </section>
         )}
 
@@ -398,7 +400,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
                     </div>
                   </header>
                   {evidenceRows.length > 0 && (
-                    <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] mb-2">
+                    <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mb-2">
                       {evidenceRows.map((row) => (
                         <li key={row.key} className="flex items-baseline justify-between gap-2">
                           <span className="text-carbon/45 truncate">{row.label}</span>
@@ -452,7 +454,7 @@ export default async function DecisionPackPage({ params }: PageProps) {
                 {backtest.data.scorecard_summary.skipped}
               </p>
             ) : (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Stat label={rs.heroPrecision} value={backtest.data.precision_heroes} />
                 <Stat label={rs.dogPrecision} value={backtest.data.precision_dogs} />
                 <Stat label={rs.carryoverPrecision} value={backtest.data.precision_carryover} />

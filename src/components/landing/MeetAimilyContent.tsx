@@ -59,7 +59,7 @@ function BlockHeading({
     <div className="max-w-7xl mx-auto mb-16 md:mb-24">
       <Reveal>
         <div className="flex items-baseline gap-6 mb-8">
-          <span className={`text-[88px] md:text-[120px] font-light tracking-[-0.04em] leading-none ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>
+          <span className={`text-[56px] md:text-[120px] font-light tracking-[-0.04em] leading-none ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>
             {num}
           </span>
           <span className={`text-[12px] tracking-[0.3em] uppercase font-medium ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
@@ -254,7 +254,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-20 max-w-4xl">
             {[
               { count: '14', label: h.problem.statSpreadsheets },
               { count: '~200', label: h.problem.statEmails },
@@ -718,7 +718,8 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
           </Reveal>
 
           <Reveal delay={300}>
-            <div className="mt-8 bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
+            <div className="mt-8 bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8 overflow-x-auto">
+              <div className="min-w-[560px]">
               <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
                 <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium">
                   {h.block3.timelineEyebrow}
@@ -746,6 +747,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
                     </div>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           </Reveal>
