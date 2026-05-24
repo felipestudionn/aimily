@@ -133,13 +133,13 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
             className="object-contain h-4 w-auto" priority unoptimized />
         </Link>
         <button onClick={() => setMobileOpen(!mobileOpen)}
-          className={`${textBase} ${textHover} transition-colors p-1`} aria-label="Menu">
+          className={`${textBase} ${textHover} transition-colors p-2.5 -mr-2.5`} aria-label="Menu">
           {mobileOpen ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
             </svg>
           )}
