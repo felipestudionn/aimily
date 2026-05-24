@@ -59,7 +59,7 @@ function BlockHeading({
     <div className="max-w-7xl mx-auto mb-16 md:mb-24">
       <Reveal>
         <div className="flex items-baseline gap-6 mb-8">
-          <span className={`text-[88px] md:text-[120px] font-light tracking-[-0.04em] leading-none ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>
+          <span className={`text-[56px] md:text-[120px] font-light tracking-[-0.04em] leading-none ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>
             {num}
           </span>
           <span className={`text-[12px] tracking-[0.3em] uppercase font-medium ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
