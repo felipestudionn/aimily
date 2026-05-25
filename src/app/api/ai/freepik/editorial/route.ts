@@ -93,16 +93,8 @@ function buildPrompt(params: {
    *  which confused Nano Banana and caused it to invent face + product. */
   styleRefIsModelComposite?: boolean;
   modelDirectives?: ModelDirectives;
-  /** Casting-context fields pulled from the collection's CIS. These
-   *  populate the EDITORIAL MODEL ARCHETYPE block. They influence the
-   *  model's face refinement, casting register and attitude only —
-   *  scene/mood/lighting come from the style reference image and are
-   *  NOT overridden by these. When absent, the block is omitted entirely. */
-  referenceBrands?: string;
-  castingConsumer?: string;
-  castingBrandVoice?: string;
 }): string {
-  const { productName, category, scene, story, userPrompt, hasStyleReference, hasModelHeadshot, styleRefIsModelComposite, modelDirectives, referenceBrands, castingConsumer, castingBrandVoice } = params;
+  const { productName, category, scene, story, userPrompt, hasStyleReference, hasModelHeadshot, styleRefIsModelComposite, modelDirectives } = params;
 
   const productType =
     category === 'CALZADO'
@@ -173,18 +165,47 @@ function buildPrompt(params: {
     `• The model's styling, wardrobe, hair, and attitude should serve the story (see EDITORIAL DIRECTION below) and NEVER compete with or obscure the product.`
   );
 
-  // 2b. (removed) MODEL CASTING BRIEF — textual casting directives
-  //     derived from the aimily_models DB row (complexion / hair_style
-  //     / age) used to be injected here. Removed 2026-05-25: when the
-  //     DB row and the headshot photo disagree (e.g., Zhara is tagged
-  //     "tan / long straight black" but her headshot shows an East
-  //     Asian model with platinum short bob), the text contradicts
-  //     the image and forces GPT into a choice. The headshot image is
-  //     now the SOLE source of identity truth. modelDirectives is
-  //     still accepted as a param for back-compat with callers and
-  //     for future use, but it is intentionally NOT serialized into
-  //     the prompt. Do not re-introduce this block without addressing
-  //     the DB-vs-photo contradiction problem first.
+  // 2b. Model appearance directives — user-selected casting brief.
+  if (modelDirectives) {
+    const complexionMap: Record<string, string> = {
+      light: 'light / fair skin tone',
+      medium: 'medium skin tone',
+      olive: 'olive / Mediterranean skin tone',
+      tan: 'tan / warm brown skin tone',
+      dark: 'dark / deep brown skin tone',
+    };
+    const ageMap: Record<string, string> = {
+      '20s': 'in their early-to-mid 20s',
+      '30s': 'in their early-to-mid 30s',
+      '40s': 'in their early-to-mid 40s',
+      '50s': 'in their 50s, mature and confident',
+    };
+    const hairMap: Record<string, string> = {
+      short_straight: 'short straight hair',
+      short_curly: 'short curly or coily hair',
+      medium_straight: 'medium-length straight hair',
+      medium_wavy: 'medium-length wavy hair',
+      long_straight: 'long straight hair',
+      long_curly: 'long curly hair',
+      buzz: 'buzz cut or very short cropped hair',
+      updo: 'hair styled up in a bun or updo',
+    };
+
+    const dirParts: string[] = [];
+    if (modelDirectives.complexion && modelDirectives.complexion !== 'any') {
+      dirParts.push(complexionMap[modelDirectives.complexion] || modelDirectives.complexion);
+    }
+    if (modelDirectives.age && modelDirectives.age !== 'any') {
+      dirParts.push(ageMap[modelDirectives.age] || `approximately ${modelDirectives.age}`);
+    }
+    if (modelDirectives.hair && modelDirectives.hair !== 'any') {
+      dirParts.push(hairMap[modelDirectives.hair] || modelDirectives.hair.replace('_', ' '));
+    }
+
+    if (dirParts.length > 0) {
+      parts.push(`MODEL CASTING BRIEF: the model should have ${dirParts.join(', ')}. These are the selected appearance directives — follow them precisely.`);
+    }
+  }
 
   // 3. Product placement — how the product relates to the model.
   parts.push(`PRODUCT PLACEMENT: the ${productType} is ${wearContext}`);
@@ -215,35 +236,6 @@ function buildPrompt(params: {
     `LIGHTING: natural or cinematic directional light appropriate to the scene. Soft key light with controlled fall-off, realistic shadows that ground the model in the space, realistic color bounce from the environment onto the product and the model. No flat ambient light, no over-blown highlights, no HDR over-processing.`
   );
 
-  // 5b. EDITORIAL MODEL ARCHETYPE — collection-aware casting layer.
-  //     IMPORTANT scope: this block influences face refinement, casting
-  //     register, and the model's underlying attitude ONLY. It does NOT
-  //     override scene, pose, lighting, mood or composition — those
-  //     come from the style reference image. The style ref carries the
-  //     visual; the CIS carries the casting taste. If a brand is more
-  //     street (SLAIZ-style), reference_brands will reflect that and
-  //     the archetype shifts automatically — that's the whole point.
-  const archetypeBlocks: string[] = [];
-  if (referenceBrands) {
-    archetypeBlocks.push(
-      `CASTING TASTE — match the editorial caliber and casting register of these reference brands: ${referenceBrands}. These define the quality bar for facial features, bone structure, skin finish, makeup register, and the "fashion model archetype" expected here. Use the casting sensibility, refinement level and editorial sophistication those brands are known for. (This describes WHO the model is, not WHAT scene she's in — the scene already comes from the style reference image.)`,
-    );
-  }
-  if (castingBrandVoice) {
-    archetypeBlocks.push(
-      `BRAND VOICE — the model's underlying attitude, posture confidence, and energy register follow the brand voice. ${castingBrandVoice}.`,
-    );
-  }
-  if (castingConsumer) {
-    archetypeBlocks.push(
-      `TARGET CONSUMER (the collection's customer profile — informs the model's age signal, attitude maturity, and emotional read): ${castingConsumer}.`,
-    );
-  }
-  if (archetypeBlocks.length > 0) {
-    parts.push(`EDITORIAL MODEL ARCHETYPE — applies to face refinement, casting register, and attitude only. Scene, pose, lighting, mood and composition come from the style reference image and are NOT overridden by this block.`);
-    archetypeBlocks.forEach((b) => parts.push(b));
-  }
-
   // 6. Story — optional brand context, same structure as still-life.
   if (story?.name) {
     parts.push(`EDITORIAL DIRECTION (from the collection story "${story.name}"):`);
@@ -265,7 +257,7 @@ function buildPrompt(params: {
 
   // 8. Reject list — things Claude must actively refuse.
   const rejectItems = [
-    'NO TEXT, NO CAPTIONS, NO WATERMARKS, NO LOGOS, NO BRAND NAMES anywhere in the final image. This includes text or brand markings that may be visible in the style/composition reference image (e.g., a "PRADA", "GUCCI", "TEL 02 546701", magazine page number, or caption present in Image 3) — those belong to the original publication and MUST be erased from the output. The final image is a clean editorial frame, not a reproduction of the source page',
+    'no text, no captions, no watermarks, no logos, no added brand markings',
     'no multiple copies of the product',
     'no second model, no visible crowd',
     'no distorted anatomy — EXACTLY two arms, EXACTLY two legs, EXACTLY two feet, EXACTLY ten fingers, EXACTLY ten toes. No extra limbs, no merged limbs, no missing limbs, no third leg, no phantom arm. Count the limbs before rendering.',
@@ -463,15 +455,6 @@ export async function POST(req: NextRequest) {
     // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
     let enrichedStory: StoryContext | undefined = story_context;
     let enrichedUserPrompt: string | undefined = user_prompt;
-    // Casting/attitude context derived from CIS — feeds the EDITORIAL
-    // MODEL ARCHETYPE block in the prompt builders. NOT the same as
-    // scene/mood/lighting (those come from Image 3, the style ref) —
-    // this is exclusively about the model's archetype, casting register,
-    // attitude, and face refinement, which the style ref's blurred or
-    // replaced face cannot signal.
-    let referenceBrands: string | undefined;
-    let castingConsumer: string | undefined;
-    let castingBrandVoice: string | undefined;
     if (collectionPlanId) {
       const serverCtx = await loadFullContext(collectionPlanId);
       const flat: Record<string, string> = {
@@ -503,20 +486,6 @@ export async function POST(req: NextRequest) {
           ? `${enrichedUserPrompt}. BRAND CONTEXT: ${cisBlock}`
           : `BRAND CONTEXT: ${cisBlock}`;
       }
-
-      // Extract casting-relevant CIS fields. `reference_brands` lives
-      // inside the brandDNA text block (see load-full-context.ts:67) as
-      // a "Reference brands: X, Y, Z" line — pull it out by regex so we
-      // can use it as a dedicated casting taste signal without modifying
-      // the locked load-full-context module.
-      const refMatch = /Reference brands:\s*([^\n]+)/i.exec(serverCtx.brandDNA || '');
-      if (refMatch && refMatch[1].trim()) referenceBrands = refMatch[1].trim();
-      // Consumer comes through as a structured profile string in
-      // serverCtx.consumer (full proposals from the Creative workspace
-      // when present, otherwise CIS demographics).
-      if (serverCtx.consumer && serverCtx.consumer.trim()) castingConsumer = serverCtx.consumer.trim();
-      // Brand voice (personality + tone + do/don't + vocabulary).
-      if (serverCtx.brandVoice && serverCtx.brandVoice.trim()) castingBrandVoice = serverCtx.brandVoice.trim();
     }
 
     const effectiveModelDirectives = aiModel
@@ -542,9 +511,6 @@ export async function POST(req: NextRequest) {
       hasStyleReference: !!style_reference_url,
       hasModelHeadshot: !!aiModel,
       styleRefIsModelComposite: willCompositeForNanoBanana,
-      referenceBrands,
-      castingConsumer,
-      castingBrandVoice,
       modelDirectives: effectiveModelDirectives,
     });
 
@@ -716,28 +682,7 @@ export async function POST(req: NextRequest) {
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
           : '',
-        // Style reference often contains brand text / captions / phone
-        // numbers / magazine watermarks (e.g., "PRADA", "Tel 02 546701")
-        // that the model sometimes leaks into the output. Hard rule:
-        // erase everything textual that appears in Image 3. The final
-        // image is a clean editorial frame, not a reproduction.
-        style_reference_url
-          ? `NO TEXT IN THE OUTPUT: Image 3 (the composition reference) may contain brand names, captions, phone numbers, magazine watermarks, page numbers, or other text overlays. These belong to the original publication and MUST be completely erased from the final image. The final photograph contains zero text, zero captions, zero brand names, zero watermarks. Clean editorial frame only.`
-          : '',
         `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
-        // EDITORIAL MODEL ARCHETYPE — casting taste from the collection's
-        // CIS (reference_brands, brand voice, consumer). Influences face
-        // refinement, casting register and attitude only. Scene, pose,
-        // lighting and mood come from Image 3 and are NOT overridden.
-        referenceBrands
-          ? `CASTING TASTE — match the editorial caliber and casting register of these reference brands: ${referenceBrands}. They define the quality bar for facial features, bone structure, skin finish and the "fashion model archetype" expected. This shapes WHO the model is (face refinement + sophistication), NOT what scene she's in.`
-          : '',
-        castingBrandVoice
-          ? `BRAND VOICE — the model's underlying attitude, posture confidence and energy register follow the brand voice: ${castingBrandVoice}.`
-          : '',
-        castingConsumer
-          ? `TARGET CONSUMER (informs age signal, attitude maturity, and emotional read of the model): ${castingConsumer}.`
-          : '',
         `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
         user_prompt ? `Additional direction: ${user_prompt}` : '',
       ].filter(Boolean).join(' ');
