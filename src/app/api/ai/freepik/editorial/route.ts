@@ -15,7 +15,7 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
-  gptImageEditTiered,
+  gptImageEditDefensive,
   nanoBananaCreateAndPoll,
   sanitizeUserPromptForGpt,
   type GptImageInput,
@@ -60,28 +60,31 @@ interface StoryContext {
   brand_personality?: string;
 }
 
-/** Tier 2 GPT prompt — the moderation filter is most often triggered
- *  by an interaction of the style reference image + repeated body
- *  language. This prompt drops both: no style image is sent (caller
- *  handles), and we frame the shot as commercial catalog. Keeps the
- *  product + model identity contract because that's load-bearing. */
-function buildSafeGptPrompt(params: {
+/** Defensive GPT prompt — used only when the primary prompt was
+ *  moderation-blocked by OpenAI. Same reference images (product,
+ *  model headshot, style reference if present), but the text is
+ *  rephrased in pure commercial-catalog framing and the user's typed
+ *  direction is dropped because user_prompt is the most common
+ *  textual trigger. References are NEVER dropped — this attempt
+ *  preserves the full editorial intent. */
+function buildDefensiveGptPrompt(params: {
   productName: string;
   category: string | undefined;
   hasStyleReference: boolean;
 }): string {
   const { productName, category, hasStyleReference } = params;
   const parts: string[] = [
-    `Professional commercial editorial fashion photograph for a high-end clothing brand catalog campaign.`,
+    `Professional commercial editorial fashion photograph for a high-end clothing brand campaign.`,
     `Fully clothed model, modest professional editorial styling, magazine-quality photography.`,
     `Image 1 is the exact product (${productName}). Replicate the product pixel-perfect: same shape, colors, materials, construction, details.`,
     `Image 2 is the model. Match the model's likeness, hair, and complexion from Image 2.`,
-    `The model wears or carries the product in a confident editorial pose.`,
   ];
   if (hasStyleReference) {
     parts.push(
-      `(Style reference was dropped for this attempt — use a clean, neutral editorial scene with natural lighting.)`,
+      `Image 3 is the composition reference. Follow its framing, lighting, and editorial atmosphere; keep the product from Image 1 and the model from Image 2.`,
     );
+  } else {
+    parts.push(`Compose a clean editorial scene with the model wearing the product, natural lighting.`);
   }
   if (category === 'CALZADO') {
     parts.push(`Footwear must be worn on the model's feet, visible and recognizable.`);
@@ -89,27 +92,6 @@ function buildSafeGptPrompt(params: {
   parts.push(
     `Output: photorealistic, natural lighting, realistic skin texture, fully clothed, modest professional fashion photography.`,
   );
-  return parts.join(' ');
-}
-
-/** Tier 3 GPT prompt — last resort. Minimal language, no creative
- *  directives, no user prompt body, only the load-bearing identity
- *  contract. If this trips moderation the issue is the images
- *  themselves, not the text. */
-function buildMinimalGptPrompt(params: {
-  productName: string;
-  category: string | undefined;
-}): string {
-  const { productName, category } = params;
-  const parts: string[] = [
-    `Commercial fashion catalog photograph for a clothing brand.`,
-    `Fully clothed model wearing the product (${productName}) in a professional editorial setting.`,
-    `Match Image 1 (product) and Image 2 (model) exactly.`,
-  ];
-  if (category === 'CALZADO') {
-    parts.push(`Footwear is worn on the feet.`);
-  }
-  parts.push(`Photorealistic, modest professional fashion photography.`);
   return parts.join(' ');
 }
 
@@ -648,31 +630,25 @@ export async function POST(req: NextRequest) {
         sanitizedUserPrompt ? `Additional direction: ${sanitizedUserPrompt}.` : '',
       ].filter(Boolean).join(' ');
 
-      const tier2Prompt = buildSafeGptPrompt({
+      const defensivePrompt = buildDefensiveGptPrompt({
         productName: product_name || 'fashion product',
         category,
         hasStyleReference: !!style_reference_url,
       });
 
-      const tier3Prompt = buildMinimalGptPrompt({
-        productName: product_name || 'fashion product',
-        category,
-      });
-
-      const gptResult = await gptImageEditTiered({
+      const gptResult = await gptImageEditDefensive({
         images,
         prompt: tier1Prompt,
-        safePrompt: tier2Prompt,
-        minimalPrompt: tier3Prompt,
+        defensivePrompt,
         collectionPlanId,
         assetType: 'editorial',
       });
 
       if (gptResult.url) {
         generatedUrl = gptResult.url;
-        providerUsed = gptResult.tierUsed === 'creative'
+        providerUsed = gptResult.attemptUsed === 'primary'
           ? 'openai-gpt-image-1.5'
-          : `openai-gpt-image-1.5-${gptResult.tierUsed}`;
+          : 'openai-gpt-image-1.5-defensive';
       } else if (gptResult.lastError) {
         lastGptError = gptResult.lastError.errorCode;
       }
@@ -701,7 +677,7 @@ export async function POST(req: NextRequest) {
       const isModeration = lastGptError === 'moderation';
       const isIpBlock = nanoBananaErrorCode === 'ip_block';
       const userMessage = isModeration
-        ? 'The image filter rejected this combination. Try a different reference photo or remove the style reference and retry.'
+        ? 'Both image providers rejected this combination of references. Try a different style reference photo and retry — the photo content (not your settings) is what got blocked.'
         : isIpBlock
           ? 'The image service is temporarily throttling us. Please retry in a minute.'
           : 'Editorial generation failed. Please retry.';

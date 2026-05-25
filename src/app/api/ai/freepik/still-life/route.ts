@@ -12,7 +12,7 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
-  gptImageEditTiered,
+  gptImageEditDefensive,
   nanoBananaCreateAndPoll,
   type GptImageInput,
 } from '@/lib/ai/image-generation';
@@ -431,11 +431,11 @@ export async function POST(req: NextRequest) {
         { buffer: productPng, filename: 'product.png' },
       ];
 
-      // For still-life the prompt builder already produces a careful
-      // brand-grade description. Pass it as Tier 1 — if moderation
-      // somehow trips, Tier 2 / Tier 3 collapse to commercial catalog
-      // language and the same single product image.
-      const safePrompt = [
+      // The prompt builder already produces a careful brand-grade
+      // description. If moderation somehow trips, the defensive prompt
+      // keeps the same product reference and rephrases in catalog
+      // language — the product image is never dropped.
+      const defensivePrompt = [
         `Professional commercial product photography for a fashion brand catalog.`,
         `Image 1 is the exact product (${product_name || 'fashion product'}). Replicate the product pixel-perfect: same shape, colors, materials, construction.`,
         `Compose a still-life scene with the product as the hero, no humans in frame, on a clean considered surface with natural directional lighting.`,
@@ -443,22 +443,19 @@ export async function POST(req: NextRequest) {
         `Photorealistic, magazine catalog quality.`,
       ].filter(Boolean).join(' ');
 
-      const minimalPrompt = `Commercial product catalog photograph. Recreate Image 1 (${product_name || 'product'}) on a clean surface, professional studio lighting, no humans.`;
-
-      const gptResult = await gptImageEditTiered({
+      const gptResult = await gptImageEditDefensive({
         images,
         prompt,
-        safePrompt,
-        minimalPrompt,
+        defensivePrompt,
         collectionPlanId,
         assetType: 'still_life',
       });
 
       if (gptResult.url) {
         generatedUrl = gptResult.url;
-        providerUsed = gptResult.tierUsed === 'creative'
+        providerUsed = gptResult.attemptUsed === 'primary'
           ? 'openai-gpt-image-1.5'
-          : `openai-gpt-image-1.5-${gptResult.tierUsed}`;
+          : 'openai-gpt-image-1.5-defensive';
       } else if (gptResult.lastError) {
         lastGptError = gptResult.lastError.errorCode;
       }
@@ -479,7 +476,7 @@ export async function POST(req: NextRequest) {
       const isModeration = lastGptError === 'moderation';
       const isIpBlock = nanoBananaErrorCode === 'ip_block';
       const userMessage = isModeration
-        ? 'The image filter rejected this attempt. Please retry with a different product photo.'
+        ? 'Both image providers rejected this product photo. Try a different product render and retry.'
         : isIpBlock
           ? 'The image service is temporarily throttling us. Please retry in a minute.'
           : 'Still life generation failed. Please retry.';

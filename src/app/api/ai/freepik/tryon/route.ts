@@ -12,7 +12,7 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
-  gptImageEditTiered,
+  gptImageEditDefensive,
   nanoBananaCreateAndPoll,
   type GptImageInput,
 } from '@/lib/ai/image-generation';
@@ -139,8 +139,9 @@ export async function POST(req: NextRequest) {
     });
 
     // ═══ STRUCTURAL DEFENSE ═══
-    // GPT Image 1.5 primary with 3-tier moderation defense, Nano
-    // Banana fallback. Image order matters for the prompt's references.
+    // GPT Image 1.5 primary with a defensive retry that KEEPS both
+    // references (model + product), Nano Banana fallback with the
+    // same references. References are never dropped.
     let generatedUrl: string | null = null;
     let providerUsed: string = 'openai-gpt-image-1.5';
     let lastGptError: string | null = null;
@@ -154,7 +155,9 @@ export async function POST(req: NextRequest) {
         { buffer: productPng, filename: 'product.png' },
       ];
 
-      const safePrompt = [
+      // Defensive prompt — same references, rephrased text in pure
+      // catalog framing. References are NEVER dropped.
+      const defensivePrompt = [
         `Professional commercial fashion catalog photograph for a clothing brand.`,
         `Fully clothed model from Image 1 wearing the product (${enrichedProductName}) from Image 2.`,
         `Replicate the model's likeness from Image 1 and the product from Image 2 exactly.`,
@@ -162,22 +165,19 @@ export async function POST(req: NextRequest) {
         `Photorealistic, magazine catalog quality, modest professional fashion photography.`,
       ].filter(Boolean).join(' ');
 
-      const minimalPrompt = `Commercial fashion catalog photograph. Fully clothed model from Image 1 wearing the product from Image 2. Photorealistic, professional, modest.`;
-
-      const gptResult = await gptImageEditTiered({
+      const gptResult = await gptImageEditDefensive({
         images,
         prompt,
-        safePrompt,
-        minimalPrompt,
+        defensivePrompt,
         collectionPlanId,
         assetType: 'tryon',
       });
 
       if (gptResult.url) {
         generatedUrl = gptResult.url;
-        providerUsed = gptResult.tierUsed === 'creative'
+        providerUsed = gptResult.attemptUsed === 'primary'
           ? 'openai-gpt-image-1.5'
-          : `openai-gpt-image-1.5-${gptResult.tierUsed}`;
+          : 'openai-gpt-image-1.5-defensive';
       } else if (gptResult.lastError) {
         lastGptError = gptResult.lastError.errorCode;
       }
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
       const isModeration = lastGptError === 'moderation';
       const isIpBlock = nanoBananaErrorCode === 'ip_block';
       const userMessage = isModeration
-        ? 'The image filter rejected this combination. Try a different model or product photo.'
+        ? 'Both image providers rejected this combination. Try a different model or product photo and retry.'
         : isIpBlock
           ? 'The image service is temporarily throttling us. Please retry in a minute.'
           : 'Try-on generation failed. Please retry.';
