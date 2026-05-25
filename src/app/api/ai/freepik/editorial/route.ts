@@ -257,7 +257,7 @@ function buildPrompt(params: {
 
   // 8. Reject list — things Claude must actively refuse.
   const rejectItems = [
-    'NO TEXT, NO CAPTIONS, NO WATERMARKS, NO LOGOS, NO BRAND NAMES anywhere in the final image. This includes text or brand markings that may be visible in the style/composition reference image (e.g., a "PRADA", "GUCCI", "TEL 02 546701", magazine page number, or caption present in Image 3) — those belong to the original publication and MUST be erased from the output. The final image is a clean editorial frame, not a reproduction of the source page',
+    'no text, no captions, no watermarks, no logos, no added brand markings',
     'no multiple copies of the product',
     'no second model, no visible crowd',
     'no distorted anatomy — EXACTLY two arms, EXACTLY two legs, EXACTLY two feet, EXACTLY ten fingers, EXACTLY ten toes. No extra limbs, no merged limbs, no missing limbs, no third leg, no phantom arm. Count the limbs before rendering.',
@@ -683,13 +683,6 @@ export async function POST(req: NextRequest) {
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
           : '',
         `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
-        // Style reference often contains brand text / captions / phone
-        // numbers / magazine watermarks (e.g., "PRADA", "Tel 02 546701")
-        // that the model sometimes leaks into the output. Hard rule:
-        // erase everything textual that appears in Image 3.
-        style_reference_url
-          ? `NO TEXT IN THE OUTPUT: Image 3 (the composition reference) may contain brand names, captions, phone numbers, magazine watermarks, page numbers, or other text overlays. These belong to the original publication and MUST be completely erased from the final image. The final photograph contains zero text, zero captions, zero brand names, zero watermarks. Clean editorial frame only.`
-          : '',
         `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
         user_prompt ? `Additional direction: ${user_prompt}` : '',
       ].filter(Boolean).join(' ');
