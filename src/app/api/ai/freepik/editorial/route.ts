@@ -165,47 +165,18 @@ function buildPrompt(params: {
     `• The model's styling, wardrobe, hair, and attitude should serve the story (see EDITORIAL DIRECTION below) and NEVER compete with or obscure the product.`
   );
 
-  // 2b. Model appearance directives — user-selected casting brief.
-  if (modelDirectives) {
-    const complexionMap: Record<string, string> = {
-      light: 'light / fair skin tone',
-      medium: 'medium skin tone',
-      olive: 'olive / Mediterranean skin tone',
-      tan: 'tan / warm brown skin tone',
-      dark: 'dark / deep brown skin tone',
-    };
-    const ageMap: Record<string, string> = {
-      '20s': 'in their early-to-mid 20s',
-      '30s': 'in their early-to-mid 30s',
-      '40s': 'in their early-to-mid 40s',
-      '50s': 'in their 50s, mature and confident',
-    };
-    const hairMap: Record<string, string> = {
-      short_straight: 'short straight hair',
-      short_curly: 'short curly or coily hair',
-      medium_straight: 'medium-length straight hair',
-      medium_wavy: 'medium-length wavy hair',
-      long_straight: 'long straight hair',
-      long_curly: 'long curly hair',
-      buzz: 'buzz cut or very short cropped hair',
-      updo: 'hair styled up in a bun or updo',
-    };
-
-    const dirParts: string[] = [];
-    if (modelDirectives.complexion && modelDirectives.complexion !== 'any') {
-      dirParts.push(complexionMap[modelDirectives.complexion] || modelDirectives.complexion);
-    }
-    if (modelDirectives.age && modelDirectives.age !== 'any') {
-      dirParts.push(ageMap[modelDirectives.age] || `approximately ${modelDirectives.age}`);
-    }
-    if (modelDirectives.hair && modelDirectives.hair !== 'any') {
-      dirParts.push(hairMap[modelDirectives.hair] || modelDirectives.hair.replace('_', ' '));
-    }
-
-    if (dirParts.length > 0) {
-      parts.push(`MODEL CASTING BRIEF: the model should have ${dirParts.join(', ')}. These are the selected appearance directives — follow them precisely.`);
-    }
-  }
+  // 2b. (removed) MODEL CASTING BRIEF — textual casting directives
+  //     derived from the aimily_models DB row (complexion / hair_style
+  //     / age) used to be injected here. Removed 2026-05-25: when the
+  //     DB row and the headshot photo disagree (e.g., Zhara is tagged
+  //     "tan / long straight black" but her headshot shows an East
+  //     Asian model with platinum short bob), the text contradicts
+  //     the image and forces GPT into a choice. The headshot image is
+  //     now the SOLE source of identity truth. modelDirectives is
+  //     still accepted as a param for back-compat with callers and
+  //     for future use, but it is intentionally NOT serialized into
+  //     the prompt. Do not re-introduce this block without addressing
+  //     the DB-vs-photo contradiction problem first.
 
   // 3. Product placement — how the product relates to the model.
   parts.push(`PRODUCT PLACEMENT: the ${productType} is ${wearContext}`);
@@ -257,7 +228,7 @@ function buildPrompt(params: {
 
   // 8. Reject list — things Claude must actively refuse.
   const rejectItems = [
-    'no text, no captions, no watermarks, no logos, no added brand markings',
+    'NO TEXT, NO CAPTIONS, NO WATERMARKS, NO LOGOS, NO BRAND NAMES anywhere in the final image. This includes text or brand markings that may be visible in the style/composition reference image (e.g., a "PRADA", "GUCCI", "TEL 02 546701", magazine page number, or caption present in Image 3) — those belong to the original publication and MUST be erased from the output. The final image is a clean editorial frame, not a reproduction of the source page',
     'no multiple copies of the product',
     'no second model, no visible crowd',
     'no distorted anatomy — EXACTLY two arms, EXACTLY two legs, EXACTLY two feet, EXACTLY ten fingers, EXACTLY ten toes. No extra limbs, no merged limbs, no missing limbs, no third leg, no phantom arm. Count the limbs before rendering.',
@@ -681,6 +652,14 @@ export async function POST(req: NextRequest) {
         `FULL-BODY EDITORIAL COMPOSITION shot on 85mm portrait lens at standing-subject distance — telephoto compression naturalizes facial proportions and matches editorial body ratio. The figure follows fashion editorial 8-head proportion (croquis: head height = 1/8 of total figure height from crown to feet). Frame head-to-toe with negative space above the head, feet included in the crop. Slight low camera angle elongates the legs. Magazine cover full-figure crop, not portrait crop, not headshot crop.`,
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+          : '',
+        // Style reference often contains brand text / captions / phone
+        // numbers / magazine watermarks (e.g., "PRADA", "Tel 02 546701")
+        // that the model sometimes leaks into the output. Hard rule:
+        // erase everything textual that appears in Image 3. The final
+        // image is a clean editorial frame, not a reproduction.
+        style_reference_url
+          ? `NO TEXT IN THE OUTPUT: Image 3 (the composition reference) may contain brand names, captions, phone numbers, magazine watermarks, page numbers, or other text overlays. These belong to the original publication and MUST be completely erased from the final image. The final photograph contains zero text, zero captions, zero brand names, zero watermarks. Clean editorial frame only.`
           : '',
         `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
         `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
