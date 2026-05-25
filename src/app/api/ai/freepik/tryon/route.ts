@@ -12,7 +12,7 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
-  gptImageEditDefensive,
+  gptImageEdit,
   nanoBananaCreateAndPoll,
   type GptImageInput,
 } from '@/lib/ai/image-generation';
@@ -155,31 +155,22 @@ export async function POST(req: NextRequest) {
         { buffer: productPng, filename: 'product.png' },
       ];
 
-      // Defensive prompt — same references, rephrased text in pure
-      // catalog framing. References are NEVER dropped.
-      const defensivePrompt = [
-        `Professional commercial fashion catalog photograph for a clothing brand.`,
-        `Fully clothed model from Image 1 wearing the product (${enrichedProductName}) from Image 2.`,
-        `Replicate the model's likeness from Image 1 and the product from Image 2 exactly.`,
-        category === 'CALZADO' ? `Footwear is worn on the feet.` : '',
-        `Photorealistic, magazine catalog quality, modest professional fashion photography.`,
-      ].filter(Boolean).join(' ');
+      // Unified prompt — same detailed contract as Nano Banana, with
+      // a commercial-catalog opener for GPT.
+      const gptPrompt = `Professional commercial fashion catalog photograph for a clothing brand. Image 1 is the model (identity must match). Image 2 is the product (pixel-perfect preservation required). ${prompt}`;
 
-      const gptResult = await gptImageEditDefensive({
+      const gptResult = await gptImageEdit({
         images,
-        prompt,
-        defensivePrompt,
+        prompt: gptPrompt,
         collectionPlanId,
         assetType: 'tryon',
       });
 
       if (gptResult.url) {
         generatedUrl = gptResult.url;
-        providerUsed = gptResult.attemptUsed === 'primary'
-          ? 'openai-gpt-image-1.5'
-          : 'openai-gpt-image-1.5-defensive';
-      } else if (gptResult.lastError) {
-        lastGptError = gptResult.lastError.errorCode;
+        providerUsed = 'openai-gpt-image-1.5';
+      } else if (gptResult.error) {
+        lastGptError = gptResult.error.errorCode;
       }
     }
 

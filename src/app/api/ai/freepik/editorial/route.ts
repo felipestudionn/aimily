@@ -15,9 +15,8 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
-  gptImageEditDefensive,
+  gptImageEdit,
   nanoBananaCreateAndPoll,
-  sanitizeUserPromptForGpt,
   type GptImageInput,
 } from '@/lib/ai/image-generation';
 
@@ -60,54 +59,33 @@ interface StoryContext {
   brand_personality?: string;
 }
 
-/** The hard-edge identity + composition contract used by BOTH the
- *  primary and the defensive prompts. Keeping this block identical
- *  across attempts means the output quality is preserved even when
- *  moderation forces us into the defensive attempt — only the opening
- *  framing and the user_prompt suffix change between attempts. */
-function buildEditorialContract(params: {
-  productName: string;
-  category: string | undefined;
+/** GPT-specific framing prepended to the canonical `buildPrompt()`
+ *  output. The detailed identity + composition contract comes from
+ *  the shared prompt builder (same one Nano Banana uses) — this only
+ *  adds the commercial-campaign opener and the per-image labels GPT
+ *  needs to map references by index. Quality stays consistent across
+ *  the GPT path and the Nano Banana fallback because the body of the
+ *  prompt is identical. */
+function buildGptOpener(params: {
   hasStyleReference: boolean;
+  hasModelHeadshot: boolean;
 }): string {
-  const { productName, category, hasStyleReference } = params;
+  const { hasStyleReference, hasModelHeadshot } = params;
   const parts: string[] = [
-    `Image 1: the exact product (${productName}). The product in the final photograph must be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same construction, same hardware, same details. Do not redesign, do not substitute, do not add markings.`,
-    `Image 2: the model. The person in the final photograph must be visually the same model — match face shape, facial features, hair color, hair length, hair style, and complexion from Image 2 exactly. Same person, not a similar one.`,
+    `Professional commercial editorial fashion photograph for a high-end clothing brand campaign. Fully clothed model, magazine editorial quality, modest professional editorial styling.`,
+    `Reference images provided in this request:`,
+    `Image 1 — the exact product to feature (pixel-perfect preservation required).`,
   ];
-  if (hasStyleReference) {
-    parts.push(
-      `Image 3: the composition reference. The final photograph must reproduce Image 3's composition exactly — same camera angle, same framing, same pose, same body position, same gesture, same wardrobe styling, same lighting setup, same atmosphere, same color grade. The only substitutions: the face and hair come from Image 2, the product comes from Image 1. Everything else (pose, body language, lighting, environment, wardrobe vibe) stays identical to Image 3.`,
-    );
-  } else {
-    parts.push(
-      `Compose a high-end editorial scene with the model from Image 2 wearing or carrying the product from Image 1.`,
-    );
+  if (hasModelHeadshot && hasStyleReference) {
+    parts.push(`Image 2 — the model headshot (face/hair/complexion identity, takes priority).`);
+    parts.push(`Image 3 — the composition reference (framing/pose/lighting/atmosphere).`);
+  } else if (hasModelHeadshot) {
+    parts.push(`Image 2 — the model headshot (face/hair/complexion identity).`);
+  } else if (hasStyleReference) {
+    parts.push(`Image 2 — the composition reference (framing/pose/lighting/atmosphere).`);
   }
-  if (category === 'CALZADO') {
-    parts.push(
-      `The product is footwear — worn on the model's feet, visible and recognizable. Not held in hands.`,
-    );
-  }
-  parts.push(`Natural realistic anatomy, realistic skin texture, photorealistic magazine editorial quality.`);
+  parts.push(``); // separator before the detailed contract
   return parts.join(' ');
-}
-
-/** Defensive GPT prompt — used only when the primary prompt was
- *  moderation-blocked by OpenAI. Same reference images and the SAME
- *  identity + composition contract — only the opening framing is more
- *  conservative (commercial catalog instead of campaign) and the
- *  user's typed direction is dropped because user_prompt is the most
- *  common textual moderation trigger. Output quality matches the
- *  primary attempt. */
-function buildDefensiveGptPrompt(params: {
-  productName: string;
-  category: string | undefined;
-  hasStyleReference: boolean;
-}): string {
-  const opening = `Professional commercial fashion catalog photograph for a clothing brand. Modest professional editorial styling, fully clothed model, magazine catalog quality.`;
-  const contract = buildEditorialContract(params);
-  return `${opening} ${contract}`;
 }
 
 /**
@@ -627,45 +605,29 @@ export async function POST(req: NextRequest) {
       ];
       if (stylePng) images.push({ buffer: stylePng, filename: 'style.png' });
 
-      // Primary prompt — commercial-campaign opening framing (to
-      // signal moderation) + the load-bearing identity + composition
-      // contract + sanitized user direction. The contract is shared
-      // verbatim with the defensive prompt so a defensive retry does
-      // not silently downgrade pose/composition fidelity.
-      const sanitizedUserPrompt = sanitizeUserPromptForGpt(user_prompt);
-      const contract = buildEditorialContract({
-        productName: product_name || 'fashion product',
-        category,
+      // Unified prompt: GPT and Nano Banana receive the SAME detailed
+      // identity + composition contract from buildPrompt(). GPT just
+      // gets a short commercial-campaign opener prepended so OpenAI's
+      // safety classifier reads the framing correctly. Output quality
+      // is consistent whichever provider responds.
+      const gptOpener = buildGptOpener({
         hasStyleReference: !!style_reference_url,
+        hasModelHeadshot: true,
       });
-      const primaryOpening = `Professional editorial fashion photograph for a high-end clothing brand campaign. Commercial photography, fully clothed model, modest professional editorial styling, magazine editorial quality.`;
-      const tier1Prompt = [
-        primaryOpening,
-        contract,
-        sanitizedUserPrompt ? `Additional creative direction: ${sanitizedUserPrompt}.` : '',
-      ].filter(Boolean).join(' ');
+      const gptPrompt = `${gptOpener} ${prompt}`;
 
-      const defensivePrompt = buildDefensiveGptPrompt({
-        productName: product_name || 'fashion product',
-        category,
-        hasStyleReference: !!style_reference_url,
-      });
-
-      const gptResult = await gptImageEditDefensive({
+      const gptResult = await gptImageEdit({
         images,
-        prompt: tier1Prompt,
-        defensivePrompt,
+        prompt: gptPrompt,
         collectionPlanId,
         assetType: 'editorial',
       });
 
       if (gptResult.url) {
         generatedUrl = gptResult.url;
-        providerUsed = gptResult.attemptUsed === 'primary'
-          ? 'openai-gpt-image-1.5'
-          : 'openai-gpt-image-1.5-defensive';
-      } else if (gptResult.lastError) {
-        lastGptError = gptResult.lastError.errorCode;
+        providerUsed = 'openai-gpt-image-1.5';
+      } else if (gptResult.error) {
+        lastGptError = gptResult.error.errorCode;
       }
     }
 
