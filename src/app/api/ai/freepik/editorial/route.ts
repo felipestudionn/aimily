@@ -329,20 +329,26 @@ function buildPrompt(params: {
       `FACE IDENTITY (non-negotiable, overrides everything else): The person in the final image must have the EXACT SAME face as this headshot — same facial structure, same jawline, same nose shape, same lip shape, same eye shape, same eyebrow shape, same complexion, same skin tone. This is NOT a suggestion, this is the #1 priority of the entire generation. If the face does not match the headshot, the image is WRONG.`
     );
     parts.push(
-      `HAIR IDENTITY (non-negotiable): The person in the final image must have the EXACT SAME hair as the headshot — same hair color, same hair length, same hair texture (straight/wavy/curly/braided), same hair style. Do NOT change the hair from the headshot under any circumstance. The hair is part of this model's identity.`
+      `HAIR IDENTITY (color / length / texture / cut — non-negotiable): The hair in the final image must be the same color, same length, same texture (straight/wavy/curly/braided), and same cut/style as in the headshot. These are identity attributes and they don't change between photos.`
     );
     parts.push(
-      `MODEL ATTITUDE: The model's facial expression and body language should match the energy of the headshot — the same confidence, the same editorial intensity, the same attitude. This specific model was CAST for this shot by the creative director because of her unique look and presence. Preserve that.`
+      `HAIR FALL / DIRECTION / MOVEMENT (adapt to the body pose, NOT frozen from the headshot): The way the hair falls, drapes, and moves is dictated by the body's pose, head tilt, and gravity${hasStyleReference ? ' — i.e. by the composition reference, not by the headshot' : ''}. The headshot is usually a static front-on portrait; the editorial frame is dynamic. If the head tilts, the hair falls to that side. If the body leans, the hair shifts with it. If the wind is implied by the scene, the hair responds. Do NOT freeze the hair as it appears in the headshot — that would look like a pasted cut-out. The hair must look like the SAME person photographed in the editorial pose, not the headshot stamped onto a body.`
+    );
+    parts.push(
+      `HEAD POSE (follows the body, NOT frozen from the headshot): The head tilt, head angle, gaze direction, and chin position should follow the body's pose and the scene's natural movement${hasStyleReference ? ' from the composition reference' : ''}. The headshot defines WHO the model is; the body defines HOW she's posed. A static frontal head on a dynamic body reads as composited and unnatural.`
+    );
+    parts.push(
+      `MODEL ATTITUDE: The model's facial expression and energy should match the scene${hasStyleReference ? ' and the composition reference' : ''} — confident, editorial intensity, the attitude appropriate to the shot. Preserve the model's underlying look, but the expression itself adapts to the scene.`
     );
 
     // When we have both a style ref AND a model headshot, clarify the roles
     if (hasStyleReference) {
       parts.push(
-        `REFERENCE IMAGE PRIORITY ORDER (most important first): #1 PRIORITY = Image 3 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical to this reference. #3 PRIORITY = Image 2 (style reference) — use for composition, lighting, pose, camera angle, and mood only. The face in Image 2 is blurred on purpose — IGNORE it completely and use the face from Image 3 instead.`
+        `REFERENCE IMAGE PRIORITY ORDER (most important first): #1 PRIORITY = Image 3 (model headshot) — the face structure, hair color/length/texture/cut, and skin tone MUST match this person exactly. The headshot defines IDENTITY only — not the head's pose, not the gaze, not how the hair falls. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical to this reference. #3 PRIORITY = Image 2 (style reference) — dictates composition, lighting, pose, camera angle, head tilt, gaze, body language, hair direction/fall, and mood. The face in Image 2 is blurred on purpose — IGNORE the blurred face and use the face from Image 3, but follow Image 2's pose and how the hair drapes from that pose.`
       );
     } else {
       parts.push(
-        `REFERENCE IMAGE PRIORITY ORDER: #1 PRIORITY = Image 2 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical.`
+        `REFERENCE IMAGE PRIORITY ORDER: #1 PRIORITY = Image 2 (model headshot) — the face structure, hair color/length/texture/cut, and skin tone MUST match this person exactly. The headshot defines IDENTITY only — head pose, gaze, and hair fall adapt to the editorial scene you compose. #2 PRIORITY = Image 1 (product) — pixel-perfect.`
       );
     }
   }
