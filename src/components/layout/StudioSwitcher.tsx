@@ -82,7 +82,7 @@ export function StudioSwitcher() {
   const showStrategy = products.isAdmin || products.hasStrategy;
 
   return (
-    <div className="fixed top-4 right-4 z-50 inline-flex items-center gap-1 rounded-full bg-white border border-carbon/[0.08] shadow-sm p-1 backdrop-blur">
+    <div className="fixed top-[72px] right-4 md:top-4 z-50 inline-flex items-center gap-1 rounded-full bg-white border border-carbon/[0.08] shadow-sm p-1 backdrop-blur">
       {showAimily && (
         <Link
           href={collectionHref}
