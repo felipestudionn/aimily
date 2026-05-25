@@ -107,6 +107,7 @@ export function ContentEvolutionStrip({
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [styleRefUrl, setStyleRefUrl] = useState<string | null>(null);
   const [editorialPrompt, setEditorialPrompt] = useState('');
+  const [editorialProvider, setEditorialProvider] = useState<'auto' | 'nano-banana'>('auto');
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const styleInputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +177,11 @@ export function ContentEvolutionStrip({
           // sku_id is the join key for storefront PDP imagery — without
           // this, the persisted asset is invisible to load-storefront-data.
           skuId: sku.id,
+          // A/B switch: 'auto' uses the default path (GPT primary →
+          // Nano Banana fallback). 'nano-banana' forces Nano Banana
+          // directly, skipping GPT. Used for the cost/quality test
+          // Felipe is running before deciding the permanent primary.
+          force_provider: editorialProvider === 'nano-banana' ? 'nano-banana' : undefined,
         }),
       });
       // The route now also writes the ai_generations row server-side
@@ -547,6 +553,40 @@ export function ContentEvolutionStrip({
                       placeholder={m.artDirectionPlaceholder || 'E.g. dramatic side lighting, against raw concrete wall, model looking away…'}
                       className="w-full text-[13px] text-carbon bg-white rounded-[12px] border border-carbon/[0.08] px-4 py-3 focus:outline-none focus:border-carbon/25 transition-colors resize-none h-20 placeholder:text-carbon/30"
                     />
+                  </div>
+
+                  {/* ── Provider A/B toggle (temporary, for the cost/quality
+                       test Felipe is running before deciding the permanent
+                       primary). 'Auto' = GPT primary → Nano Banana fallback.
+                       'Nano Banana' = forces Nano Banana directly. ── */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">
+                      Provider
+                    </span>
+                    <div className="inline-flex items-center rounded-full bg-carbon/[0.04] p-0.5">
+                      <button
+                        onClick={() => setEditorialProvider('auto')}
+                        disabled={generating}
+                        className={`px-3 py-1 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
+                          editorialProvider === 'auto'
+                            ? 'bg-carbon text-white'
+                            : 'text-carbon/55 hover:text-carbon'
+                        }`}
+                      >
+                        Auto (GPT)
+                      </button>
+                      <button
+                        onClick={() => setEditorialProvider('nano-banana')}
+                        disabled={generating}
+                        className={`px-3 py-1 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
+                          editorialProvider === 'nano-banana'
+                            ? 'bg-carbon text-white'
+                            : 'text-carbon/55 hover:text-carbon'
+                        }`}
+                      >
+                        Nano Banana
+                      </button>
+                    </div>
                   </div>
 
                   {/* ── Generate ── */}

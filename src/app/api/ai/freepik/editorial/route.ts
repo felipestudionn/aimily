@@ -355,6 +355,10 @@ export async function POST(req: NextRequest) {
       model_directives,
       collectionPlanId,
       skuId,
+      // A/B test toggle: 'nano-banana' forces Nano Banana directly,
+      // skipping the GPT primary path. Used to compare quality and
+      // cost before committing to a permanent default.
+      force_provider,
     } = await req.json();
 
     // Look up the selected aimily model if provided
@@ -543,7 +547,14 @@ export async function POST(req: NextRequest) {
     let lastGptError: string | null = null;
     let nanoBananaErrorCode: string | null = null;
 
-    if (aiModel?.headshot_url && process.env.OPENAI_API_KEY) {
+    // When force_provider === 'nano-banana', skip the GPT path entirely
+    // and route straight to the Nano Banana block below. Used for the
+    // A/B test comparing quality and cost.
+    if (force_provider === 'nano-banana') {
+      console.log('[Editorial] force_provider=nano-banana — skipping GPT path');
+    }
+
+    if (force_provider !== 'nano-banana' && aiModel?.headshot_url && process.env.OPENAI_API_KEY) {
       providerUsed = 'openai-gpt-image-1.5';
 
       // Prepare image buffers once — reused across tiers.
