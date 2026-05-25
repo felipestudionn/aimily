@@ -60,39 +60,54 @@ interface StoryContext {
   brand_personality?: string;
 }
 
-/** Defensive GPT prompt — used only when the primary prompt was
- *  moderation-blocked by OpenAI. Same reference images (product,
- *  model headshot, style reference if present), but the text is
- *  rephrased in pure commercial-catalog framing and the user's typed
- *  direction is dropped because user_prompt is the most common
- *  textual trigger. References are NEVER dropped — this attempt
- *  preserves the full editorial intent. */
-function buildDefensiveGptPrompt(params: {
+/** The hard-edge identity + composition contract used by BOTH the
+ *  primary and the defensive prompts. Keeping this block identical
+ *  across attempts means the output quality is preserved even when
+ *  moderation forces us into the defensive attempt — only the opening
+ *  framing and the user_prompt suffix change between attempts. */
+function buildEditorialContract(params: {
   productName: string;
   category: string | undefined;
   hasStyleReference: boolean;
 }): string {
   const { productName, category, hasStyleReference } = params;
   const parts: string[] = [
-    `Professional commercial editorial fashion photograph for a high-end clothing brand campaign.`,
-    `Fully clothed model, modest professional editorial styling, magazine-quality photography.`,
-    `Image 1 is the exact product (${productName}). Replicate the product pixel-perfect: same shape, colors, materials, construction, details.`,
-    `Image 2 is the model. Match the model's likeness, hair, and complexion from Image 2.`,
+    `Image 1: the exact product (${productName}). The product in the final photograph must be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same construction, same hardware, same details. Do not redesign, do not substitute, do not add markings.`,
+    `Image 2: the model. The person in the final photograph must be visually the same model — match face shape, facial features, hair color, hair length, hair style, and complexion from Image 2 exactly. Same person, not a similar one.`,
   ];
   if (hasStyleReference) {
     parts.push(
-      `Image 3 is the composition reference. Follow its framing, lighting, and editorial atmosphere; keep the product from Image 1 and the model from Image 2.`,
+      `Image 3: the composition reference. The final photograph must reproduce Image 3's composition exactly — same camera angle, same framing, same pose, same body position, same gesture, same wardrobe styling, same lighting setup, same atmosphere, same color grade. The only substitutions: the face and hair come from Image 2, the product comes from Image 1. Everything else (pose, body language, lighting, environment, wardrobe vibe) stays identical to Image 3.`,
     );
   } else {
-    parts.push(`Compose a clean editorial scene with the model wearing the product, natural lighting.`);
+    parts.push(
+      `Compose a high-end editorial scene with the model from Image 2 wearing or carrying the product from Image 1.`,
+    );
   }
   if (category === 'CALZADO') {
-    parts.push(`Footwear must be worn on the model's feet, visible and recognizable.`);
+    parts.push(
+      `The product is footwear — worn on the model's feet, visible and recognizable. Not held in hands.`,
+    );
   }
-  parts.push(
-    `Output: photorealistic, natural lighting, realistic skin texture, fully clothed, modest professional fashion photography.`,
-  );
+  parts.push(`Natural realistic anatomy, realistic skin texture, photorealistic magazine editorial quality.`);
   return parts.join(' ');
+}
+
+/** Defensive GPT prompt — used only when the primary prompt was
+ *  moderation-blocked by OpenAI. Same reference images and the SAME
+ *  identity + composition contract — only the opening framing is more
+ *  conservative (commercial catalog instead of campaign) and the
+ *  user's typed direction is dropped because user_prompt is the most
+ *  common textual moderation trigger. Output quality matches the
+ *  primary attempt. */
+function buildDefensiveGptPrompt(params: {
+  productName: string;
+  category: string | undefined;
+  hasStyleReference: boolean;
+}): string {
+  const opening = `Professional commercial fashion catalog photograph for a clothing brand. Modest professional editorial styling, fully clothed model, magazine catalog quality.`;
+  const contract = buildEditorialContract(params);
+  return `${opening} ${contract}`;
 }
 
 /**
@@ -612,22 +627,22 @@ export async function POST(req: NextRequest) {
       ];
       if (stylePng) images.push({ buffer: stylePng, filename: 'style.png' });
 
-      // Tier 1 prompt — full creative directive with all identity
-      // contracts. Pre-framed as commercial editorial campaign and
-      // user_prompt is sanitized to strip moderation-trigger words.
+      // Primary prompt — commercial-campaign opening framing (to
+      // signal moderation) + the load-bearing identity + composition
+      // contract + sanitized user direction. The contract is shared
+      // verbatim with the defensive prompt so a defensive retry does
+      // not silently downgrade pose/composition fidelity.
       const sanitizedUserPrompt = sanitizeUserPromptForGpt(user_prompt);
+      const contract = buildEditorialContract({
+        productName: product_name || 'fashion product',
+        category,
+        hasStyleReference: !!style_reference_url,
+      });
+      const primaryOpening = `Professional editorial fashion photograph for a high-end clothing brand campaign. Commercial photography, fully clothed model, modest professional editorial styling, magazine editorial quality.`;
       const tier1Prompt = [
-        `Professional commercial editorial fashion photograph for a high-end clothing brand campaign. Fully clothed model, magazine editorial quality.`,
-        `Image 1 is the exact product (${product_name || 'fashion product'}). The product in the final photo must be pixel-perfect identical to Image 1: same shape, colors, materials, details.`,
-        `Image 2 is the model who should appear. Match the model's likeness (face, hair, complexion) from Image 2 exactly. Same person.`,
-        style_reference_url
-          ? `Image 3 is the composition reference. Follow its framing, pose, lighting and atmosphere; keep the product from Image 1 and the model from Image 2.`
-          : `Compose a high-end editorial scene with the model from Image 2 wearing or carrying the product from Image 1.`,
-        category === 'CALZADO'
-          ? `The product is footwear — worn on the model's feet, visible and recognizable. Not held in hands.`
-          : '',
-        `Natural realistic anatomy, realistic skin texture, natural lighting, photorealistic.`,
-        sanitizedUserPrompt ? `Additional direction: ${sanitizedUserPrompt}.` : '',
+        primaryOpening,
+        contract,
+        sanitizedUserPrompt ? `Additional creative direction: ${sanitizedUserPrompt}.` : '',
       ].filter(Boolean).join(' ');
 
       const defensivePrompt = buildDefensiveGptPrompt({
