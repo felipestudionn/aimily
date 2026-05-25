@@ -161,6 +161,16 @@ export function ContentEvolutionStrip({
     if (!user || !(sku.render_url || sku.render_urls?.['3d'])) return;
     setGenerating(true);
     onError(null);
+    // Diagnostic log — Felipe is testing the provider toggle and seeing
+    // model_id come through null on Nano Banana requests. This logs the
+    // exact state the moment the fetch fires so we can confirm whether
+    // the toggle is mutating selectedModelId behind our back.
+    console.log('[editorial] generate state', {
+      selectedModelId,
+      styleRefUrl,
+      editorialProvider,
+      editorialPrompt: editorialPrompt || '(empty)',
+    });
     try {
       const res = await fetch('/api/ai/freepik/editorial', {
         method: 'POST',
@@ -558,14 +568,18 @@ export function ContentEvolutionStrip({
                   {/* ── Provider A/B toggle (temporary, for the cost/quality
                        test Felipe is running before deciding the permanent
                        primary). 'Auto' = GPT primary → Nano Banana fallback.
-                       'Nano Banana' = forces Nano Banana directly. ── */}
+                       'Nano Banana' = forces Nano Banana directly.
+                       type="button" + stopPropagation defensively so the
+                       click never bubbles to the model picker or expansion
+                       row above. ── */}
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">
                       Provider
                     </span>
                     <div className="inline-flex items-center rounded-full bg-carbon/[0.04] p-0.5">
                       <button
-                        onClick={() => setEditorialProvider('auto')}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setEditorialProvider('auto'); }}
                         disabled={generating}
                         className={`px-3 py-1 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
                           editorialProvider === 'auto'
@@ -576,7 +590,8 @@ export function ContentEvolutionStrip({
                         Auto (GPT)
                       </button>
                       <button
-                        onClick={() => setEditorialProvider('nano-banana')}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setEditorialProvider('nano-banana'); }}
                         disabled={generating}
                         className={`px-3 py-1 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
                           editorialProvider === 'nano-banana'
