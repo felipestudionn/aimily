@@ -8,6 +8,7 @@ import {
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
@@ -520,9 +521,40 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Atomic ai_generations insert — see editorial route for rationale
+    // (mobile Safari was killing the long-lived call between the two
+    // separate fetches the frontend used to do).
+    let generationId: string | null = null;
+    if (collectionPlanId) {
+      const promptLabel = `Still life for ${product_name || 'product'}`;
+      const { data: genRow, error: genErr } = await supabaseAdmin
+        .from('ai_generations')
+        .insert({
+          user_id: user!.id,
+          collection_plan_id: collectionPlanId,
+          generation_type: 'still_life',
+          prompt: promptLabel,
+          input_data: { sku_id: skuId || null, sku_name: product_name || null },
+          output_data: { images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }] },
+          provider_request_id: null,
+          model_used: providerUsed,
+          status: 'completed',
+          is_favorite: false,
+          story_id: null,
+        })
+        .select('id')
+        .single();
+      if (genErr) {
+        console.error('[Still Life] ai_generations insert failed:', genErr);
+      } else {
+        generationId = genRow?.id ?? null;
+      }
+    }
+
     return NextResponse.json({
       images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }],
       provider: providerUsed,
+      generationId,
     });
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
