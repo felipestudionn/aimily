@@ -44,7 +44,12 @@ export type GptImageInput = {
   filename: string;
 };
 
-export type GptTier = 'creative' | 'safe' | 'minimal';
+/** Attempt label — every attempt uses the SAME reference images. The
+ *  only variation is the text prompt. We never drop the style image,
+ *  the model headshot, or the product reference — the user paid for a
+ *  reference-faithful editorial, and degrading by dropping references
+ *  would silently downgrade the output. */
+export type GptAttempt = 'primary' | 'defensive';
 
 export type GptImageResult = {
   url: string | null;
@@ -69,15 +74,15 @@ export async function fetchAsPng(url: string): Promise<Buffer> {
  *  (uploaded to Storage if collectionPlanId provided, otherwise data:
  *  URL) or a null URL with a classified error code. Never throws on
  *  HTTP errors — those become errorCode results so the caller can
- *  decide whether to retry on a safer tier. */
+ *  decide whether to retry. */
 async function runGptImageEditOnce(params: {
   images: GptImageInput[];
   prompt: string;
   collectionPlanId?: string;
   assetType: 'editorial' | 'still_life' | 'tryon';
-  tier: GptTier;
+  attempt: GptAttempt;
 }): Promise<GptImageResult> {
-  const { images, prompt, collectionPlanId, assetType, tier } = params;
+  const { images, prompt, collectionPlanId, assetType, attempt } = params;
 
   if (!process.env.OPENAI_API_KEY) {
     return { url: null, errorCode: 'auth', rawError: 'OPENAI_API_KEY not set' };
@@ -118,7 +123,7 @@ async function runGptImageEditOnce(params: {
       errorCode = 'transient';
     }
     console.error(
-      `[gpt-image tier=${tier}] ${res.status} ${errorCode}:`,
+      `[gpt-image attempt=${attempt}] ${res.status} ${errorCode}:`,
       errText.slice(0, 400),
     );
     return { url: null, errorCode, rawError: errText.slice(0, 400) };
@@ -132,7 +137,7 @@ async function runGptImageEditOnce(params: {
       const upload = await uploadToStorage(
         collectionPlanId,
         assetType,
-        `${assetType}-gpt-${tier}-${Date.now()}.png`,
+        `${assetType}-gpt-${attempt}-${Date.now()}.png`,
         imgBuffer,
         'image/png',
       );
@@ -146,69 +151,54 @@ async function runGptImageEditOnce(params: {
   return { url, errorCode: null };
 }
 
-/** Orchestrates the 3-tier GPT defense.
+/** Two-attempt GPT defense. Both attempts use the SAME reference
+ *  images — the product, the model headshot, and (when provided) the
+ *  style reference. The only variation is the text prompt:
  *
- *   Tier 1 ("creative")  — the caller's full prompt with all reference
- *                          images, best quality.
- *   Tier 2 ("safe")      — the caller's `safePrompt` if provided,
- *                          falls back to the creative prompt. Style
- *                          reference (image #3, if any) is dropped —
- *                          empirically the image itself is the most
- *                          common moderation trigger.
- *   Tier 3 ("minimal")   — the caller's `minimalPrompt` if provided.
- *                          Only product + model headshot. Last resort
- *                          before yielding to Nano Banana.
+ *    primary:    full caller prompt (sanitized user direction included).
+ *    defensive:  caller's `defensivePrompt`, intended to drop any
+ *                user-typed text and rephrase the creative direction
+ *                in commercial-catalog framing. References stay.
  *
- *  Only `moderation` errors trigger the next tier — auth / rate_limit
- *  / transient surface immediately to the caller because retrying with
- *  a different prompt won't help. */
-export async function gptImageEditTiered(params: {
+ *  Only `moderation` errors trigger the defensive retry — auth /
+ *  rate_limit / transient surface immediately because retrying with
+ *  different text won't help.
+ *
+ *  This deliberately does NOT degrade by dropping reference images.
+ *  If the caller's references genuinely trip OpenAI moderation, the
+ *  route should fall back to Nano Banana with the same references
+ *  rather than silently shipping a reference-less output. */
+export async function gptImageEditDefensive(params: {
   images: GptImageInput[];
   prompt: string;
-  safePrompt?: string;
-  minimalPrompt?: string;
+  defensivePrompt?: string;
   collectionPlanId?: string;
   assetType: 'editorial' | 'still_life' | 'tryon';
 }): Promise<{
   url: string | null;
-  tierUsed: GptTier | null;
+  attemptUsed: GptAttempt | null;
   lastError: GptImageResult | null;
 }> {
-  const { images, prompt, safePrompt, minimalPrompt, collectionPlanId, assetType } = params;
+  const { images, prompt, defensivePrompt, collectionPlanId, assetType } = params;
 
-  // Tier 1 — full creative
-  let result = await runGptImageEditOnce({ images, prompt, collectionPlanId, assetType, tier: 'creative' });
-  if (result.url) return { url: result.url, tierUsed: 'creative', lastError: null };
-  if (result.errorCode !== 'moderation') return { url: null, tierUsed: null, lastError: result };
+  // Primary — full caller prompt
+  let result = await runGptImageEditOnce({ images, prompt, collectionPlanId, assetType, attempt: 'primary' });
+  if (result.url) return { url: result.url, attemptUsed: 'primary', lastError: null };
+  if (result.errorCode !== 'moderation') return { url: null, attemptUsed: null, lastError: result };
 
-  // Tier 2 — safe, drop style image (last image when there are 3+)
-  if (safePrompt) {
-    const safeImages = images.length >= 3 ? images.slice(0, 2) : images;
+  // Defensive — same images, rephrased prompt without user direction
+  if (defensivePrompt) {
     result = await runGptImageEditOnce({
-      images: safeImages,
-      prompt: safePrompt,
+      images,
+      prompt: defensivePrompt,
       collectionPlanId,
       assetType,
-      tier: 'safe',
+      attempt: 'defensive',
     });
-    if (result.url) return { url: result.url, tierUsed: 'safe', lastError: null };
-    if (result.errorCode !== 'moderation') return { url: null, tierUsed: null, lastError: result };
+    if (result.url) return { url: result.url, attemptUsed: 'defensive', lastError: null };
   }
 
-  // Tier 3 — minimal, only first 2 images max
-  if (minimalPrompt) {
-    const minImages = images.slice(0, 2);
-    result = await runGptImageEditOnce({
-      images: minImages,
-      prompt: minimalPrompt,
-      collectionPlanId,
-      assetType,
-      tier: 'minimal',
-    });
-    if (result.url) return { url: result.url, tierUsed: 'minimal', lastError: null };
-  }
-
-  return { url: null, tierUsed: null, lastError: result };
+  return { url: null, attemptUsed: null, lastError: result };
 }
 
 export type NanoBananaResult = {
