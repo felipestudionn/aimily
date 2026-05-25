@@ -13,6 +13,13 @@ import sharp from 'sharp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 import { normalizeAiError } from '@/lib/ai/error-messages';
+import {
+  fetchAsPng,
+  gptImageEditTiered,
+  nanoBananaCreateAndPoll,
+  sanitizeUserPromptForGpt,
+  type GptImageInput,
+} from '@/lib/ai/image-generation';
 
 /* ═══════════════════════════════════════════════════════════════
    Editorial — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -43,8 +50,6 @@ import { normalizeAiError } from '@/lib/ai/error-messages';
    ═══════════════════════════════════════════════════════════════ */
 
 const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY;
-const NANO_BANANA_ENDPOINT =
-  'https://api.freepik.com/v1/ai/gemini-2-5-flash-image-preview';
 
 interface StoryContext {
   name?: string;
@@ -55,48 +60,57 @@ interface StoryContext {
   brand_personality?: string;
 }
 
-async function createAndPoll(
-  prompt: string,
-  referenceImages: string[]
-): Promise<string | null> {
-  const createRes = await fetch(NANO_BANANA_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-freepik-api-key': FREEPIK_API_KEY!,
-    },
-    body: JSON.stringify({
-      prompt,
-      reference_images: referenceImages,
-    }),
-  });
-
-  if (!createRes.ok) {
-    const errText = await createRes.text();
-    console.error(
-      '[Editorial] Freepik create error:',
-      createRes.status,
-      errText.slice(0, 300)
+/** Tier 2 GPT prompt — the moderation filter is most often triggered
+ *  by an interaction of the style reference image + repeated body
+ *  language. This prompt drops both: no style image is sent (caller
+ *  handles), and we frame the shot as commercial catalog. Keeps the
+ *  product + model identity contract because that's load-bearing. */
+function buildSafeGptPrompt(params: {
+  productName: string;
+  category: string | undefined;
+  hasStyleReference: boolean;
+}): string {
+  const { productName, category, hasStyleReference } = params;
+  const parts: string[] = [
+    `Professional commercial editorial fashion photograph for a high-end clothing brand catalog campaign.`,
+    `Fully clothed model, modest professional editorial styling, magazine-quality photography.`,
+    `Image 1 is the exact product (${productName}). Replicate the product pixel-perfect: same shape, colors, materials, construction, details.`,
+    `Image 2 is the model. Match the model's likeness, hair, and complexion from Image 2.`,
+    `The model wears or carries the product in a confident editorial pose.`,
+  ];
+  if (hasStyleReference) {
+    parts.push(
+      `(Style reference was dropped for this attempt — use a clean, neutral editorial scene with natural lighting.)`,
     );
-    return null;
   }
-
-  const { data } = await createRes.json();
-  const taskId = data?.task_id;
-  if (!taskId) return null;
-
-  for (let i = 0; i < 20; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const statusRes = await fetch(`${NANO_BANANA_ENDPOINT}/${taskId}`, {
-      headers: { 'x-freepik-api-key': FREEPIK_API_KEY! },
-    });
-    if (!statusRes.ok) continue;
-    const sd = await statusRes.json();
-    const status: string | undefined = sd.data?.status;
-    if (status === 'COMPLETED') return sd.data?.generated?.[0] || null;
-    if (status === 'FAILED') return null;
+  if (category === 'CALZADO') {
+    parts.push(`Footwear must be worn on the model's feet, visible and recognizable.`);
   }
-  return null;
+  parts.push(
+    `Output: photorealistic, natural lighting, realistic skin texture, fully clothed, modest professional fashion photography.`,
+  );
+  return parts.join(' ');
+}
+
+/** Tier 3 GPT prompt — last resort. Minimal language, no creative
+ *  directives, no user prompt body, only the load-bearing identity
+ *  contract. If this trips moderation the issue is the images
+ *  themselves, not the text. */
+function buildMinimalGptPrompt(params: {
+  productName: string;
+  category: string | undefined;
+}): string {
+  const { productName, category } = params;
+  const parts: string[] = [
+    `Commercial fashion catalog photograph for a clothing brand.`,
+    `Fully clothed model wearing the product (${productName}) in a professional editorial setting.`,
+    `Match Image 1 (product) and Image 2 (model) exactly.`,
+  ];
+  if (category === 'CALZADO') {
+    parts.push(`Footwear is worn on the feet.`);
+  }
+  parts.push(`Photorealistic, modest professional fashion photography.`);
+  return parts.join(' ');
 }
 
 /**
@@ -567,110 +581,140 @@ export async function POST(req: NextRequest) {
       referenceImages.push(aiModel.headshot_url);
     }
 
-    // Choose generation engine:
-    // - When an aimily MODEL is selected → GPT Image 1.5 (best face fidelity)
-    // - When no model (product ± style ref only) → Nano Banana (good for scenes)
+    // ═══ STRUCTURAL DEFENSE ═══
+    // Path selection:
+    //   - With aimily MODEL → GPT Image 1.5 (3-tier moderation defense),
+    //     Nano Banana only if all 3 GPT tiers fail.
+    //   - Without model → Nano Banana directly (GPT can't preserve face
+    //     identity without a headshot reference).
+    //
+    // Each tier on rejection retries with a progressively safer prompt
+    // and fewer images. Hot path returns from Tier 1 — Tier 2 / Tier 3
+    // / Nano only run when prior tier was moderation-blocked.
     let generatedUrl: string | null = null;
     let providerUsed = 'freepik-nano-banana';
+    let lastGptError: string | null = null;
+    let nanoBananaErrorCode: string | null = null;
 
     if (aiModel?.headshot_url && process.env.OPENAI_API_KEY) {
-      // ═══ GPT IMAGE 1.5 PATH ═══
-      // OpenAI's images/edits with input_fidelity="high" preserves face identity
-      // much better than Nano Banana's generic reference_images.
-      // We pass multiple images and reference each by index in the prompt.
       providerUsed = 'openai-gpt-image-1.5';
 
-      // Fetch all images as PNG buffers
-      const fetchAsPng = async (url: string): Promise<Buffer> => {
-        const res = await fetch(url);
-        const buf = Buffer.from(await res.arrayBuffer());
-        return await sharp(buf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
-      };
-
+      // Prepare image buffers once — reused across tiers.
       const productPng = await fetchAsPng(product_image_url);
       const headshotPng = await fetchAsPng(aiModel.headshot_url);
 
-      const formData = new FormData();
-      formData.append('model', 'gpt-image-1.5');
-      formData.append('image[]', new Blob([productPng], { type: 'image/png' }), 'product.png');
-      formData.append('image[]', new Blob([headshotPng], { type: 'image/png' }), 'model.png');
-
-      // If we have a style reference, add it too (face composited or blurred)
+      let stylePng: Buffer | undefined;
       if (style_reference_url) {
         try {
-          const compositedBuffer = await compositeModelOntoStyleRef(style_reference_url, aiModel.headshot_url);
-          const compositedPng = await sharp(compositedBuffer).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
-          formData.append('image[]', new Blob([compositedPng], { type: 'image/png' }), 'style.png');
+          const compositedBuffer = await compositeModelOntoStyleRef(
+            style_reference_url,
+            aiModel.headshot_url,
+          );
+          stylePng = await sharp(compositedBuffer)
+            .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+            .png()
+            .toBuffer();
         } catch {
           const styleRes = await fetch(style_reference_url);
           const styleBuf = Buffer.from(await styleRes.arrayBuffer());
-          const stylePng = await sharp(styleBuf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
-          formData.append('image[]', new Blob([stylePng], { type: 'image/png' }), 'style.png');
+          stylePng = await sharp(styleBuf)
+            .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
+            .png()
+            .toBuffer();
         }
       }
 
-      // Build a GPT-specific prompt that references images by index
-      const gptPrompt = [
-        `HIGH-END EDITORIAL FASHION PHOTOGRAPH.`,
-        `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
-        `Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`,
+      const images: GptImageInput[] = [
+        { buffer: productPng, filename: 'product.png' },
+        { buffer: headshotPng, filename: 'model.png' },
+      ];
+      if (stylePng) images.push({ buffer: stylePng, filename: 'style.png' });
+
+      // Tier 1 prompt — full creative directive with all identity
+      // contracts. Pre-framed as commercial editorial campaign and
+      // user_prompt is sanitized to strip moderation-trigger words.
+      const sanitizedUserPrompt = sanitizeUserPromptForGpt(user_prompt);
+      const tier1Prompt = [
+        `Professional commercial editorial fashion photograph for a high-end clothing brand campaign. Fully clothed model, magazine editorial quality.`,
+        `Image 1 is the exact product (${product_name || 'fashion product'}). The product in the final photo must be pixel-perfect identical to Image 1: same shape, colors, materials, details.`,
+        `Image 2 is the model who should appear. Match the model's likeness (face, hair, complexion) from Image 2 exactly. Same person.`,
         style_reference_url
-          ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
-          : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+          ? `Image 3 is the composition reference. Follow its framing, pose, lighting and atmosphere; keep the product from Image 1 and the model from Image 2.`
+          : `Compose a high-end editorial scene with the model from Image 2 wearing or carrying the product from Image 1.`,
         category === 'CALZADO'
-          ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+          ? `The product is footwear — worn on the model's feet, visible and recognizable. Not held in hands.`
           : '',
-        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
-        `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
-        user_prompt ? `Additional direction: ${user_prompt}` : '',
+        `Natural realistic anatomy, realistic skin texture, natural lighting, photorealistic.`,
+        sanitizedUserPrompt ? `Additional direction: ${sanitizedUserPrompt}.` : '',
       ].filter(Boolean).join(' ');
 
-      formData.append('prompt', gptPrompt);
-      formData.append('n', '1');
-      formData.append('size', '1024x1536');
-      formData.append('quality', 'high');
-      formData.append('input_fidelity', 'high');
-
-      const gptRes = await fetch('https://api.openai.com/v1/images/edits', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: formData,
+      const tier2Prompt = buildSafeGptPrompt({
+        productName: product_name || 'fashion product',
+        category,
+        hasStyleReference: !!style_reference_url,
       });
 
-      if (!gptRes.ok) {
-        const errText = await gptRes.text();
-        console.error('[Editorial GPT] OpenAI error:', gptRes.status, errText.slice(0, 500));
-        // Fallback to Nano Banana
-        generatedUrl = await createAndPoll(prompt, referenceImages);
-        providerUsed = 'freepik-nano-banana-fallback';
-      } else {
-        const gptData = await gptRes.json();
-        if (gptData.data?.[0]?.b64_json) {
-          // Upload base64 to storage
-          const imgBuffer = Buffer.from(gptData.data[0].b64_json, 'base64');
-          if (collectionPlanId) {
-            const upload = await uploadToStorage(
-              collectionPlanId, 'editorial',
-              `editorial-gpt-${Date.now()}.png`, imgBuffer, 'image/png'
-            );
-            generatedUrl = upload.publicUrl;
-          } else {
-            generatedUrl = `data:image/png;base64,${gptData.data[0].b64_json}`;
-          }
-        } else if (gptData.data?.[0]?.url) {
-          generatedUrl = gptData.data[0].url;
-        }
+      const tier3Prompt = buildMinimalGptPrompt({
+        productName: product_name || 'fashion product',
+        category,
+      });
+
+      const gptResult = await gptImageEditTiered({
+        images,
+        prompt: tier1Prompt,
+        safePrompt: tier2Prompt,
+        minimalPrompt: tier3Prompt,
+        collectionPlanId,
+        assetType: 'editorial',
+      });
+
+      if (gptResult.url) {
+        generatedUrl = gptResult.url;
+        providerUsed = gptResult.tierUsed === 'creative'
+          ? 'openai-gpt-image-1.5'
+          : `openai-gpt-image-1.5-${gptResult.tierUsed}`;
+      } else if (gptResult.lastError) {
+        lastGptError = gptResult.lastError.errorCode;
       }
-    } else {
-      // ═══ NANO BANANA PATH (no model selected) ═══
-      generatedUrl = await createAndPoll(prompt, referenceImages);
+    }
+
+    // ═══ NANO BANANA FALLBACK ═══
+    // Reached when: (a) no model selected (no GPT path), or
+    // (b) all 3 GPT tiers were moderation-blocked / errored.
+    if (!generatedUrl) {
+      const nb = await nanoBananaCreateAndPoll(prompt, referenceImages);
+      if (nb.url) {
+        generatedUrl = nb.url;
+        providerUsed = providerUsed === 'freepik-nano-banana'
+          ? 'freepik-nano-banana'
+          : 'freepik-nano-banana-fallback';
+      } else {
+        nanoBananaErrorCode = nb.errorCode;
+      }
     }
 
     if (!generatedUrl) {
       await refundImageryUnits(userId, planConsumed, packConsumed);
+      // Surface a specific diagnostic so the UI can tell the user
+      // whether to wait / retry / contact support, instead of the
+      // generic "generation failed".
+      const isModeration = lastGptError === 'moderation';
+      const isIpBlock = nanoBananaErrorCode === 'ip_block';
+      const userMessage = isModeration
+        ? 'The image filter rejected this combination. Try a different reference photo or remove the style reference and retry.'
+        : isIpBlock
+          ? 'The image service is temporarily throttling us. Please retry in a minute.'
+          : 'Editorial generation failed. Please retry.';
       return NextResponse.json(
-        { error: 'Editorial generation failed' },
-        { status: 502 }
+        {
+          error: userMessage,
+          code: isModeration ? 'moderation_blocked' : isIpBlock ? 'service_throttled' : 'generation_failed',
+          diagnostics: {
+            gptError: lastGptError,
+            nanoBananaError: nanoBananaErrorCode,
+          },
+        },
+        { status: 502 },
       );
     }
 

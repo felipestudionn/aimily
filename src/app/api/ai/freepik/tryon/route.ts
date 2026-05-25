@@ -10,6 +10,12 @@ import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 import { normalizeAiError } from '@/lib/ai/error-messages';
+import {
+  fetchAsPng,
+  gptImageEditTiered,
+  nanoBananaCreateAndPoll,
+  type GptImageInput,
+} from '@/lib/ai/image-generation';
 
 /* Same long-poll constraint as still-life. */
 export const runtime = 'nodejs';
@@ -31,49 +37,9 @@ export const maxDuration = 120;
    Nice-to-have flow: called from ProductVisualsCard "On-Model" button.
    ═══════════════════════════════════════════════════════════════ */
 
+/** Either OPENAI_API_KEY (primary GPT path) or FREEPIK_API_KEY (Nano
+ *  Banana fallback) must be configured for the route to function. */
 const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY;
-const NANO_BANANA_ENDPOINT =
-  'https://api.freepik.com/v1/ai/gemini-2-5-flash-image-preview';
-
-async function createAndPoll(
-  prompt: string,
-  referenceImages: string[]
-): Promise<string | null> {
-  const createRes = await fetch(NANO_BANANA_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-freepik-api-key': FREEPIK_API_KEY!,
-    },
-    body: JSON.stringify({
-      prompt,
-      reference_images: referenceImages,
-    }),
-  });
-
-  if (!createRes.ok) {
-    const errText = await createRes.text();
-    console.error('[Try-On] Freepik create error:', createRes.status, errText.slice(0, 300));
-    return null;
-  }
-
-  const { data } = await createRes.json();
-  const taskId = data?.task_id;
-  if (!taskId) return null;
-
-  for (let i = 0; i < 20; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const statusRes = await fetch(`${NANO_BANANA_ENDPOINT}/${taskId}`, {
-      headers: { 'x-freepik-api-key': FREEPIK_API_KEY! },
-    });
-    if (!statusRes.ok) continue;
-    const sd = await statusRes.json();
-    const status: string | undefined = sd.data?.status;
-    if (status === 'COMPLETED') return sd.data?.generated?.[0] || null;
-    if (status === 'FAILED') return null;
-  }
-  return null;
-}
 
 function buildPrompt(params: {
   productName: string;
@@ -111,10 +77,10 @@ export async function POST(req: NextRequest) {
     const rateLimited = enforceAiUserRateLimit(userId, 'image');
     if (rateLimited) return rateLimited;
 
-    if (!FREEPIK_API_KEY) {
+    if (!process.env.OPENAI_API_KEY && !FREEPIK_API_KEY) {
       return NextResponse.json(
-        { error: 'FREEPIK_API_KEY not configured' },
-        { status: 500 }
+        { error: 'No image provider configured (need OPENAI_API_KEY or FREEPIK_API_KEY)' },
+        { status: 500 },
       );
     }
 
@@ -172,18 +138,78 @@ export async function POST(req: NextRequest) {
       category,
     });
 
-    // Order matters: [model, product] — the prompt references them in
-    // this order ("FIRST reference ... SECOND reference").
-    const generatedUrl = await createAndPoll(prompt, [
-      brand_model_url,
-      product_image_url,
-    ]);
+    // ═══ STRUCTURAL DEFENSE ═══
+    // GPT Image 1.5 primary with 3-tier moderation defense, Nano
+    // Banana fallback. Image order matters for the prompt's references.
+    let generatedUrl: string | null = null;
+    let providerUsed: string = 'openai-gpt-image-1.5';
+    let lastGptError: string | null = null;
+    let nanoBananaErrorCode: string | null = null;
+
+    if (process.env.OPENAI_API_KEY) {
+      const modelPng = await fetchAsPng(brand_model_url);
+      const productPng = await fetchAsPng(product_image_url);
+      const images: GptImageInput[] = [
+        { buffer: modelPng, filename: 'model.png' },
+        { buffer: productPng, filename: 'product.png' },
+      ];
+
+      const safePrompt = [
+        `Professional commercial fashion catalog photograph for a clothing brand.`,
+        `Fully clothed model from Image 1 wearing the product (${enrichedProductName}) from Image 2.`,
+        `Replicate the model's likeness from Image 1 and the product from Image 2 exactly.`,
+        category === 'CALZADO' ? `Footwear is worn on the feet.` : '',
+        `Photorealistic, magazine catalog quality, modest professional fashion photography.`,
+      ].filter(Boolean).join(' ');
+
+      const minimalPrompt = `Commercial fashion catalog photograph. Fully clothed model from Image 1 wearing the product from Image 2. Photorealistic, professional, modest.`;
+
+      const gptResult = await gptImageEditTiered({
+        images,
+        prompt,
+        safePrompt,
+        minimalPrompt,
+        collectionPlanId,
+        assetType: 'tryon',
+      });
+
+      if (gptResult.url) {
+        generatedUrl = gptResult.url;
+        providerUsed = gptResult.tierUsed === 'creative'
+          ? 'openai-gpt-image-1.5'
+          : `openai-gpt-image-1.5-${gptResult.tierUsed}`;
+      } else if (gptResult.lastError) {
+        lastGptError = gptResult.lastError.errorCode;
+      }
+    }
+
+    if (!generatedUrl) {
+      // Nano Banana fallback — image order [model, product] matches the prompt.
+      const nb = await nanoBananaCreateAndPoll(prompt, [brand_model_url, product_image_url]);
+      if (nb.url) {
+        generatedUrl = nb.url;
+        providerUsed = process.env.OPENAI_API_KEY ? 'freepik-nano-banana-fallback' : 'freepik-nano-banana';
+      } else {
+        nanoBananaErrorCode = nb.errorCode;
+      }
+    }
 
     if (!generatedUrl) {
       await refundImageryUnits(userId, planConsumed, packConsumed);
+      const isModeration = lastGptError === 'moderation';
+      const isIpBlock = nanoBananaErrorCode === 'ip_block';
+      const userMessage = isModeration
+        ? 'The image filter rejected this combination. Try a different model or product photo.'
+        : isIpBlock
+          ? 'The image service is temporarily throttling us. Please retry in a minute.'
+          : 'Try-on generation failed. Please retry.';
       return NextResponse.json(
-        { error: 'Try-on generation failed' },
-        { status: 502 }
+        {
+          error: userMessage,
+          code: isModeration ? 'moderation_blocked' : isIpBlock ? 'service_throttled' : 'generation_failed',
+          diagnostics: { gptError: lastGptError, nanoBananaError: nanoBananaErrorCode },
+        },
+        { status: 502 },
       );
     }
 
@@ -200,7 +226,7 @@ export async function POST(req: NextRequest) {
           metadata: {
             prompt,
             category,
-            provider: 'freepik-nano-banana',
+            provider: providerUsed,
           },
           uploadedBy: user!.id,
         });
@@ -215,7 +241,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }],
-      provider: 'freepik-nano-banana',
+      provider: providerUsed,
     });
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
