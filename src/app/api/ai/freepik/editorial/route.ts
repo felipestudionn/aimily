@@ -414,10 +414,6 @@ export async function POST(req: NextRequest) {
       model_directives,
       collectionPlanId,
       skuId,
-      // A/B test toggle: 'nano-banana' forces Nano Banana directly,
-      // skipping the GPT primary path. Used to compare quality and
-      // cost before committing to a permanent default.
-      force_provider,
     } = await req.json();
 
     // Look up the selected aimily model if provided
@@ -617,14 +613,10 @@ export async function POST(req: NextRequest) {
     let lastGptError: string | null = null;
     let nanoBananaErrorCode: string | null = null;
 
-    // When force_provider === 'nano-banana', skip the GPT path entirely
-    // and route straight to the Nano Banana block below. Used for the
-    // A/B test comparing quality and cost.
-    if (force_provider === 'nano-banana') {
-      console.log('[Editorial] force_provider=nano-banana — skipping GPT path');
-    }
-
-    if (force_provider !== 'nano-banana' && aiModel?.headshot_url && process.env.OPENAI_API_KEY) {
+    // GPT primary, always. The Nano Banana block below is a silent
+    // emergency fallback only — never user-selectable. The A/B test
+    // concluded GPT wins on identity, composition, and product fidelity.
+    if (aiModel?.headshot_url && process.env.OPENAI_API_KEY) {
       providerUsed = 'openai-gpt-image-1.5';
 
       // Prepare image buffers once — reused across tiers.
@@ -670,10 +662,17 @@ export async function POST(req: NextRequest) {
         style_reference_url
           ? `Image 3 defines the BEHAVIOR of the photograph: pose, body position, body language, head tilt, GAZE DIRECTION (where she is looking — if she looks sideways in Image 3, she looks sideways in the output; if she looks down at her foot, she looks down at her foot), facial expression, mood, lighting, atmosphere, camera angle, framing, wardrobe styling around the product. Reproduce Image 3's behavior exactly — only the IDENTITY of the face/hair changes (to Image 2's person) and only the PRODUCT changes (to Image 1's item).`
           : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+        // Head-to-body proportion: a common GPT artifact in fashion editorial
+        // is rendering the head slightly enlarged relative to the body, which
+        // breaks the editorial silhouette. Pin the head size to Image 3's
+        // proportions explicitly.
+        style_reference_url
+          ? `HEAD-TO-BODY PROPORTION: The head must occupy the SAME proportion of the frame as the model's head in Image 3 — same head-to-shoulder ratio, same head-to-body ratio, same head size relative to the overall figure. Do NOT enlarge the head. The model's head from Image 2 is mapped onto the body of Image 3 at Image 3's exact head scale. Editorial body proportions, not portrait proportions.`
+          : ``,
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
           : '',
-        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
+        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs. Natural realistic human proportions (head ~1/7 to 1/8 of total body height for editorial fashion).`,
         `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
         user_prompt ? `Additional direction: ${user_prompt}` : '',
       ].filter(Boolean).join(' ');
