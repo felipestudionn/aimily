@@ -662,17 +662,27 @@ export async function POST(req: NextRequest) {
         style_reference_url
           ? `Image 3 defines the BEHAVIOR of the photograph: pose, body position, body language, head tilt, GAZE DIRECTION (where she is looking — if she looks sideways in Image 3, she looks sideways in the output; if she looks down at her foot, she looks down at her foot), facial expression, mood, lighting, atmosphere, camera angle, framing, wardrobe styling around the product. Reproduce Image 3's behavior exactly — only the IDENTITY of the face/hair changes (to Image 2's person) and only the PRODUCT changes (to Image 1's item).`
           : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
-        // Head-to-body proportion: a common GPT artifact in fashion editorial
-        // is rendering the head slightly enlarged relative to the body, which
-        // breaks the editorial silhouette. Pin the head size to Image 3's
-        // proportions explicitly.
-        style_reference_url
-          ? `HEAD-TO-BODY PROPORTION: The head must occupy the SAME proportion of the frame as the model's head in Image 3 — same head-to-shoulder ratio, same head-to-body ratio, same head size relative to the overall figure. Do NOT enlarge the head. The model's head from Image 2 is mapped onto the body of Image 3 at Image 3's exact head scale. Editorial body proportions, not portrait proportions.`
-          : ``,
+        // Head-to-body proportion — research-backed directive replacing
+        // the older direct-anatomical instruction. The OpenAI developer
+        // forum reports that anatomical commands like "head = 1/8 of
+        // body" are ignored by gpt-image-1.5, but three indirect levers
+        // DO work in combination:
+        //   1. Photographic lens spec — telephoto compression
+        //      (85mm portrait lens) naturalizes facial proportions and
+        //      shrinks perceived head size relative to body.
+        //   2. Fashion-industry vocabulary — "fashion croquis", "8-head
+        //      figure ratio", "elongated editorial figure" hit training-
+        //      data fashion-illustration literature directly.
+        //   3. Framing constraint — explicit head-to-toe with negative
+        //      space above head + low camera angle forces the full
+        //      body into the crop.
+        // Sources: OpenAI cookbook, OpenAI dev forum thread on full-body
+        // generation, and academic fashion-illustration literature.
+        `FULL-BODY EDITORIAL COMPOSITION shot on 85mm portrait lens at standing-subject distance — telephoto compression naturalizes facial proportions and matches editorial body ratio. The figure follows fashion editorial 8-head proportion (croquis: head height = 1/8 of total figure height from crown to feet). Frame head-to-toe with negative space above the head, feet included in the crop. Slight low camera angle elongates the legs. Magazine cover full-figure crop, not portrait crop, not headshot crop.`,
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
           : '',
-        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs. Natural realistic human proportions (head ~1/7 to 1/8 of total body height for editorial fashion).`,
+        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
         `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
         user_prompt ? `Additional direction: ${user_prompt}` : '',
       ].filter(Boolean).join(' ');
