@@ -59,34 +59,6 @@ interface StoryContext {
   brand_personality?: string;
 }
 
-/** GPT-specific framing prepended to the canonical `buildPrompt()`
- *  output. The detailed identity + composition contract comes from
- *  the shared prompt builder (same one Nano Banana uses) — this only
- *  adds the commercial-campaign opener and the per-image labels GPT
- *  needs to map references by index. Quality stays consistent across
- *  the GPT path and the Nano Banana fallback because the body of the
- *  prompt is identical. */
-function buildGptOpener(params: {
-  hasStyleReference: boolean;
-  hasModelHeadshot: boolean;
-}): string {
-  const { hasStyleReference, hasModelHeadshot } = params;
-  const parts: string[] = [
-    `Professional commercial editorial fashion photograph for a high-end clothing brand campaign. Fully clothed model, magazine editorial quality, modest professional editorial styling.`,
-    `Reference images provided in this request:`,
-    `Image 1 — the exact product to feature (pixel-perfect preservation required).`,
-  ];
-  if (hasModelHeadshot && hasStyleReference) {
-    parts.push(`Image 2 — the model headshot (face/hair/complexion identity, takes priority).`);
-    parts.push(`Image 3 — the composition reference (framing/pose/lighting/atmosphere).`);
-  } else if (hasModelHeadshot) {
-    parts.push(`Image 2 — the model headshot (face/hair/complexion identity).`);
-  } else if (hasStyleReference) {
-    parts.push(`Image 2 — the composition reference (framing/pose/lighting/atmosphere).`);
-  }
-  parts.push(``); // separator before the detailed contract
-  return parts.join(' ');
-}
 
 /**
  * Build the editorial on-model prompt.
@@ -329,26 +301,20 @@ function buildPrompt(params: {
       `FACE IDENTITY (non-negotiable, overrides everything else): The person in the final image must have the EXACT SAME face as this headshot — same facial structure, same jawline, same nose shape, same lip shape, same eye shape, same eyebrow shape, same complexion, same skin tone. This is NOT a suggestion, this is the #1 priority of the entire generation. If the face does not match the headshot, the image is WRONG.`
     );
     parts.push(
-      `HAIR IDENTITY (color / length / texture / cut — non-negotiable): The hair in the final image must be the same color, same length, same texture (straight/wavy/curly/braided), and same cut/style as in the headshot. These are identity attributes and they don't change between photos.`
+      `HAIR IDENTITY (non-negotiable): The person in the final image must have the EXACT SAME hair as the headshot — same hair color, same hair length, same hair texture (straight/wavy/curly/braided), same hair style. Do NOT change the hair from the headshot under any circumstance. The hair is part of this model's identity.`
     );
     parts.push(
-      `HAIR FALL / DIRECTION / MOVEMENT (adapt to the body pose, NOT frozen from the headshot): The way the hair falls, drapes, and moves is dictated by the body's pose, head tilt, and gravity${hasStyleReference ? ' — i.e. by the composition reference, not by the headshot' : ''}. The headshot is usually a static front-on portrait; the editorial frame is dynamic. If the head tilts, the hair falls to that side. If the body leans, the hair shifts with it. If the wind is implied by the scene, the hair responds. Do NOT freeze the hair as it appears in the headshot — that would look like a pasted cut-out. The hair must look like the SAME person photographed in the editorial pose, not the headshot stamped onto a body.`
-    );
-    parts.push(
-      `HEAD POSE (follows the body, NOT frozen from the headshot): The head tilt, head angle, gaze direction, and chin position should follow the body's pose and the scene's natural movement${hasStyleReference ? ' from the composition reference' : ''}. The headshot defines WHO the model is; the body defines HOW she's posed. A static frontal head on a dynamic body reads as composited and unnatural.`
-    );
-    parts.push(
-      `MODEL ATTITUDE: The model's facial expression and energy should match the scene${hasStyleReference ? ' and the composition reference' : ''} — confident, editorial intensity, the attitude appropriate to the shot. Preserve the model's underlying look, but the expression itself adapts to the scene.`
+      `MODEL ATTITUDE: The model's facial expression and body language should match the energy of the headshot — the same confidence, the same editorial intensity, the same attitude. This specific model was CAST for this shot by the creative director because of her unique look and presence. Preserve that.`
     );
 
     // When we have both a style ref AND a model headshot, clarify the roles
     if (hasStyleReference) {
       parts.push(
-        `REFERENCE IMAGE PRIORITY ORDER (most important first): #1 PRIORITY = Image 3 (model headshot) — the face structure, hair color/length/texture/cut, and skin tone MUST match this person exactly. The headshot defines IDENTITY only — not the head's pose, not the gaze, not how the hair falls. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical to this reference. #3 PRIORITY = Image 2 (style reference) — dictates composition, lighting, pose, camera angle, head tilt, gaze, body language, hair direction/fall, and mood. The face in Image 2 is blurred on purpose — IGNORE the blurred face and use the face from Image 3, but follow Image 2's pose and how the hair drapes from that pose.`
+        `REFERENCE IMAGE PRIORITY ORDER (most important first): #1 PRIORITY = Image 3 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical to this reference. #3 PRIORITY = Image 2 (style reference) — use for composition, lighting, pose, camera angle, and mood only. The face in Image 2 is blurred on purpose — IGNORE it completely and use the face from Image 3 instead.`
       );
     } else {
       parts.push(
-        `REFERENCE IMAGE PRIORITY ORDER: #1 PRIORITY = Image 2 (model headshot) — the face structure, hair color/length/texture/cut, and skin tone MUST match this person exactly. The headshot defines IDENTITY only — head pose, gaze, and hair fall adapt to the editorial scene you compose. #2 PRIORITY = Image 1 (product) — pixel-perfect.`
+        `REFERENCE IMAGE PRIORITY ORDER: #1 PRIORITY = Image 2 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical.`
       );
     }
   }
@@ -611,16 +577,25 @@ export async function POST(req: NextRequest) {
       ];
       if (stylePng) images.push({ buffer: stylePng, filename: 'style.png' });
 
-      // Unified prompt: GPT and Nano Banana receive the SAME detailed
-      // identity + composition contract from buildPrompt(). GPT just
-      // gets a short commercial-campaign opener prepended so OpenAI's
-      // safety classifier reads the framing correctly. Output quality
-      // is consistent whichever provider responds.
-      const gptOpener = buildGptOpener({
-        hasStyleReference: !!style_reference_url,
-        hasModelHeadshot: true,
-      });
-      const gptPrompt = `${gptOpener} ${prompt}`;
+      // Day-perfect GPT prompt — restored verbatim from commit 9f3a21b~1.
+      // This is the prompt Felipe validated as producing the correct pose
+      // / hair-fall / attitude fidelity to the style reference. Do NOT
+      // unify or refactor without explicit approval — past attempts to
+      // "unify with buildPrompt()" silently dropped composition fidelity.
+      const gptPrompt = [
+        `HIGH-END EDITORIAL FASHION PHOTOGRAPH.`,
+        `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
+        `Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`,
+        style_reference_url
+          ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
+          : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+        category === 'CALZADO'
+          ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+          : '',
+        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
+        `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
+        user_prompt ? `Additional direction: ${user_prompt}` : '',
+      ].filter(Boolean).join(' ');
 
       const gptResult = await gptImageEdit({
         images,
