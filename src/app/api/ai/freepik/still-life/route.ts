@@ -13,7 +13,7 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
-  gptImageEditDefensive,
+  gptImageEdit,
   nanoBananaCreateAndPoll,
   type GptImageInput,
 } from '@/lib/ai/image-generation';
@@ -432,33 +432,22 @@ export async function POST(req: NextRequest) {
         { buffer: productPng, filename: 'product.png' },
       ];
 
-      // The prompt builder already produces a careful brand-grade
-      // description. If moderation somehow trips, the defensive prompt
-      // keeps the same product reference and rephrases in catalog
-      // language — the product image is never dropped.
-      const defensivePrompt = [
-        `Professional commercial product photography for a fashion brand catalog.`,
-        `Image 1 is the exact product (${product_name || 'fashion product'}). Replicate the product pixel-perfect: same shape, colors, materials, construction.`,
-        `Compose a still-life scene with the product as the hero, no humans in frame, on a clean considered surface with natural directional lighting.`,
-        category === 'CALZADO' ? `The product is footwear placed on a surface, not worn.` : '',
-        `Photorealistic, magazine catalog quality.`,
-      ].filter(Boolean).join(' ');
+      // Unified prompt — same detailed contract as Nano Banana, with
+      // a short commercial-product opener prepended for GPT.
+      const gptPrompt = `Professional commercial product photography for a fashion brand catalog. Reference Image 1 is the product to feature with pixel-perfect preservation. ${prompt}`;
 
-      const gptResult = await gptImageEditDefensive({
+      const gptResult = await gptImageEdit({
         images,
-        prompt,
-        defensivePrompt,
+        prompt: gptPrompt,
         collectionPlanId,
         assetType: 'still_life',
       });
 
       if (gptResult.url) {
         generatedUrl = gptResult.url;
-        providerUsed = gptResult.attemptUsed === 'primary'
-          ? 'openai-gpt-image-1.5'
-          : 'openai-gpt-image-1.5-defensive';
-      } else if (gptResult.lastError) {
-        lastGptError = gptResult.lastError.errorCode;
+        providerUsed = 'openai-gpt-image-1.5';
+      } else if (gptResult.error) {
+        lastGptError = gptResult.error.errorCode;
       }
     }
 

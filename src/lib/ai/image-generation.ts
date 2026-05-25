@@ -102,6 +102,21 @@ async function runGptImageEditOnce(params: {
   formData.append('size', '1024x1536');
   formData.append('quality', 'high');
   formData.append('input_fidelity', 'high');
+  // `moderation: 'low'` is the documented parameter for gpt-image-1.5
+  // commercial-fashion / editorial use cases. The Python SDK does not
+  // expose it on images.edit yet, but the REST endpoint accepts it
+  // when sent via raw multipart (confirmed by OpenAI staff on the
+  // developer forum). With `auto` the filter false-positives fashion
+  // editorial routinely — models + style refs + brand campaigns get
+  // flagged as sexual. `low` raises the threshold to the level that
+  // OpenAI's own ad policy permits for "lingerie / underwear / swim-
+  // wear in a standard fashion or retail context".
+  formData.append('moderation', 'low');
+
+  // Server-side ops log so we can verify what was actually sent.
+  console.log(
+    `[gpt-image attempt=${attempt}] prompt.length=${prompt.length} images=${images.length} moderation=low`,
+  );
 
   const res = await fetch(OPENAI_IMAGE_EDIT_ENDPOINT, {
     method: 'POST',
@@ -151,23 +166,40 @@ async function runGptImageEditOnce(params: {
   return { url, errorCode: null };
 }
 
-/** Two-attempt GPT defense. Both attempts use the SAME reference
- *  images — the product, the model headshot, and (when provided) the
- *  style reference. The only variation is the text prompt:
+/** Single GPT Image 1.5 edit call with `moderation: 'low'`. The
+ *  earlier two-attempt defensive pattern was a workaround for the
+ *  default `moderation: 'auto'` false-positives. With the policy-
+ *  aligned moderation level the primary attempt succeeds for fashion
+ *  editorial, and a second attempt only added 30-60s of latency that
+ *  killed mobile connections without recovering quality. If GPT does
+ *  fail on this single attempt, the caller falls back to Nano Banana
+ *  with the same prompt and references — no degradation of inputs.
  *
- *    primary:    full caller prompt (sanitized user direction included).
- *    defensive:  caller's `defensivePrompt`, intended to drop any
- *                user-typed text and rephrase the creative direction
- *                in commercial-catalog framing. References stay.
- *
- *  Only `moderation` errors trigger the defensive retry — auth /
- *  rate_limit / transient surface immediately because retrying with
- *  different text won't help.
- *
- *  This deliberately does NOT degrade by dropping reference images.
- *  If the caller's references genuinely trip OpenAI moderation, the
- *  route should fall back to Nano Banana with the same references
- *  rather than silently shipping a reference-less output. */
+ *  References stay intact every time. We never drop images, never
+ *  rephrase user direction, never compromise output quality. */
+export async function gptImageEdit(params: {
+  images: GptImageInput[];
+  prompt: string;
+  collectionPlanId?: string;
+  assetType: 'editorial' | 'still_life' | 'tryon';
+}): Promise<{
+  url: string | null;
+  error: GptImageResult | null;
+}> {
+  const result = await runGptImageEditOnce({
+    images: params.images,
+    prompt: params.prompt,
+    collectionPlanId: params.collectionPlanId,
+    assetType: params.assetType,
+    attempt: 'primary',
+  });
+  if (result.url) return { url: result.url, error: null };
+  return { url: null, error: result };
+}
+
+/** @deprecated Kept for back-compat — alias to gptImageEdit. The
+ *  defensive second attempt no longer exists; `moderation: 'low'`
+ *  removes the need. */
 export async function gptImageEditDefensive(params: {
   images: GptImageInput[];
   prompt: string;
@@ -179,26 +211,17 @@ export async function gptImageEditDefensive(params: {
   attemptUsed: GptAttempt | null;
   lastError: GptImageResult | null;
 }> {
-  const { images, prompt, defensivePrompt, collectionPlanId, assetType } = params;
-
-  // Primary — full caller prompt
-  let result = await runGptImageEditOnce({ images, prompt, collectionPlanId, assetType, attempt: 'primary' });
-  if (result.url) return { url: result.url, attemptUsed: 'primary', lastError: null };
-  if (result.errorCode !== 'moderation') return { url: null, attemptUsed: null, lastError: result };
-
-  // Defensive — same images, rephrased prompt without user direction
-  if (defensivePrompt) {
-    result = await runGptImageEditOnce({
-      images,
-      prompt: defensivePrompt,
-      collectionPlanId,
-      assetType,
-      attempt: 'defensive',
-    });
-    if (result.url) return { url: result.url, attemptUsed: 'defensive', lastError: null };
-  }
-
-  return { url: null, attemptUsed: null, lastError: result };
+  const r = await gptImageEdit({
+    images: params.images,
+    prompt: params.prompt,
+    collectionPlanId: params.collectionPlanId,
+    assetType: params.assetType,
+  });
+  return {
+    url: r.url,
+    attemptUsed: r.url ? 'primary' : null,
+    lastError: r.error,
+  };
 }
 
 export type NanoBananaResult = {
