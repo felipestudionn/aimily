@@ -83,9 +83,18 @@ function buildPrompt(params: {
   userPrompt?: string;
   hasStyleReference?: boolean;
   hasModelHeadshot?: boolean;
+  /** True when the style reference IS the composite (model's face pasted
+   *  onto the style ref body) and no separate headshot is being sent.
+   *  In this mode buildPrompt skips the "Image 3 is headshot" priority
+   *  block and describes Image 2 as the model+scene composite that must
+   *  be preserved verbatim (face, hair, body, pose) — only the product
+   *  is replaced from Image 1. Bug fix: prior to this flag, buildPrompt
+   *  generated a 3-image prompt while the route only sent 2 images,
+   *  which confused Nano Banana and caused it to invent face + product. */
+  styleRefIsModelComposite?: boolean;
   modelDirectives?: ModelDirectives;
 }): string {
-  const { productName, category, scene, story, userPrompt, hasStyleReference, hasModelHeadshot, modelDirectives } = params;
+  const { productName, category, scene, story, userPrompt, hasStyleReference, hasModelHeadshot, styleRefIsModelComposite, modelDirectives } = params;
 
   const productType =
     category === 'CALZADO'
@@ -266,55 +275,105 @@ function buildPrompt(params: {
     `REJECT LIST (the final image MUST NOT contain): ${rejectItems.join(', ')}.`
   );
 
-  // 9. Visual style reference — when the user provides a second image
-  // as art direction. The first reference_image is always the product;
-  // the second is this style reference. Tell Nano Banana to use it for
-  // composition, lighting, pose, and mood — but never to copy the
-  // products/garments from the style reference.
-  if (hasStyleReference) {
+  // 9. Visual style reference — describes the *behavior* the final
+  // photograph must reproduce. Explicit partition of what comes from
+  // where, no contradictions. The composite case (when the model's
+  // face has already been pasted onto the style ref body before being
+  // sent to Nano Banana) is handled with its own block further down.
+  if (hasStyleReference && !styleRefIsModelComposite) {
     parts.push(
-      `STYLE REFERENCE (second reference image): A second image is provided as VISUAL ART DIRECTION. Match its composition, lighting mood, camera angle, color grading, pose energy, and editorial atmosphere as closely as possible.`
+      `STYLE / COMPOSITION REFERENCE (second reference image): The second reference image defines the BEHAVIOR of the photograph — the entire shot direction. The final image must reproduce ALL of the following from the style reference, exactly:`
     );
     parts.push(
-      `CRITICAL — STYLE REFERENCE RULES:`
+      `• Pose, body position, body language, gesture, weight distribution.`
     );
     parts.push(
-      `• The PRODUCT in the final image must be ONLY the ${productType} from the first reference image — do NOT copy or include any products, garments, shoes, or accessories visible in the style reference image.`
+      `• Head tilt, head angle, neck position, chin position.`
     );
     parts.push(
-      `• MODEL IDENTITY (non-negotiable): keep EVERYTHING from the style reference — same pose, same body language, same styling, same energy, same complexion, same hair direction, same wardrobe vibe. The ONLY thing that MUST change is the FACE: generate a DIFFERENT face with different facial features (different eyes, different nose, different jawline, different lip shape). The body, pose, lighting, composition, and mood stay identical to the reference. Think "same photo reshoot with a different model from the same agency." This is a legal requirement — the face must not match the reference person.`
+      `• GAZE DIRECTION — where the model is looking. If she looks sideways in the reference, she looks sideways in the output. If she looks down at her foot, she looks down at her foot. If her eyes are closed, eyes closed. Replicate the gaze precisely.`
     );
     parts.push(
-      `• The style reference dictates HOW the shot looks (composition, lighting, mood, pose); the first reference dictates WHAT product appears.`
+      `• Facial expression, mouth shape, eye expression, acting, attitude, mood.`
+    );
+    parts.push(
+      `• Composition, framing, camera angle, depth of field.`
+    );
+    parts.push(
+      `• Lighting setup, key light direction, shadows, color grade, atmosphere.`
+    );
+    parts.push(
+      `• Wardrobe styling around the product (tights, jacket, dress, accessories) — keep these as in the reference unless they ARE the product being substituted.`
+    );
+    parts.push(
+      `• The PRODUCT visible on the model in the style reference is the WRONG product — replace it with the ${productType} from the first reference image. Do NOT copy any product, garment, shoes, or accessory shown in the style reference unless the prompt explicitly says so.`
+    );
+    if (!hasModelHeadshot) {
+      // Legacy v2 path (no casting model selected) — the only allowed
+      // change is the face identity, for likeness rights.
+      parts.push(
+        `• FACE IDENTITY (legal requirement): generate a DIFFERENT face from the person shown in the style reference — different eye shape, different nose, different jawline, different lip shape. Same complexion range and hair vibe, but a believably different person. Think "same casting brief, different model".`
+      );
+    }
+  }
+
+  // 9b. Composite case — Image 2 is already "model + scene" baked together.
+  // The casting model's face has been pasted onto the style ref body
+  // BEFORE Nano Banana sees it. No separate headshot is sent. The
+  // contract is: preserve Image 2 verbatim (face, hair, pose, expression,
+  // gaze, lighting, atmosphere) and ONLY replace the product.
+  if (styleRefIsModelComposite) {
+    parts.push(
+      `COMPOSITE REFERENCE (second reference image) — non-negotiable, single source of truth for the entire shot: Image 2 is the FINAL composition minus the product. It already contains the correct casting model (her face, her hair, her complexion) placed in the correct editorial scene (correct pose, correct body language, correct head tilt, correct gaze direction, correct facial expression, correct lighting, correct atmosphere, correct wardrobe). Reproduce Image 2 verbatim, pixel-faithful.`
+    );
+    parts.push(
+      `The ONLY change from Image 2 to the output: replace the ${productType} that the model is interacting with in Image 2 (on her feet, in her hands, around her body — whatever applies) with the EXACT ${productType} from Image 1. Same pose, same gaze, same expression, same lighting, same scene — only the product changes.`
+    );
+    parts.push(
+      `Do NOT regenerate the face. Do NOT change the hair. Do NOT alter the gaze direction or where the model is looking. Do NOT change the head tilt. Do NOT modify the body pose. Image 2 IS the answer for everything except the product.`
     );
   }
 
-  // 10. Model headshot reference — when the user selects an aimily model,
-  // their headshot is passed as the last reference image. This provides
-  // the face identity signal. The style reference (if any) has its face
-  // blurred, so this headshot is the ONLY face Nano Banana can latch onto.
-  if (hasModelHeadshot) {
+  // 10. Model headshot reference — only when sent as a SEPARATE image
+  // (not in composite mode). Defines IDENTITY only: face structure,
+  // hair, complexion. NOT expression, NOT gaze, NOT head pose — those
+  // come from the style reference above.
+  if (hasModelHeadshot && !styleRefIsModelComposite) {
     parts.push(
-      `MODEL HEADSHOT — HIGHEST PRIORITY REFERENCE (last reference image): The last reference image is a headshot of the EXACT model who MUST appear in the final photograph. This is the most important reference of all three — it defines WHO appears in the image.`
+      `MODEL HEADSHOT — identity-only reference (last reference image): The headshot defines WHO this model is. Take ONLY the identity attributes from this image:`
     );
     parts.push(
-      `FACE IDENTITY (non-negotiable, overrides everything else): The person in the final image must have the EXACT SAME face as this headshot — same facial structure, same jawline, same nose shape, same lip shape, same eye shape, same eyebrow shape, same complexion, same skin tone. This is NOT a suggestion, this is the #1 priority of the entire generation. If the face does not match the headshot, the image is WRONG.`
+      `• Face structure: eye shape, nose shape, lip shape, jawline, cheekbones, eyebrow shape. These define WHO she is.`
     );
     parts.push(
-      `HAIR IDENTITY (non-negotiable): The person in the final image must have the EXACT SAME hair as the headshot — same hair color, same hair length, same hair texture (straight/wavy/curly/braided), same hair style. Do NOT change the hair from the headshot under any circumstance. The hair is part of this model's identity.`
+      `• Hair: color, length, texture (straight / wavy / curly / braided), cut / style. Do NOT take the hair DIRECTION or how it falls from the headshot — hair fall follows the body pose from the style reference.`
     );
     parts.push(
-      `MODEL ATTITUDE: The model's facial expression and body language should match the energy of the headshot — the same confidence, the same editorial intensity, the same attitude. This specific model was CAST for this shot by the creative director because of her unique look and presence. Preserve that.`
+      `• Complexion and skin tone.`
+    );
+    parts.push(
+      `DO NOT take from the headshot: facial expression, gaze direction, head tilt, head pose, neck angle, mood, energy. The headshot is typically a static front-on portrait; those behavioral attributes come exclusively from the style reference. WHO the person is = headshot. WHAT she is doing = style reference.`
     );
 
-    // When we have both a style ref AND a model headshot, clarify the roles
     if (hasStyleReference) {
       parts.push(
-        `REFERENCE IMAGE PRIORITY ORDER (most important first): #1 PRIORITY = Image 3 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical to this reference. #3 PRIORITY = Image 2 (style reference) — use for composition, lighting, pose, camera angle, and mood only. The face in Image 2 is blurred on purpose — IGNORE it completely and use the face from Image 3 instead.`
+        `REFERENCE IMAGE ROLES (three images sent):`
+      );
+      parts.push(
+        `• Image 1 (product): replace into the final image, pixel-perfect.`
+      );
+      parts.push(
+        `• Image 2 (style / composition): everything the photograph is DOING — pose, gaze, head tilt, expression, lighting, atmosphere, scene. The face in Image 2 has been blurred on purpose; do not use it for identity. The body, pose, and behavior of Image 2 ARE the final shot direction.`
+      );
+      parts.push(
+        `• Image 3 (model headshot): the IDENTITY of the face/hair/complexion that replaces the blurred face in Image 2. Identity only — do not copy the headshot's pose or expression.`
+      );
+      parts.push(
+        `Final image = Image 2's behavior + Image 3's identity + Image 1's product.`
       );
     } else {
       parts.push(
-        `REFERENCE IMAGE PRIORITY ORDER: #1 PRIORITY = Image 2 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical.`
+        `REFERENCE IMAGE ROLES (two images sent): Image 1 = product (pixel-perfect). Image 2 = model headshot (identity for face / hair / complexion). Compose a high-end editorial scene of the model wearing or carrying the product.`
       );
     }
   }
@@ -437,6 +496,16 @@ export async function POST(req: NextRequest) {
       ? { complexion: aiModel.complexion, hair: aiModel.hair_style, age: '20s' }
       : (model_directives || undefined);
 
+    // When BOTH a style ref AND a casting model are selected, we
+    // composite the model's face onto the style ref body before
+    // sending to Nano Banana — Image 2 is then a "model + scene"
+    // composite, not a raw style ref, and no separate headshot is
+    // sent. buildPrompt needs this flag to switch to the composite-
+    // aware contract (preserve Image 2 verbatim, swap only the
+    // product) instead of the legacy 3-image prompt that talked
+    // about a non-existent Image 3 headshot.
+    const willCompositeForNanoBanana = !!(style_reference_url && aiModel?.headshot_url);
+
     const prompt = buildPrompt({
       productName: product_name || 'fashion product',
       category,
@@ -445,6 +514,7 @@ export async function POST(req: NextRequest) {
       userPrompt: enrichedUserPrompt,
       hasStyleReference: !!style_reference_url,
       hasModelHeadshot: !!aiModel,
+      styleRefIsModelComposite: willCompositeForNanoBanana,
       modelDirectives: effectiveModelDirectives,
     });
 
@@ -596,9 +666,9 @@ export async function POST(req: NextRequest) {
       const gptPrompt = [
         `HIGH-END EDITORIAL FASHION PHOTOGRAPH.`,
         `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
-        `Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`,
+        `Image 2 shows the EXACT model who must appear. Take her IDENTITY ONLY from Image 2: face structure (eye shape, nose shape, lip shape, jawline), hair (color, length, texture, cut), complexion, skin tone. Do NOT take her expression, gaze, or head pose from Image 2 — Image 2 is a headshot and those come from Image 3.`,
         style_reference_url
-          ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
+          ? `Image 3 defines the BEHAVIOR of the photograph: pose, body position, body language, head tilt, GAZE DIRECTION (where she is looking — if she looks sideways in Image 3, she looks sideways in the output; if she looks down at her foot, she looks down at her foot), facial expression, mood, lighting, atmosphere, camera angle, framing, wardrobe styling around the product. Reproduce Image 3's behavior exactly — only the IDENTITY of the face/hair changes (to Image 2's person) and only the PRODUCT changes (to Image 1's item).`
           : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
