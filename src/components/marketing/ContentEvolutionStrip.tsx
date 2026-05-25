@@ -178,27 +178,13 @@ export function ContentEvolutionStrip({
           skuId: sku.id,
         }),
       });
+      // The route now also writes the ai_generations row server-side
+      // (atomic) so we don't fire a second fetch after this. iOS Safari
+      // was killing the connection between the two fetches, which left
+      // the asset orphaned in storage with no ai_generations row to
+      // surface it in the UI.
       if (!res.ok) throw await backendError(res);
-      const data = await res.json();
-
-      const addRes = await fetch('/api/ai-generations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          collection_plan_id: collectionPlanId,
-          generation_type: 'editorial',
-          prompt: `Editorial for ${sku.name}${editorialPrompt ? ` — ${editorialPrompt}` : ''}`,
-          input_data: { sku_id: sku.id, sku_name: sku.name, model_id: selectedModelId },
-          output_data: { images: data.images || [] },
-          provider_request_id: null,
-          model_used: 'freepik-nano-banana',
-          status: 'completed',
-          is_favorite: false,
-          story_id: null,
-        }),
-      });
-      if (!addRes.ok) throw await backendError(addRes);
+      await res.json();
 
       onRefetchGenerations();
       setEditorialPrompt('');
@@ -227,27 +213,9 @@ export function ContentEvolutionStrip({
           skuId: sku.id,
         }),
       });
+      // Server-side atomic ai_generations write — see editorial handler.
       if (!res.ok) throw await backendError(res);
-      const data = await res.json();
-
-      const addRes = await fetch('/api/ai-generations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          collection_plan_id: collectionPlanId,
-          generation_type: 'still_life',
-          prompt: `Still life for ${sku.name}`,
-          input_data: { sku_id: sku.id, sku_name: sku.name },
-          output_data: { images: data.images || [] },
-          provider_request_id: null,
-          model_used: 'freepik-nano-banana',
-          status: 'completed',
-          is_favorite: false,
-          story_id: null,
-        }),
-      });
-      if (!addRes.ok) throw await backendError(addRes);
+      await res.json();
       onRefetchGenerations();
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Still life generation failed');

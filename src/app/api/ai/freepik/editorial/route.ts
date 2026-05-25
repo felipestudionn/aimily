@@ -739,9 +739,50 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Record the generation in ai_generations server-side. The frontend
+    // used to do this in a second fetch after the editorial call, but
+    // iOS Safari was killing the long-lived editorial connection
+    // (Vercel function returned 200, mobile saw "Load failed") which
+    // meant the asset existed in storage but ai_generations had no row
+    // and the UI never saw the image. Atomic server-side insert fixes
+    // that class of bug.
+    let generationId: string | null = null;
+    if (collectionPlanId) {
+      const promptLabel = `Editorial for ${product_name || 'product'}${user_prompt ? ` — ${user_prompt}` : ''}`;
+      const { data: genRow, error: genErr } = await supabaseAdmin
+        .from('ai_generations')
+        .insert({
+          user_id: user!.id,
+          collection_plan_id: collectionPlanId,
+          generation_type: 'editorial',
+          prompt: promptLabel,
+          input_data: {
+            sku_id: skuId || null,
+            sku_name: product_name || null,
+            model_id: model_id || null,
+          },
+          output_data: {
+            images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }],
+          },
+          provider_request_id: null,
+          model_used: providerUsed,
+          status: 'completed',
+          is_favorite: false,
+          story_id: null,
+        })
+        .select('id')
+        .single();
+      if (genErr) {
+        console.error('[Editorial] ai_generations insert failed:', genErr);
+      } else {
+        generationId = genRow?.id ?? null;
+      }
+    }
+
     return NextResponse.json({
       images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }],
       provider: providerUsed,
+      generationId,
     });
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
