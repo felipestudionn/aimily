@@ -66,7 +66,7 @@ export function CreditMeter() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`fixed top-4 right-[260px] z-50 inline-flex items-center gap-1.5 rounded-full bg-white border shadow-sm px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-carbon/30 ${
+        className={`fixed top-[120px] right-4 md:top-4 md:right-[260px] z-50 inline-flex items-center gap-1.5 rounded-full bg-white border shadow-sm px-3 py-1.5 text-[12px] font-medium transition-colors hover:border-carbon/30 ${
           isLow ? 'border-rose-200 text-rose-700' : 'border-carbon/[0.08] text-carbon/70'
         }`}
         aria-label={t.title}

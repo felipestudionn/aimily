@@ -121,7 +121,11 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
         {/* ═══ SKU Library (left) ═══ */}
-        <aside className="bg-white rounded-[20px] p-5 space-y-4 sticky top-24 max-h-[calc(100vh-140px)] overflow-hidden flex flex-col">
+        {/* On mobile the aside stacks ABOVE the detail section. Without the
+            lg: prefix, sticky+max-h pinned the aside to ~85% of the viewport
+            and the detail (model/reference pickers, generation) was
+            unreachable. Cap mobile height so the user can scroll past it. */}
+        <aside className="bg-white rounded-[20px] p-5 space-y-4 flex flex-col max-h-[70vh] overflow-hidden lg:sticky lg:top-24 lg:max-h-[calc(100vh-140px)]">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-carbon/30 pointer-events-none" />
