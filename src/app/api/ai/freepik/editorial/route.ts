@@ -693,6 +693,13 @@ export async function POST(req: NextRequest) {
         style_reference_url
           ? `REFERENCE PRIORITY ORDER (when sources appear to conflict): Image 2's face/hair identity is the HIGHEST priority — Image 3's behavior adapts around it, never overwrites it. Image 1's product is pixel-perfect — the scene accommodates the product, not the other way around. Image 3 supplies pose, gaze direction, head tilt, lighting, scene, atmosphere. Never blend Image 2's identity with the blurred or composited face in Image 3 — Image 2 wins identity always.`
           : '',
+        // BLINDAJE 6 — Editorial casting refinement (face + upper body)
+        // The features Felipe identified as the differentiator between
+        // the "perfecta" sample and the merely-decent regenerations:
+        // visible clavicle, slender neck, hair tucked behind the ear,
+        // sharp cheekbones, sculpted face. Without this clause GPT
+        // resolves the model's body/face refinement by sampling luck.
+        `EDITORIAL CASTING REFINEMENT (applies to face and upper body rendering, NOT to pose/scene/product): runway-caliber bone structure — visible defined collarbone (clavicle prominent against the neckline), slender swan-like neck (long elegant proportion), sharp cheekbones with sculpted shadow, slim sculpted face, defined jawline. HAIR STYLING — at least one side of the hair is tucked behind the ear, revealing the earlobe, the jawline, and the side of the neck. The model reads as high-fashion editorial, not commercial catalog.`,
         // BLINDAJE 2 — Foot anatomy (orientation + mirroring)
         `FOOT ANATOMY: the model has exactly 2 feet, naturally MIRRORED — left foot points outward toward the model's left side, right foot points outward toward the model's right side. The big toe of each foot is on the medial (inside) edge, the little toe on the lateral (outside) edge. Heels face backward, never sideways. Never render two left feet, two right feet, or both feet rotated identically. Each foot includes 5 distinguishable toes.`,
         // BLINDAJE 3 — Hands and fingers
