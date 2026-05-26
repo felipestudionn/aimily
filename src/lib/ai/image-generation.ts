@@ -49,7 +49,7 @@ export type GptImageInput = {
  *  the model headshot, or the product reference — the user paid for a
  *  reference-faithful editorial, and degrading by dropping references
  *  would silently downgrade the output. */
-export type GptAttempt = 'primary' | 'defensive' | `parallel-${number}`;
+export type GptAttempt = 'primary' | 'defensive';
 
 export type GptImageResult = {
   url: string | null;
@@ -180,67 +180,17 @@ async function runGptImageEditOnce(params: {
   return { url, errorCode: null };
 }
 
-/** Multi-candidate GPT Image edit — fires N parallel `n=1` requests in
- *  parallel, returns all successful candidate URLs. Designed to be paired
- *  with a vision evaluator (pickBestEditorialCandidate) that picks the
- *  best output.
+/** Single GPT Image 1.5 edit call with `moderation: 'low'`. The
+ *  earlier two-attempt defensive pattern was a workaround for the
+ *  default `moderation: 'auto'` false-positives. With the policy-
+ *  aligned moderation level the primary attempt succeeds for fashion
+ *  editorial, and a second attempt only added 30-60s of latency that
+ *  killed mobile connections without recovering quality. If GPT does
+ *  fail on this single attempt, the caller falls back to Nano Banana
+ *  with the same prompt and references — no degradation of inputs.
  *
- *  Why parallel n=1 instead of single n=N: OpenAI's n=N request runs
- *  internally serial-ish and can exceed iOS Safari's tolerance for
- *  long-lived fetches. N parallel n=1 calls finish in roughly the time
- *  of a single call (~30-35s), at the cost of N× input billing.
- *
- *  Per Codex consult (2026-05-26): "Replace n=1 with n=4 plus automated
- *  visual selection/rejection. Candidate selection is the biggest jump
- *  toward production consistency because it accepts that generation is
- *  stochastic instead of pretending the prompt can remove sampling
- *  variance."
- */
-export async function gptImageEditParallel(params: {
-  images: GptImageInput[];
-  prompt: string;
-  collectionPlanId?: string;
-  assetType: 'editorial' | 'still_life' | 'tryon';
-  /** Number of parallel candidates. Default 4 per Codex. Set 1 to opt
-   *  out of multi-candidate mode (legacy single-call behavior). */
-  n?: number;
-}): Promise<{
-  urls: string[];
-  error: GptImageResult | null;
-}> {
-  const n = Math.max(1, Math.min(8, params.n ?? 4));
-  console.log(`[gpt-image-parallel] firing ${n} parallel candidate generations`);
-  const start = Date.now();
-
-  const results = await Promise.all(
-    Array.from({ length: n }, (_, i) =>
-      runGptImageEditOnce({
-        images: params.images,
-        prompt: params.prompt,
-        collectionPlanId: params.collectionPlanId,
-        assetType: params.assetType,
-        attempt: `parallel-${i + 1}` as GptAttempt,
-      }),
-    ),
-  );
-
-  const elapsed = Date.now() - start;
-  const urls = results.filter((r) => r.url !== null).map((r) => r.url as string);
-  const firstError = results.find((r) => r.errorCode !== null) ?? null;
-
-  console.log(
-    `[gpt-image-parallel] ${urls.length}/${n} succeeded in ${elapsed}ms`,
-  );
-
-  return {
-    urls,
-    error: urls.length === 0 ? (firstError as GptImageResult) : null,
-  };
-}
-
-/** Single GPT Image 1.5 edit call with `moderation: 'low'`. Kept for
- *  callers that don't want multi-candidate mode (still-life, tryon).
- *  Editorial now uses gptImageEditParallel + pickBestEditorialCandidate. */
+ *  References stay intact every time. We never drop images, never
+ *  rephrase user direction, never compromise output quality. */
 export async function gptImageEdit(params: {
   images: GptImageInput[];
   prompt: string;
