@@ -32,23 +32,22 @@ export async function GET() {
   }
 
   // Pull brand_name from CIS so the dropdown reads "AZUR · Nudo" not just
-  // "AZUR". The brand_name decision is the most recent row per collection.
+  // "AZUR". Use is_current=true to grab the live row directly — every
+  // brand_name update creates a new versioned row and flips is_current.
   const { data: brandRows } = await supabaseAdmin
     .from('collection_decisions')
-    .select('collection_plan_id, value, created_at')
+    .select('collection_plan_id, value')
     .in('collection_plan_id', ids)
     .eq('domain', 'creative')
     .eq('subdomain', 'identity')
     .eq('key', 'brand_name')
-    .order('created_at', { ascending: false });
+    .eq('is_current', true);
 
   const brandByCollection: Record<string, string | null> = {};
   for (const row of brandRows || []) {
-    if (!(row.collection_plan_id in brandByCollection)) {
-      const v = row.value;
-      brandByCollection[row.collection_plan_id as string] =
-        typeof v === 'string' ? v : null;
-    }
+    const v = row.value;
+    brandByCollection[row.collection_plan_id as string] =
+      typeof v === 'string' ? v : null;
   }
 
   const enriched = (collections || []).map((c) => ({

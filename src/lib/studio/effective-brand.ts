@@ -90,7 +90,8 @@ export async function getEffectiveBrand(
       .select('domain, subdomain, key, value')
       .eq('collection_plan_id', p.brand_source_collection_id)
       .eq('domain', 'creative')
-      .in('subdomain', ['identity', 'color']),
+      .in('subdomain', ['identity', 'color'])
+      .eq('is_current', true),
   ]);
 
   // Source collection deleted between writes — degrade to standalone
