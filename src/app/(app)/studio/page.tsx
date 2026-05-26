@@ -13,7 +13,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getServerSession } from '@/lib/auth/server-session';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { ArrowRight, Plus, Camera } from 'lucide-react';
+import { ArrowRight, Plus, Camera, Layers, Film, ImageIcon, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,11 +30,44 @@ interface PurchaseAgg {
   outputs_consumed: number;
 }
 
+interface CollectionAssetRow {
+  id: string;
+  collection_plan_id: string;
+  asset_type: string;
+  name: string | null;
+  url: string;
+  thumbnail_url: string | null;
+  created_at: string;
+}
+
+interface CollectionRow {
+  id: string;
+  name: string;
+  season: string | null;
+}
+
+// Marketing-grade asset types only — render/sketch/moodboard/callout are
+// design artefacts of the 360 builder and don't belong in Studio's library.
+const STUDIO_LIBRARY_TYPES = ['editorial', 'lifestyle', 'still_life', 'video'] as const;
+
 export default async function StudioDashboardPage() {
   const { user } = await getServerSession();
   if (!user) redirect('/');
 
-  const [{ data: projectsData }, { data: purchasesData }] = await Promise.all([
+  // First fetch user's collections — we need their IDs to scope the
+  // cross-collection asset query (assets are FK'd to collection_plans, not
+  // to user_id directly).
+  const { data: userCollections } = await supabaseAdmin
+    .from('collection_plans')
+    .select('id, name, season')
+    .eq('user_id', user.id)
+    .is('deleted_at', null);
+
+  const collections = (userCollections || []) as CollectionRow[];
+  const collectionsById = new Map(collections.map((c) => [c.id, c]));
+  const collectionIds = collections.map((c) => c.id);
+
+  const [{ data: projectsData }, { data: purchasesData }, { data: assetsData }] = await Promise.all([
     supabaseAdmin
       .from('studio_projects')
       .select('id, brand_name, brand_logo_url, updated_at')
@@ -45,16 +78,37 @@ export default async function StudioDashboardPage() {
       .from('studio_purchases')
       .select('studio_project_id, outputs_allocated, outputs_consumed')
       .eq('user_id', user.id),
+    collectionIds.length > 0
+      ? supabaseAdmin
+          .from('collection_assets')
+          .select('id, collection_plan_id, asset_type, name, url, thumbnail_url, created_at')
+          .in('collection_plan_id', collectionIds)
+          .in('asset_type', STUDIO_LIBRARY_TYPES as unknown as string[])
+          .is('deleted_at', null)
+          .is('studio_project_id', null)
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [] as CollectionAssetRow[] }),
   ]);
 
   const projects = (projectsData || []) as StudioProjectRow[];
   const purchases = (purchasesData || []) as PurchaseAgg[];
+  const collectionAssets = (assetsData || []) as CollectionAssetRow[];
 
   const outputsByProject = purchases.reduce((acc, p) => {
     if (!acc[p.studio_project_id]) acc[p.studio_project_id] = 0;
     acc[p.studio_project_id] += Math.max(p.outputs_allocated - p.outputs_consumed, 0);
     return acc;
   }, {} as Record<string, number>);
+
+  // Group cross-collection assets by collection_plan_id for the library view.
+  const assetsByCollection = collectionAssets.reduce((acc, a) => {
+    if (!acc[a.collection_plan_id]) acc[a.collection_plan_id] = [];
+    acc[a.collection_plan_id].push(a);
+    return acc;
+  }, {} as Record<string, CollectionAssetRow[]>);
+  const collectionsWithAssets = Object.keys(assetsByCollection)
+    .map((id) => collectionsById.get(id))
+    .filter((c): c is CollectionRow => Boolean(c));
 
   return (
     <main className="min-h-screen bg-shade px-6 py-12 md:px-12 xl:px-16">
@@ -84,13 +138,24 @@ export default async function StudioDashboardPage() {
           )}
         </header>
 
-        {/* Empty state */}
-        {projects.length === 0 && (
+        {/* Empty state — only when there's literally nothing in either
+            bucket (no standalone projects AND no marketing assets in any
+            of the user's collections). With cross-collection visibility,
+            the studio surface is meaningful even before standalone packs
+            are bought. */}
+        {projects.length === 0 && collectionAssets.length === 0 && (
           <EmptyState />
         )}
 
-        {/* Project grid (gold standard) */}
+        {/* ── Standalone Studio projects ────────────────────────────── */}
         {projects.length > 0 && (
+          <section className="mb-16">
+            <div className="flex items-center gap-2.5 mb-6">
+              <Camera className="h-4 w-4 text-carbon/55" />
+              <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+                Proyectos Studio
+              </span>
+            </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
             {projects.map((p) => {
               const remaining = outputsByProject[p.id] || 0;
@@ -147,7 +212,126 @@ export default async function StudioDashboardPage() {
                 Nuevo proyecto
               </p>
             </Link>
-          </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Cross-collection content library ──────────────────────── */}
+        {collectionsWithAssets.length > 0 && (
+          <section>
+            <div className="flex items-end justify-between flex-wrap gap-4 mb-6">
+              <div>
+                <div className="flex items-center gap-2.5 mb-2">
+                  <Layers className="h-4 w-4 text-carbon/55" />
+                  <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+                    Contenido de tus colecciones
+                  </span>
+                </div>
+                <p className="text-[13px] text-carbon/50 max-w-xl leading-[1.6]">
+                  Editoriales, lifestyles, still life y vídeos generados dentro
+                  del builder 360. Vive aquí también para que lo encuentres
+                  desde Studio.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-10">
+              {collectionsWithAssets.map((col) => {
+                const assets = assetsByCollection[col.id] || [];
+                const counts = assets.reduce(
+                  (acc, a) => {
+                    acc[a.asset_type] = (acc[a.asset_type] || 0) + 1;
+                    return acc;
+                  },
+                  {} as Record<string, number>,
+                );
+                return (
+                  <div key={col.id}>
+                    <div className="flex items-end justify-between gap-4 mb-4 flex-wrap">
+                      <div>
+                        <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-[1.2]">
+                          {col.name}
+                          {col.season && (
+                            <span className="ml-2 text-[12px] text-carbon/35 uppercase tracking-[0.06em] font-normal">
+                              {col.season}
+                            </span>
+                          )}
+                        </h3>
+                        <p className="text-[12px] text-carbon/45 mt-1 flex gap-3 flex-wrap">
+                          {counts.editorial > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" />
+                              {counts.editorial} editorial
+                            </span>
+                          )}
+                          {counts.video > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <Film className="h-3 w-3" />
+                              {counts.video} vídeo
+                            </span>
+                          )}
+                          {counts.lifestyle > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <ImageIcon className="h-3 w-3" />
+                              {counts.lifestyle} lifestyle
+                            </span>
+                          )}
+                          {counts.still_life > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <ImageIcon className="h-3 w-3" />
+                              {counts.still_life} still life
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/collection/${col.id}/marketing`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-[12px] font-medium text-carbon/70 transition-colors"
+                      >
+                        Abrir en colección
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+                      {assets.slice(0, 16).map((a) => (
+                        <Link
+                          key={a.id}
+                          href={`/collection/${col.id}/marketing`}
+                          className="group relative aspect-square rounded-[12px] overflow-hidden bg-white border border-carbon/[0.06] hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all"
+                        >
+                          {a.thumbnail_url || a.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={a.thumbnail_url || a.url}
+                              alt={a.name || a.asset_type}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-carbon/30">
+                              <ImageIcon className="h-6 w-6" />
+                            </div>
+                          )}
+                          <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded-full bg-white/90 text-[9px] text-carbon/60 uppercase tracking-[0.08em] font-medium">
+                            {a.asset_type === 'still_life' ? 'still' : a.asset_type}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    {assets.length > 16 && (
+                      <Link
+                        href={`/collection/${col.id}/marketing`}
+                        className="inline-block mt-3 text-[12px] text-carbon/50 hover:text-carbon transition-colors"
+                      >
+                        Ver los {assets.length} en {col.name} →
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
       </div>
     </main>
