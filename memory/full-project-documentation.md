@@ -1,6 +1,7 @@
 # aimily — Full Project Documentation (The Bible)
 
-> **Last verified**: 2026-05-21 — deep rewrite. Every claim cross-checked against code + recent git history. Replaces the 2026-05-06 version, which had drifted across 4+ feature waves (In-Season feedback loop, Studio rebrand, pricing v6, Aimily Assistant, landing redesign).
+> **Last verified**: 2026-05-26 — UX cube + brand inherit + credits unification.
+> Since 2026-05-21: (a) authenticated landing moved from `/my-collections` to a new unified `/home` ("free workspace") · (b) `/new-collection` no longer shows the 3-pad intent selector, the date wizard renders directly · (c) `StudioSwitcher` pills always navigate to the face HUB (never to an active project) · (d) `/in-season/<tenant>` card 04 routes to `/pdf-view` when the tenant has a PDF source · (e) `/studio` now lists cross-collection marketing assets (editorial / lifestyle / still_life / video generated inside collections) alongside standalone projects · (f) Studio projects can soft-link a `brand_source_collection_id` (live brand inheritance from a 360 collection) with a badge in the workspace header · (g) credits unification shipped: `imagery_credits` → `user_credits` + new `credit_ledger`, `imagery_credit_purchases` and `studio_purchases` dropped (zero rows), all 7 imagery endpoints migrated to `consumeCredits(action)`, Stripe webhook routes Studio packs to the global balance · (h) video cost aligned to `CREDIT_COSTS` canon (5 → 30).
 >
 > **Source of truth rule**: when this document conflicts with code, code wins. Verify before quoting — and when you spot drift, update the Bible in the same PR that changes the code.
 >
@@ -164,8 +165,9 @@ Bare paths (`/contact`, `/privacy`, …) redirect to `/[locale]/<path>` via next
 
 | Route | Purpose |
 |---|---|
-| `/my-collections` | Collection hub (grid + progress + deadlines) |
-| `/new-collection` | Intent selector (Empezar · Studio · In-Season). `?direct=1` skips selector |
+| `/home` | Free workspace landing — unified view of all 3 faces (Collections · Studio · In-Season) for the current user, with per-section "+ Nuevo" CTAs. Every authenticated redirect (`/[locale]`, `/auth/callback`, `/welcome`) lands here. Felipe 2026-05-26 — two-spaces mental model: this is the pre-workspace, the per-face hubs below are the workspace |
+| `/my-collections` | Per-face hub (collections grid + progress + deadlines) |
+| `/new-collection` | Date wizard for creating a new collection. The old 3-pad intent screen ("¿Qué quieres hacer hoy?") was retired 2026-05-26 — the page now always lands directly on `view='pick-date'`. `?direct=1` is a no-op kept for back-compat with existing CTAs in `/my-collections` |
 | `/account` | Settings, subscription, GDPR export/delete |
 | `/welcome` · `/welcome/tour` | First-run onboarding |
 | `/studio` · `/studio/new` · `/studio/[id]` | Aimily Studio dashboard + project view |
@@ -372,14 +374,28 @@ Subscribers (Founder / Team / Team Pro) generate from the unified Aimily Credits
 ### 7.3 DB
 
 ```
-studio_projects          one row per brand container per user (1 row in prod)
-studio_purchases         Stripe payment record
+studio_projects          one row per brand container per user. NEW column
+                         (migration 076): brand_source_collection_id (uuid,
+                         FK collection_plans, ON DELETE SET NULL) — when
+                         set, brand_name + brand_palette are resolved live
+                         from the source collection's CIS at read time via
+                         lib/studio/effective-brand.ts. Local brand fields
+                         stay populated as snapshot fallback.
 studio_output_formats    per-format derivative URLs
 ```
 
+`studio_purchases` was dropped 2026-05-26 (migration 078). Studio packs now top up the global `user_credits.balance` like any other credit pack — no more per-project pool. The 3 obsolete RPCs (`allocate_studio_outputs`, `consume_studio_output`, `refund_studio_output`) were dropped with it. See §8.2.
+
 ### 7.4 API (16 routes under `/api/studio/*`)
 
-`generate` · `variation` · `video` + `video/status` · `output-formats` · `download` · `download-zip` · `upload` · `projects` + `projects/[id]` · `style-memory` · `checkout`.
+`generate` · `variation` · `video` + `video/status` · `output-formats` · `download` · `download-zip` · `upload` · `projects` + `projects/[id]` · `style-memory` · `checkout`. `generate`, `variation`, `video` and `video/status` migrated 2026-05-26 to `consumeCredits(action)` / `refundCredits(planConsumed, packConsumed)` via the new `output-checker.ts` wrapper.
+
+### 7.5 Cross-product surfaces (Felipe 2026-05-26)
+
+- `/studio` now renders two sections: **"Proyectos Studio"** (standalone `studio_projects`) and **"Contenido de tus colecciones"** (marketing-grade `collection_assets` — `asset_type IN ('editorial','lifestyle','still_life','video')` — grouped by collection, each tile deep-links to `/collection/<id>/marketing`).
+- Power users with active 360 collections see their photoshoots without leaving Studio. Solo-Studio subscribers see only the standalone section. Solo-In-Season users can't reach `/studio` at all (gated by `StudioSwitcher`).
+- New project flow (`/studio/new`) offers a "Heredar de mi colección" mode that soft-links the new project to an existing collection. The dropdown reads collections from `GET /api/user/collections` and shows them as "AZUR · Nudo (SS27)" (collection name + CIS brand_name + season). The toggle is hidden when the user has no collections.
+- `/studio/[id]` header now uses the EFFECTIVE brand (from CIS if linked, local snapshot otherwise) and surfaces a pill "Heredado de <collection>" that deep-links to `/collection/<id>`.
 
 Full state of play: [`state_aimily-studio-2026-05-16.md`](memory/state_aimily-studio-2026-05-16.md).
 
@@ -402,22 +418,31 @@ Source of truth: [`src/lib/stripe.ts`](src/lib/stripe.ts).
 
 Public pricing page exposes Founder + Team (+ Enterprise contact). Team Pro is a soft-upsell tier visible only in code / checkout. The 3 legacy products (Starter / Professional / Pro Max) were archived in Stripe on 2026-05-20.
 
-### 8.2 Aimily Credits (shared bucket)
+### 8.2 Aimily Credits (shared bucket · unified 2026-05-26)
 
 `src/lib/stripe.ts#CREDIT_COSTS`:
 
 | Action | Cost |
 |---|---|
-| sketch (single image: sketch · colorize · brand-board · brand-reference) | 1 |
+| sketch (single image: sketch · colorize · brand-board · brand-reference · brand-model) | 1 |
 | still_life | 3 |
 | tryon | 3 |
 | editorial | 5 |
 | video_kling | 30 |
 | in_season_run | 10 |
 
-Top-up packs (one-time): +50 €29 · +250 €119 · +1.000 €399. Studio standalone packs (€49/€99/€199) coexist for customers without a subscription.
+Top-up packs (one-time): +50 €29 · +250 €119 · +1.000 €399. Studio standalone packs (€49/€99/€199) coexist for customers without a subscription — they top up the same global `user_credits.balance`, no per-project pool (post-077/078).
 
-Active migration note: most AI endpoints still call `checkImageryUsage(units)` directly. `consumeCredits(userId, email, action)` in `src/lib/api-auth.ts` is the new canonical helper — In-Season runs already use it (`/api/in-season/runs/[id]/execute`). Pricing-page alignment with `CREDIT_COSTS` is a deliberate follow-up (don't change pricing on live users without comms).
+**Canonical schema (migrations 077 + 078)**:
+- `user_credits` — single row per user with `balance`, `total_purchased`, `total_consumed`. Renamed from `imagery_credits` for semantic clarity (in-season runs / 360 generations / Studio outputs all draw from the same row).
+- `credit_ledger` — append-only audit log. One row per consume / refund / topup with `delta`, `consume_action` (the `CreditAction` key), `type`, `source` (`stripe` / `api` / `admin`), `source_id`, `metadata`, `balance_after`. Unique index on `(source='stripe', source_id) WHERE type='topup'` makes Stripe webhook replays idempotent at the DB level.
+- `imagery_credit_purchases` and `studio_purchases` dropped (zero rows at migration time).
+
+**RPCs**: `consume_user_credits(p_user_id, p_units, p_plan_limit, p_action, p_metadata)`, `refund_user_credits(...)`, `add_user_credits(p_user_id, p_amount, p_pack, p_stripe_session_id)`. Each one writes to `credit_ledger` inside the same transaction so the ledger never drifts from `user_credits.balance`. Legacy names (`consume_imagery_units`, `refund_imagery_units`, `add_imagery_credits`) kept as SQL aliases for zero-downtime back-compat — removed in a future cleanup.
+
+**TypeScript canon**: `consumeCredits(userId, email, action)` and `refundCredits(userId, planConsumed, packConsumed)` in `src/lib/api-auth.ts`. All 7 imagery endpoints (`colorize-sketch`, `generate-sketch-options`, `freepik/{still-life,tryon,editorial,video,brand-model}`) and all 3 Studio endpoints (`generate`, `variation`, `video`) migrated 2026-05-26. In-Season run was already on this path. `checkImageryUsage(units)` remains as a deprecated wrapper for any caller we missed but the helper is no longer used in the AI surface.
+
+**Pricing alignment**: video cost moved from 5 → 30 to match `CREDIT_COSTS.video_kling`. Safe because no live customers were on `studio_purchases` or `imagery_credits` at the time of migration (verified zero rows).
 
 ### 8.3 Stripe surface
 
@@ -470,17 +495,21 @@ Sub-trees:
 - **CIS-consuming (must use `loadFullContext()`)**: `creative-generate`, `merch-generate`, `design-generate`, `consumer-suggest-input`, `research-suggest-input`, `brand-propose`, `brand-from-external`, `generate-skus`, `scenarios-deepen`, `scenarios-prefill-editor`, `distribution-propose`, `sales-strategy-prefill-editor`, `seo-keywords`, `seo-onpage`, `seo-competitors`, `seo-copy`, `seo-audit`, `post-launch/generate`, `freepik/editorial`, `freepik/still-life`, `freepik/tryon`
 - **Utility / standalone** (no CIS): `analyze-moodboard`, `explore-trends`, `translate`, `costing/suggest-substitutions`, `sample-review/compare`, `tech-pack/generate`, `colorize-sketch`, `generate-sketch-options`, `freepik/sketch` (deprecated), `freepik/brand-model`, `freepik/video`, `zones/detect`
 
-### 9.3 Credit consumption per endpoint
+### 9.3 Credit consumption per endpoint (post-077/078)
 
 | Endpoint | Helper | Cost |
 |---|---|---|
-| `colorize-sketch` · `generate-sketch-options` · `freepik/brand-model` | `checkImageryUsage(1)` | 1 |
-| `freepik/still-life` · `freepik/tryon` | `checkImageryUsage(1)` | 3 |
-| `freepik/editorial` | `checkImageryUsage(1)` | 5 |
-| `freepik/video` | `checkImageryUsage(5)` | 30 |
-| `in-season/runs/[id]/execute` | `consumeCredits(action='in_season_run')` | 10 |
+| `colorize-sketch` · `generate-sketch-options` · `freepik/brand-model` | `consumeCredits('sketch')` | 1 |
+| `freepik/still-life` | `consumeCredits('still_life')` | 3 |
+| `freepik/tryon` | `consumeCredits('tryon')` | 3 |
+| `freepik/editorial` | `consumeCredits('editorial')` | 5 |
+| `freepik/video` | `consumeCredits('video_kling')` | 30 |
+| `studio/generate` (`type=still_life` / `editorial` / `tryon`) | `consumeStudioOutput(action)` → `consumeCredits(action)` | 3 / 5 / 3 |
+| `studio/variation` (`type=color` / `background` / `model`) | `consumeStudioOutput('still_life' or 'editorial')` | 3 / 3 / 5 |
+| `studio/video` | `consumeStudioOutput('video_kling')` | 30 |
+| `in-season/runs/[id]/execute` | `consumeCredits('in_season_run')` | 10 |
 
-Refund-on-failure pattern: `refundImageryUnits(...)` / `refundCredits(...)` is called when the upstream provider returns an error or the async job ultimately fails.
+Refund-on-failure: every endpoint stores the returned `planConsumed` / `packConsumed` and calls `refundCredits(userId, planConsumed, packConsumed)` (or `refundStudioOutput(...)` which delegates to it) when the upstream provider errors. Async pipelines (Kling, gpt-image-1.5 background) persist the two integers in the asset's `metadata` so the status endpoint can refund precisely on failure.
 
 ### 9.4 The 5 architecture locks
 
@@ -499,7 +528,7 @@ Full prompt details: `ai-generation-bible.md`.
 ### 10.1 By family
 
 **Core auth & billing (5)**
-`subscriptions` · `ai_usage` · `imagery_credits` · `imagery_credit_purchases` · `audit_log`
+`subscriptions` · `ai_usage` · `user_credits` (renamed from `imagery_credits` in mig 077) · `credit_ledger` (new in 077 — append-only audit) · `audit_log`
 
 **Collections (16)**
 `collection_plans` · `collection_skus` · `collection_timelines` · `collection_assets` · `collection_workspace_data` · `collection_stories` · `collection_decisions` (CIS · 271 rows) · `collection_plan_strategy_links` · `drops` · `sku_colorways` · `sales_actions` · `sales_channels` · `wholesale_orders` · `aimily_models` (28-model roster) · `brand_profiles` · `brand_voice_config`
@@ -519,8 +548,8 @@ See §6.3 above — `in_season_*` family.
 **Tenant sales (4)**
 `tenant_sales_connections` · `tenant_sales_sync_runs` · `tenant_sales_webhook_events` · `tenant_sales_webhook_dead_letters`
 
-**Studio (3)**
-`studio_projects` · `studio_purchases` · `studio_output_formats`
+**Studio (2)**
+`studio_projects` (now has `brand_source_collection_id` FK · mig 076) · `studio_output_formats`. `studio_purchases` dropped in mig 078 — Studio packs land in the global `user_credits.balance` like any other top-up.
 
 **Aimily Assistant (3)**
 `aimily_assistant_conversations` (24) · `aimily_assistant_messages` (46) · `aimily_assistant_user_usage`
@@ -539,6 +568,9 @@ See §6.3 above — `in_season_*` family.
 The migrations folder lives in `supabase/migrations/`. Recent waves:
 - **065–072** · In-Season feedback loop, OAuth Vault encryption, webhook hardening (idempotency + DLQ), seeds gate
 - **2026-05-21 drops** · 25 tables removed in 4 waves (raw_content, signals, reports, tech_packs old, market_predictions, product_copy, social_templates, email_templates_content, brand_models, pr_contacts, commercial_actions, content_calendar, content_pillars, launch_tasks, lookbook_pages, paid_campaigns, campaign_shoots, paid_ad_sets, launch_checklist, launch_issues, lessons_learned, asset_reviews, analyzed_content, processing_jobs, sales_entries) — see [`db-dropped-tables-backup-2026-05-21.md`](memory/db-dropped-tables-backup-2026-05-21.md) for rationale + backup of the 3 signals demo rows.
+- **076 · `studio_brand_inherit`** · adds `studio_projects.brand_source_collection_id` (FK `collection_plans` ON DELETE SET NULL) + partial index for cascading "Studio projects linked to this collection" queries.
+- **077 · `unify_credits`** · `imagery_credits` → `user_credits`, drop `imagery_credit_purchases`, create `credit_ledger` (append-only, RLS by `auth.uid()`, unique idempotency on Stripe topups), recreate `consume_user_credits` / `refund_user_credits` / `add_user_credits` RPCs each writing to the ledger inside the same transaction. Legacy RPC names kept as aliases for zero-downtime.
+- **078 · `drop_studio_purchases`** · drops the now-orphan `studio_purchases` table + 3 obsolete RPCs (`allocate_studio_outputs`, `consume_studio_output`, `refund_studio_output`). All Studio billing flows through `user_credits` post-077.
 
 ### 10.3 RLS pattern
 
@@ -938,4 +970,4 @@ The Bible drifted because nobody updated it on the way through 4 feature waves. 
 
 ---
 
-*Last verified 2026-05-21 against branch `cleanup/bible-deep-rewrite-2026-05-21` · commit pending.*
+*Last verified 2026-05-26 against `main` HEAD — UX cube (`/home` + switcher to face hubs + `/in-season/<tenant>` card 04 → `/pdf-view`) + Studio brand inherit from collection (migration 076) + cross-collection visibility in `/studio` + credits unification (`user_credits` + `credit_ledger` + 7 imagery endpoints migrated to `consumeCredits(action)` + studio_purchases dropped via migrations 077 + 078).*
