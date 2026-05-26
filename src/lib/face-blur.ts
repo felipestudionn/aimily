@@ -59,7 +59,7 @@ async function detectFacePosition(imageBuffer: Buffer): Promise<{
         },
         {
           type: 'text',
-          text: 'Look at this fashion photograph. Find the person\'s HEAD (face + hair). Return ONLY a JSON object with the bounding box as fractions of the image dimensions (0 to 1): {"x": left_edge, "y": top_edge, "w": width, "h": height}. The box should include the entire head from the top of the hair to the chin, and from ear to ear including all hair. Return ONLY the JSON, no other text.',
+          text: 'Look at this fashion photograph. Find the person\'s FACE only (skin region from forehead hairline down to chin, and from ear to ear — NOT including the hair above the forehead or hair falling on the sides). Return ONLY a JSON object with the face bounding box as fractions of the image dimensions (0 to 1): {"x": left_edge, "y": top_edge, "w": width, "h": height}. Tight to the face skin, not the whole head. Return ONLY the JSON, no other text.',
         },
       ],
     }],
@@ -78,21 +78,83 @@ async function detectFacePosition(imageBuffer: Buffer): Promise<{
   };
 }
 
-function createCircleMask(width: number, height: number): Buffer {
-  const rx = Math.round(width / 2);
-  const ry = Math.round(height / 2);
+/**
+ * Face oval mask — narrower and softer than the previous full-bbox circle.
+ * The mask covers ~75% of the face bbox width and ~85% of the height,
+ * vertically biased toward forehead/eyes/nose/mouth (the IDENTITY zone),
+ * with a long soft fade so the pasted face blends into the style ref's
+ * skin and hair instead of looking like a circular sticker.
+ *
+ * Per Codex consult (2026-05-26): "composite only the face/identity
+ * region, not the whole hair silhouette, unless the head pose is
+ * compatible". A tighter mask preserves more of the style ref's hair
+ * silhouette (no headshot hair conflict) and avoids the pasted-circle
+ * look that crude radial masks produce.
+ */
+function createFaceOvalMask(width: number, height: number): Buffer {
+  const cx = Math.round(width / 2);
+  const cy = Math.round(height / 2);
+  // Tighter oval: 75% wide, 88% tall. Vertical orientation matches
+  // human face aspect ratio (~1:1.3 height:width).
+  const rx = Math.round(width * 0.375);
+  const ry = Math.round(height * 0.44);
   return Buffer.from(
     `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="g" cx="50%" cy="50%">
           <stop offset="0%" stop-color="white" stop-opacity="1"/>
-          <stop offset="55%" stop-color="white" stop-opacity="1"/>
+          <stop offset="60%" stop-color="white" stop-opacity="1"/>
+          <stop offset="85%" stop-color="white" stop-opacity="0.55"/>
           <stop offset="100%" stop-color="white" stop-opacity="0"/>
         </radialGradient>
       </defs>
-      <ellipse cx="${rx}" cy="${ry}" rx="${rx}" ry="${ry}" fill="url(#g)"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#g)"/>
     </svg>`
   );
+}
+
+/**
+ * Tone-match the headshot's mean luminance and per-channel mean to the
+ * style ref's face region. Without this, the pasted face often looks
+ * brighter / cooler / warmer than the surrounding skin — the classic
+ * "pasted sticker" giveaway.
+ *
+ * Approach: compute mean RGB of both face regions, derive a per-channel
+ * linear scale, apply with sharp.linear(scale, 0). Clamped to a sensible
+ * range so a wildly different headshot doesn't get over-corrected.
+ *
+ * Per Codex consult (2026-05-26): "Match color temperature/exposure
+ * to the style ref".
+ */
+async function toneMatch(
+  headshotBuffer: Buffer,
+  faceRegionFromStyleRef: Buffer,
+): Promise<Buffer> {
+  try {
+    const [headshotStats, styleStats] = await Promise.all([
+      sharp(headshotBuffer).stats(),
+      sharp(faceRegionFromStyleRef).stats(),
+    ]);
+
+    // channels[0..2] = R, G, B means in 0-255 range
+    const hMeans = [headshotStats.channels[0].mean, headshotStats.channels[1].mean, headshotStats.channels[2].mean];
+    const sMeans = [styleStats.channels[0].mean, styleStats.channels[1].mean, styleStats.channels[2].mean];
+
+    // Per-channel linear scale to match style ref's mean.
+    // Clamp 0.7..1.3 so a wildly off headshot doesn't get clipped/blown.
+    const scales = hMeans.map((h, i) => {
+      if (h < 1) return 1;
+      const s = sMeans[i] / h;
+      return Math.max(0.7, Math.min(1.3, s));
+    }) as [number, number, number];
+
+    return await sharp(headshotBuffer)
+      .linear(scales, [0, 0, 0])
+      .toBuffer();
+  } catch {
+    // If stats fail (e.g., grayscale image), return original
+    return headshotBuffer;
+  }
 }
 
 /**
@@ -121,26 +183,44 @@ export async function compositeModelOntoStyleRef(
   const faceW = Math.round(face.w * styleW);
   const faceH = Math.round(face.h * styleH);
 
-  // Resize model headshot to match the detected face region
+  // Step 1: extract the style ref's face region — used for tone-matching
+  // the headshot before composite (per Codex: match color temperature
+  // and exposure to the style ref).
+  const styleFaceRegion = await sharp(styleBuffer)
+    .extract({ left: faceX, top: faceY, width: faceW, height: faceH })
+    .toBuffer();
+
+  // Step 2: resize the headshot. `fit: cover, position: top` keeps the
+  // face at the top of the headshot frame (where it usually is) and
+  // crops the shoulders/torso out. The smaller-then-fade mask below
+  // means hair edges from the headshot get blended away.
   const resizedHeadshot = await sharp(headshotBuffer)
     .resize(faceW, faceH, { fit: 'cover', position: 'top' })
     .toBuffer();
 
-  // Create soft elliptical mask
-  const maskSvg = createCircleMask(faceW, faceH);
+  // Step 3: tone-match the resized headshot to the style ref's face
+  // region — same lighting, similar undertone, no "pasted sticker" look.
+  const toneMatchedHeadshot = await toneMatch(resizedHeadshot, styleFaceRegion);
+
+  // Step 4: tighter face-oval mask (per Codex: composite only the
+  // face/identity region, not the whole hair silhouette).
+  const maskSvg = createFaceOvalMask(faceW, faceH);
   const mask = await sharp(maskSvg)
     .resize(faceW, faceH)
     .grayscale()
     .toBuffer();
 
-  // Apply mask to headshot
-  const maskedHeadshot = await sharp(resizedHeadshot)
+  // Step 5: apply mask to the tone-matched headshot — preserve alpha,
+  // PNG for lossless edge handling.
+  const maskedHeadshot = await sharp(toneMatchedHeadshot)
     .ensureAlpha()
     .composite([{ input: mask, blend: 'dest-in' as const }])
     .png()
     .toBuffer();
 
-  // Composite onto style reference at the exact detected position
+  // Step 6: composite onto style reference at the detected face position.
+  // High-quality JPEG (95) since this image goes straight to GPT — any
+  // compression artifacts can degrade GPT's face fidelity.
   const result = await sharp(styleBuffer)
     .composite([{
       input: maskedHeadshot,
@@ -148,7 +228,7 @@ export async function compositeModelOntoStyleRef(
       left: faceX,
       blend: 'over' as const,
     }])
-    .jpeg({ quality: 90 })
+    .jpeg({ quality: 95 })
     .toBuffer();
 
   return result;
