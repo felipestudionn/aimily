@@ -1831,6 +1831,8 @@ export const nl: Dictionary = {
     selectModel: 'Kies Model',
     modelFemale: 'Vrouwen',
     modelMale: 'Mannen',
+    modelFamilySophisticated: 'Verfijnd',
+    modelFamilyStrong: 'Sterk',
     searchSkus: 'SKU\'s zoeken...',
     noSkusFound: 'Geen SKU\'s gevonden',
     selectSkuPrompt: 'Selecteer een SKU uit de lijst om de contentpipeline te bekijken',

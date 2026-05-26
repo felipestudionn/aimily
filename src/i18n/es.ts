@@ -1883,6 +1883,8 @@ export const es: Dictionary = {
     selectModel: 'Elige Modelo',
     modelFemale: 'Mujeres',
     modelMale: 'Hombres',
+    modelFamilySophisticated: 'Sofisticado',
+    modelFamilyStrong: 'Fuerte',
     searchSkus: 'Buscar SKUs...',
     noSkusFound: 'No se encontraron SKUs',
     selectSkuPrompt: 'Selecciona un SKU de la lista para ver su pipeline de contenido',

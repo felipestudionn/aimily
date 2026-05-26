@@ -5,14 +5,13 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 /**
  * GET /api/aimily-models
  *
- * Returns the aimily model roster — 28 AI-generated models (14 female,
- * 14 male) for editorial casting. Each model has a headshot URL,
- * physical description metadata, and a unique name.
+ * Returns the aimily model roster grouped by family + gender.
  *
  * Query params:
- *   ?gender=female|male  — filter by gender (optional, returns all if omitted)
+ *   ?gender=female|male       — filter by gender (optional)
+ *   ?family=sophisticated|strong — filter by mood family (optional; defaults to sophisticated)
  *
- * Response: { models: AimilyModel[] }
+ * Response: { models: AimilyModel[], families: { slug, name }[] }
  */
 export async function GET(req: Request) {
   const { error: authError } = await getAuthenticatedUser();
@@ -20,11 +19,13 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const gender = searchParams.get('gender');
+  const family = searchParams.get('family') || 'sophisticated';
 
   let query = supabaseAdmin
     .from('aimily_models')
-    .select('id, name, gender, headshot_url, complexion, hair_style, hair_color, age_range, ethnicity, description, sort_order')
+    .select('id, name, gender, headshot_url, complexion, hair_style, hair_color, age_range, ethnicity, description, sort_order, family_slug')
     .eq('is_active', true)
+    .eq('family_slug', family)
     .order('sort_order', { ascending: true });
 
   if (gender === 'female' || gender === 'male') {
@@ -32,10 +33,14 @@ export async function GET(req: Request) {
   }
 
   const { data, error } = await query;
-
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ models: data || [] });
+  const { data: families } = await supabaseAdmin
+    .from('aimily_model_families')
+    .select('slug, name, description, sort_order')
+    .order('sort_order', { ascending: true });
+
+  return NextResponse.json({ models: data || [], families: families || [] });
 }

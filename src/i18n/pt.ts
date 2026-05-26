@@ -1824,6 +1824,8 @@ export const pt: Dictionary = {
     selectModel: 'Escolher Modelo',
     modelFemale: 'Mulheres',
     modelMale: 'Homens',
+    modelFamilySophisticated: 'Sofisticado',
+    modelFamilyStrong: 'Forte',
     searchSkus: 'Procurar SKUs...',
     noSkusFound: 'Nenhum SKU encontrado',
     selectSkuPrompt: 'Selecione um SKU da lista para ver o seu pipeline de conteúdo',

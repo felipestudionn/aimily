@@ -1766,6 +1766,8 @@ export const no: Dictionary = {
     selectModel: 'Velg Modell',
     modelFemale: 'Kvinner',
     modelMale: 'Menn',
+    modelFamilySophisticated: 'Sofistikert',
+    modelFamilyStrong: 'Sterk',
     searchSkus: 'Søk SKUer...',
     noSkusFound: 'Ingen SKUer funnet',
     selectSkuPrompt: 'Velg en SKU fra listen for å se innholdspipelinen',

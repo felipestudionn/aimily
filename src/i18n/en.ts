@@ -1891,6 +1891,8 @@ export const en = {
     selectModel: 'Select Model',
     modelFemale: 'Women',
     modelMale: 'Men',
+    modelFamilySophisticated: 'Sophisticated',
+    modelFamilyStrong: 'Strong',
     searchSkus: 'Search SKUs...',
     noSkusFound: 'No SKUs found',
     selectSkuPrompt: 'Select a SKU from the list to view its content pipeline',
