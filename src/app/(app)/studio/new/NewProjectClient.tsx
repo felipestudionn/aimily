@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, Link2 } from 'lucide-react';
 
 interface PackTier {
   id: 'capsule' | 'editorial' | 'full_campaign';
@@ -45,15 +45,48 @@ interface NewProjectClientProps {
   isAdmin?: boolean;
 }
 
+interface UserCollection {
+  id: string;
+  name: string;
+  season: string | null;
+  brand_name: string | null;
+}
+
+type BrandMode = 'new' | 'inherit';
+
 export default function NewProjectClient({ isAdmin = false }: NewProjectClientProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
+  const [brandMode, setBrandMode] = useState<BrandMode>('new');
   const [brandName, setBrandName] = useState('');
   const [palette, setPalette] = useState<string[]>([]);
   const [paletteInput, setPaletteInput] = useState('');
+  const [collections, setCollections] = useState<UserCollection[] | null>(null);
+  const [sourceCollectionId, setSourceCollectionId] = useState<string>('');
   const [selectedTier, setSelectedTier] = useState<PackTier['id'] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load the user's collections lazily — only when the inherit option is
+  // first opened. Avoids paying for the round-trip if every user picked the
+  // default "Brand nuevo" path.
+  useEffect(() => {
+    if (brandMode !== 'inherit' || collections !== null) return;
+    fetch('/api/user/collections')
+      .then((r) => (r.ok ? r.json() : { collections: [] }))
+      .then((j) => setCollections(j.collections ?? []))
+      .catch(() => setCollections([]));
+  }, [brandMode, collections]);
+
+  // When the user picks a collection from the dropdown, prefill the visible
+  // brand_name field with its name. The CIS-resolved name overrides this at
+  // read time on the server (see lib/studio/effective-brand.ts), so this is
+  // just the snapshot the project stores as fallback.
+  useEffect(() => {
+    if (brandMode !== 'inherit' || !sourceCollectionId || !collections) return;
+    const col = collections.find((c) => c.id === sourceCollectionId);
+    if (col?.brand_name && !brandName) setBrandName(col.brand_name);
+  }, [brandMode, sourceCollectionId, collections, brandName]);
 
   const addColor = () => {
     const c = paletteInput.trim();
@@ -73,6 +106,7 @@ export default function NewProjectClient({ isAdmin = false }: NewProjectClientPr
 
   const handleCreateAndCheckout = async () => {
     if (!brandName.trim()) return;
+    if (brandMode === 'inherit' && !sourceCollectionId) return;
     // For non-admin users we require a tier (they must pay). Admin can skip.
     if (!isAdmin && !selectedTier) return;
     setSubmitting(true);
@@ -86,6 +120,10 @@ export default function NewProjectClient({ isAdmin = false }: NewProjectClientPr
         body: JSON.stringify({
           brand_name: brandName.trim(),
           brand_palette: palette,
+          brand_source_collection_id:
+            brandMode === 'inherit' && sourceCollectionId
+              ? sourceCollectionId
+              : undefined,
         }),
       });
       const projectJson = await projectRes.json();
@@ -155,9 +193,92 @@ export default function NewProjectClient({ isAdmin = false }: NewProjectClientPr
         {step === 1 && (
           <div className="bg-white rounded-[20px] p-10 md:p-14 max-w-2xl">
             <div className="space-y-6">
+              {/* Brand source toggle — pick a fresh brand, or inherit live
+                  from one of the user's collections. Hidden if the user
+                  has no collections (Studio-only subscribers stay on the
+                  current standalone flow without seeing dead UI). */}
+              {(collections === null || collections.length > 0) && (
+                <div>
+                  <label className="block text-[13px] font-medium text-carbon/70 mb-3 tracking-[-0.02em]">
+                    De dónde sale el brand
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setBrandMode('new')}
+                      className={`text-left rounded-[12px] border p-4 transition-all ${
+                        brandMode === 'new'
+                          ? 'border-carbon bg-carbon/[0.02]'
+                          : 'border-carbon/[0.08] hover:border-carbon/30'
+                      }`}
+                    >
+                      <div className="text-[13px] font-semibold text-carbon mb-1">
+                        Brand nuevo
+                      </div>
+                      <div className="text-[12px] text-carbon/55 leading-[1.5]">
+                        Empieza limpio. Tú escribes el nombre y la paleta para este proyecto.
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBrandMode('inherit')}
+                      className={`text-left rounded-[12px] border p-4 transition-all ${
+                        brandMode === 'inherit'
+                          ? 'border-carbon bg-carbon/[0.02]'
+                          : 'border-carbon/[0.08] hover:border-carbon/30'
+                      }`}
+                    >
+                      <div className="text-[13px] font-semibold text-carbon mb-1 inline-flex items-center gap-1.5">
+                        <Link2 className="h-3.5 w-3.5" />
+                        Heredar de mi colección
+                      </div>
+                      <div className="text-[12px] text-carbon/55 leading-[1.5]">
+                        El brand del proyecto se sincroniza en vivo con el de una de tus colecciones aimily 360.
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {brandMode === 'inherit' && (
+                <div>
+                  <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
+                    Colección fuente
+                  </label>
+                  {collections === null ? (
+                    <div className="text-[12px] text-carbon/45 px-4 py-3 bg-carbon/[0.03] rounded-[12px]">
+                      Cargando tus colecciones…
+                    </div>
+                  ) : (
+                    <select
+                      value={sourceCollectionId}
+                      onChange={(e) => setSourceCollectionId(e.target.value)}
+                      className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
+                    >
+                      <option value="">— Elige una colección —</option>
+                      {collections.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                          {c.brand_name && c.brand_name !== c.name ? ` · ${c.brand_name}` : ''}
+                          {c.season ? ` (${c.season})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {sourceCollectionId && (
+                    <p className="mt-2 text-[12px] text-carbon/50 leading-[1.5]">
+                      El nombre y la paleta de esta colección se aplicarán en vivo. Si cambias el brand en la colección, este Studio se actualiza.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-[13px] font-medium text-carbon/70 mb-2 tracking-[-0.02em]">
                   Nombre de la marca
+                  {brandMode === 'inherit' && sourceCollectionId && (
+                    <span className="ml-2 text-[11px] text-carbon/40 font-normal">(snapshot — el servidor sirve el de la colección)</span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -213,7 +334,7 @@ export default function NewProjectClient({ isAdmin = false }: NewProjectClientPr
                 {isAdmin ? (
                   <button
                     onClick={handleCreateAndCheckout}
-                    disabled={!brandName.trim() || submitting}
+                    disabled={!brandName.trim() || (brandMode === 'inherit' && !sourceCollectionId) || submitting}
                     className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90 disabled:opacity-50"
                   >
                     {submitting ? (
@@ -230,8 +351,8 @@ export default function NewProjectClient({ isAdmin = false }: NewProjectClientPr
                   </button>
                 ) : (
                   <button
-                    onClick={() => brandName.trim() && setStep(2)}
-                    disabled={!brandName.trim()}
+                    onClick={() => brandName.trim() && !(brandMode === 'inherit' && !sourceCollectionId) && setStep(2)}
+                    disabled={!brandName.trim() || (brandMode === 'inherit' && !sourceCollectionId)}
                     className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] transition-all hover:bg-carbon/90 disabled:opacity-50"
                   >
                     Continuar
