@@ -16,9 +16,11 @@ import { normalizeAiError } from '@/lib/ai/error-messages';
 import {
   fetchAsPng,
   gptImageEdit,
+  gptImageEditParallel,
   nanoBananaCreateAndPoll,
   type GptImageInput,
 } from '@/lib/ai/image-generation';
+import { pickBestEditorialCandidate } from '@/lib/ai/editorial-evaluator';
 
 /* ═══════════════════════════════════════════════════════════════
    Editorial — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -613,6 +615,13 @@ export async function POST(req: NextRequest) {
     let lastGptError: string | null = null;
     let nanoBananaErrorCode: string | null = null;
 
+    // Multi-candidate state, populated by the GPT branch below. Used by
+    // persistAsset metadata + ai_generations input_data so the forensic
+    // trail includes every alternate the evaluator considered + scores.
+    let alternateUrls: string[] = [];
+    let evaluatorReasoning: string | null = null;
+    let evaluatorScores: unknown = null;
+
     // GPT primary, always. The Nano Banana block below is a silent
     // emergency fallback only — never user-selectable. The A/B test
     // concluded GPT wins on identity, composition, and product fidelity.
@@ -733,16 +742,51 @@ export async function POST(req: NextRequest) {
         user_prompt ? user_prompt : '',
       ].filter((p) => p !== '').join('\n');
 
-      const gptResult = await gptImageEdit({
+      // ─── n=4 PARALLEL + VISION EVALUATOR (Codex consult, 2026-05-26) ───
+      // Replaces single-candidate gptImageEdit. Fires 4 parallel gpt-image-2
+      // requests, then Claude Haiku vision picks the best against explicit
+      // criteria. Hides the multi-candidate generation from the user — they
+      // only see the winner. The 3 losers are persisted to storage as
+      // alternates in case Felipe wants to inspect them later.
+      //
+      // Wall time: ~30-35s (parallel execution, same as single n=1).
+      // Cost per generation: ~4x output billing (was $0.25 → now ~$1.00),
+      // plus ~$0.07 evaluator. Covered by Founder credit pricing.
+      //
+      // Per Codex: "Candidate selection is the biggest jump toward
+      // production consistency because it accepts that generation is
+      // stochastic instead of pretending the prompt can remove sampling
+      // variance."
+      const N_CANDIDATES = Number(process.env.EDITORIAL_CANDIDATES || 4);
+      const gptResult = await gptImageEditParallel({
         images,
         prompt: gptPrompt,
         collectionPlanId,
         assetType: 'editorial',
+        n: N_CANDIDATES,
       });
 
-      if (gptResult.url) {
-        generatedUrl = gptResult.url;
-        providerUsed = 'openai-gpt-image-1.5';
+      if (gptResult.urls.length > 0) {
+        // Vision evaluator picks the best candidate
+        const compositedStyleRefUrl = referenceImages.length > 1 ? referenceImages[1] : undefined;
+        const evalResult = await pickBestEditorialCandidate({
+          candidates: gptResult.urls,
+          productUrl: product_image_url,
+          headshotUrl: aiModel?.headshot_url,
+          styleRefUrl: compositedStyleRefUrl,
+          productName: product_name,
+          category: category as 'CALZADO' | 'ROPA' | 'ACCESORIO' | undefined,
+        });
+
+        generatedUrl = evalResult.winnerUrl;
+        alternateUrls = gptResult.urls.filter((u) => u !== evalResult.winnerUrl);
+        evaluatorReasoning = evalResult.reasoning;
+        evaluatorScores = evalResult.scores;
+        providerUsed = `openai-gpt-image-2-best-of-${gptResult.urls.length}`;
+
+        console.log(
+          `[editorial] picked candidate ${evalResult.winnerIndex + 1}/${gptResult.urls.length}: ${evalResult.reasoning}`,
+        );
       } else if (gptResult.error) {
         lastGptError = gptResult.error.errorCode;
       }
@@ -839,9 +883,17 @@ export async function POST(req: NextRequest) {
             sku_id: skuId || null,
             sku_name: product_name || null,
             model_id: model_id || null,
+            // n=4 + evaluator forensic trail (YOLO Commit 3)
+            n_candidates: alternateUrls.length + (generatedUrl ? 1 : 0),
+            evaluator_reasoning: evaluatorReasoning,
+            evaluator_scores: evaluatorScores,
           },
           output_data: {
             images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }],
+            // All the candidates the evaluator considered. Winner is
+            // already in `images[0]` above; these are the rejected
+            // alternates, preserved for forensic inspection.
+            alternate_candidates: alternateUrls,
           },
           provider_request_id: null,
           model_used: providerUsed,
