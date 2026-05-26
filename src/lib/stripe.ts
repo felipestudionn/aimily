@@ -215,7 +215,7 @@ export function isSelfServePlan(plan: PlanId): boolean {
 // + re-importing this map if needed.
 
 // Aimily Credits packs — one-time top-up for imagery generation
-// Each pack adds N imagery to the user's `imagery_credits.balance` (no expiry).
+// Each pack adds N imagery to the user's `user_credits.balance` (no expiry).
 // Packs are deliberately priced higher per imagery than the next plan tier so
 // 2-3 months of pack usage signals an upgrade.
 export const AIMILY_CREDITS_PACKS = {

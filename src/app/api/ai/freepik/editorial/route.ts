@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
-  checkImageryUsage,
-  refundImageryUnits,
+  consumeCredits,
+  refundCredits,
   usageDeniedResponse,
   enforceAiUserRateLimit,
 } from '@/lib/api-auth';
@@ -444,7 +444,7 @@ export async function POST(req: NextRequest) {
       if (!perm.allowed) return perm.error!;
     }
 
-    const usage = await checkImageryUsage(user!.id, user!.email!);
+    const usage = await consumeCredits(user!.id, user!.email!, 'editorial');
     if (!usage.allowed) return usageDeniedResponse(usage);
     planConsumed = usage.planConsumed ?? 0;
     packConsumed = usage.packConsumed ?? 0;
@@ -748,7 +748,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!generatedUrl) {
-      await refundImageryUnits(userId, planConsumed, packConsumed);
+      await refundCredits(userId, planConsumed, packConsumed);
       // Surface a specific diagnostic so the UI can tell the user
       // whether to wait / retry / contact support, instead of the
       // generic "generation failed".
@@ -848,7 +848,7 @@ export async function POST(req: NextRequest) {
       generationId,
     });
   } catch (error) {
-    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
+    if (userId) await refundCredits(userId, planConsumed, packConsumed);
     console.error('[Editorial] Error:', error);
     const norm = normalizeAiError(error);
     return NextResponse.json(

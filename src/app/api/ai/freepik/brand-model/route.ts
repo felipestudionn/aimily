@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
-  checkImageryUsage,
-  refundImageryUnits,
+  consumeCredits,
+  refundCredits,
   usageDeniedResponse,
   enforceAiUserRateLimit,
 } from '@/lib/api-auth';
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
       if (!perm.allowed) return perm.error!;
     }
 
-    const usage = await checkImageryUsage(user!.id, user!.email!);
+    const usage = await consumeCredits(user!.id, user!.email!, 'sketch');
     if (!usage.allowed) return usageDeniedResponse(usage);
     planConsumed = usage.planConsumed ?? 0;
     packConsumed = usage.packConsumed ?? 0;
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     const generatedUrl = await createAndPoll(prompt, referenceImages);
     if (!generatedUrl) {
-      await refundImageryUnits(userId, planConsumed, packConsumed);
+      await refundCredits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Brand model generation failed' },
         { status: 502 }
@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
       provider: 'freepik-nano-banana',
     });
   } catch (error) {
-    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
+    if (userId) await refundCredits(userId, planConsumed, packConsumed);
     console.error('[Brand Model] Error:', error);
     const norm = normalizeAiError(error);
     return NextResponse.json(

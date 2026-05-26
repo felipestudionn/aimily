@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser, consumeCredits, refundCredits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   // Imagery quota — gpt-image-1.5 high quality is one of our most expensive endpoints
-  const usage = await checkImageryUsage(user!.id, user!.email!);
+  const usage = await consumeCredits(user!.id, user!.email!, 'sketch');
   if (!usage.allowed) return usageDeniedResponse(usage);
   /* Track exact split so the catch / 502 paths can refund. */
   const planConsumed = usage.planConsumed ?? 0;
@@ -164,7 +164,7 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
     } else if (data.data?.[0]?.url) {
       imageUrl = data.data[0].url;
     } else {
-      await refundImageryUnits(user!.id, planConsumed, packConsumed);
+      await refundCredits(user!.id, planConsumed, packConsumed);
       return NextResponse.json({ error: 'No image in response' }, { status: 502 });
     }
 
@@ -189,7 +189,7 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
 
     return NextResponse.json({ imageUrl });
   } catch (err) {
-    await refundImageryUnits(user!.id, planConsumed, packConsumed);
+    await refundCredits(user!.id, planConsumed, packConsumed);
     console.error('[Colorize] Error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Colorization failed' },

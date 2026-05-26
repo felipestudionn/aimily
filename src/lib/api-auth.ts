@@ -46,22 +46,26 @@ export async function verifyCollectionOwnership(
  * Imagery quota check — only paid AI image/video generations consume quota.
  * Text generations (Claude Haiku, Gemini Flash, Perplexity) are unlimited.
  *
- * Atomic: delegates the read+write to the `consume_imagery_units` Postgres
- * RPC, which holds row locks on `ai_usage` and `imagery_credits` for the
- * duration of the transaction. Two concurrent requests cannot both pass
- * the check, and the two-table update can never end up half-applied.
+ * Atomic: delegates the read+write to the `consume_user_credits` Postgres
+ * RPC (migration 077), which holds row locks on `ai_usage` and
+ * `user_credits` for the duration of the transaction, and writes an
+ * append-only row to `credit_ledger`. Two concurrent requests cannot both
+ * pass the check, and the three-table update can never end up half-applied.
  *
  * Returned `planConsumed` and `packConsumed` MUST be passed to
  * `refundImageryUnits()` if the downstream provider call fails — that
  * gives the customer back exactly what was taken, no more, no less.
  *
  * `units` lets multi-image endpoints count more than 1 (brand-references = 4,
- * Kling video = 5).
+ * Kling video = 5). Prefer `consumeCredits(action)` (below) in new code so
+ * the unit count comes from the canonical `CREDIT_COSTS` map and lands as
+ * the consume_action attribute on the ledger row for analytics.
  */
 export async function checkImageryUsage(
   userId: string,
   userEmail: string,
   units: number = 1,
+  action?: CreditAction,
 ) {
   // Admin bypass — no quota, no record.
   if (ADMIN_EMAILS.includes(userEmail)) {
@@ -95,10 +99,12 @@ export async function checkImageryUsage(
   const planLimits = getPlanLimits(plan);
   const limit = planLimits.imageryGenerations;
 
-  const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('consume_imagery_units', {
+  const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('consume_user_credits', {
     p_user_id: userId,
     p_units: units,
     p_plan_limit: limit,
+    p_action: action ?? null,
+    p_metadata: {},
   });
 
   if (rpcError || !rpcData) {
@@ -158,10 +164,12 @@ export async function refundImageryUnits(
 ) {
   if ((planConsumed || 0) <= 0 && (packConsumed || 0) <= 0) return;
 
-  const { error } = await supabaseAdmin.rpc('refund_imagery_units', {
+  const { error } = await supabaseAdmin.rpc('refund_user_credits', {
     p_user_id: userId,
     p_plan_consumed: planConsumed || 0,
     p_pack_consumed: packConsumed || 0,
+    p_action: null,
+    p_metadata: {},
   });
 
   if (error) {
@@ -192,7 +200,7 @@ export async function consumeCredits(
   action: CreditAction,
 ) {
   const units = CREDIT_COSTS[action];
-  return checkImageryUsage(userId, userEmail, units);
+  return checkImageryUsage(userId, userEmail, units, action);
 }
 
 /**

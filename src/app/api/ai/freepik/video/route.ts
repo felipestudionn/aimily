@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
-  checkImageryUsage,
-  refundImageryUnits,
+  consumeCredits,
+  refundCredits,
   usageDeniedResponse,
   enforceAiUserRateLimit,
 } from '@/lib/api-auth';
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Kling video is the most expensive operation — counts as 5 imagery units
-    const usage = await checkImageryUsage(user!.id, user!.email!, 5);
+    const usage = await consumeCredits(user!.id, user!.email!, 'video_kling');
     if (!usage.allowed) return usageDeniedResponse(usage);
     planConsumed = usage.planConsumed ?? 0;
     packConsumed = usage.packConsumed ?? 0;
@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!generatedUrl) {
-      await refundImageryUnits(userId, planConsumed, packConsumed);
+      await refundCredits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Video generation failed' },
         { status: 502 }
@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
       duration,
     });
   } catch (error) {
-    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
+    if (userId) await refundCredits(userId, planConsumed, packConsumed);
     console.error('[Video] Error:', error);
     const norm = normalizeAiError(error);
     return NextResponse.json(

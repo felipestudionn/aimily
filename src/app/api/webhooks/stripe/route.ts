@@ -163,8 +163,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
 
-    // Atomic credit add via RPC (handles concurrent purchases)
-    const { error } = await supabaseAdmin.rpc('add_imagery_credits', {
+    // Atomic credit add via RPC. Writes both to user_credits and to
+    // credit_ledger inside the same transaction (migration 077). The
+    // unique constraint on (source='stripe', source_id=session.id) makes
+    // this idempotent if Stripe replays the webhook.
+    const { error } = await supabaseAdmin.rpc('add_user_credits', {
       p_user_id: userId,
       p_amount: imagery,
       p_pack: session.metadata.pack,
@@ -172,7 +175,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     });
 
     if (error) {
-      console.error('Failed to add imagery credits:', error);
+      console.error('Failed to add user credits:', error);
     }
     return;
   }

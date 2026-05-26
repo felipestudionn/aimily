@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
-  checkImageryUsage,
-  refundImageryUnits,
+  consumeCredits,
+  refundCredits,
   usageDeniedResponse,
   enforceAiUserRateLimit,
 } from '@/lib/api-auth';
@@ -366,7 +366,7 @@ export async function POST(req: NextRequest) {
       if (!perm.allowed) return perm.error!;
     }
 
-    const usage = await checkImageryUsage(user!.id, user!.email!);
+    const usage = await consumeCredits(user!.id, user!.email!, 'still_life');
     if (!usage.allowed) return usageDeniedResponse(usage);
     /* Track the exact split that was consumed so the catch block can
        refund the customer if Freepik fails downstream. */
@@ -462,7 +462,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!generatedUrl) {
-      await refundImageryUnits(userId, planConsumed, packConsumed);
+      await refundCredits(userId, planConsumed, packConsumed);
       const isModeration = lastGptError === 'moderation';
       const isIpBlock = nanoBananaErrorCode === 'ip_block';
       const userMessage = isModeration
@@ -546,7 +546,7 @@ export async function POST(req: NextRequest) {
       generationId,
     });
   } catch (error) {
-    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
+    if (userId) await refundCredits(userId, planConsumed, packConsumed);
     /* Log the raw provider message for ops; surface a friendly,
        actionable message to the user. */
     console.error('[Still Life] Error:', error);

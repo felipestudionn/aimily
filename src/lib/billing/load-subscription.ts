@@ -57,7 +57,7 @@ export async function loadSubscriptionForUser(
       .eq('month', month)
       .single(),
     supabaseAdmin
-      .from('imagery_credits')
+      .from('user_credits')
       .select('balance')
       .eq('user_id', userId)
       .single(),

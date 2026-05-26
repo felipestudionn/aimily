@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser, consumeCredits, refundCredits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
 import { normalizeAiError } from '@/lib/ai/error-messages';
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
     if (authError) return authError;
     userId = user.id;
 
-    const usage = await checkImageryUsage(user.id, user.email!);
+    const usage = await consumeCredits(user.id, user.email!, 'sketch');
     if (!usage.allowed) return usageDeniedResponse(usage);
     planConsumed = usage.planConsumed ?? 0;
     packConsumed = usage.packConsumed ?? 0;
@@ -305,7 +305,7 @@ export async function POST(req: NextRequest) {
       const backImage = backResult.status === 'fulfilled' ? backResult.value : null;
 
       if (!sideImage && !topImage && !backImage) {
-        await refundImageryUnits(userId, planConsumed, packConsumed);
+        await refundCredits(userId, planConsumed, packConsumed);
         const err = sideResult.status === 'rejected' ? String(sideResult.reason) : 'All views failed';
         return NextResponse.json({ error: err }, { status: 500 });
       }
@@ -370,7 +370,7 @@ REGLA DE DUDA: si dudas, simplifica. Mejor un sketch que carezca de detalle que 
       const backImage = backResult.status === 'fulfilled' ? backResult.value : null;
 
       if (!frontImage && !backImage) {
-        await refundImageryUnits(userId, planConsumed, packConsumed);
+        await refundCredits(userId, planConsumed, packConsumed);
         const err = frontResult.status === 'rejected' ? String(frontResult.reason) : 'Both apparel views failed';
         return NextResponse.json({ error: err }, { status: 500 });
       }
@@ -387,7 +387,7 @@ REGLA DE DUDA: si dudas, simplifica. Mejor un sketch que carezca de detalle que 
       });
     }
   } catch (error) {
-    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
+    if (userId) await refundCredits(userId, planConsumed, packConsumed);
     console.error('Sketch error:', error);
     const norm = normalizeAiError(error);
     return NextResponse.json(
