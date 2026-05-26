@@ -31,7 +31,7 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
   const [sourcesRes, runsRes, constraintRes, briefRes] = await Promise.all([
     supabaseAdmin
       .from('strategy_sources')
-      .select('id, processed_at')
+      .select('id, processed_at, source_type')
       .eq('tenant_id', tenant.id)
       .limit(50),
     supabaseAdmin
@@ -68,6 +68,17 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
     (r) => r.run_status === 'scoring' || r.run_status === 'recommending' || r.run_status === 'pending'
   );
   const latestCompletedRun = runs.find((r) => r.run_status === 'complete');
+
+  // PDF-source tenants (big-brand-style weekly internal report) get routed to
+  // the PDF overlay viewer where the original report is rendered with verdicts
+  // anchored on each SKU — the canonical demo wedge for that surface. API-source
+  // tenants (Shopify live, CSV) have no PDF to overlay, so they keep the regular
+  // list view.
+  const hasPdfSource = sources.some((s) => s.source_type === 'pdf');
+  const analysisRunHref = (runId: string) =>
+    hasPdfSource
+      ? `/in-season/${tenant.slug}/runs/${runId}/pdf-view`
+      : `/in-season/${tenant.slug}/runs/${runId}`;
 
   // 4 hub cards · progress + status shape (status text is rendered client-side
   // via the i18n dictionary). The server only sets the shape + numeric data.
@@ -106,9 +117,9 @@ export default async function TenantWorkspacePage({ params }: PageProps) {
       number: 4,
       kind: 'analysis' as const,
       href: runInFlight
-        ? `/in-season/${tenant.slug}/runs/${runInFlight.id}`
+        ? analysisRunHref(runInFlight.id)
         : latestCompletedRun
-        ? `/in-season/${tenant.slug}/runs/${latestCompletedRun.id}`
+        ? analysisRunHref(latestCompletedRun.id)
         : `/in-season/${tenant.slug}/runs/new`,
       progress: runsCompleted > 0 ? 100 : runInFlight ? 50 : 0,
       status:
