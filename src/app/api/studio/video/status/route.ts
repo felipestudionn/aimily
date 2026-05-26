@@ -141,9 +141,14 @@ export async function GET(req: NextRequest) {
 
     // ── 4b. Failed upstream — refund + mark asset failed ─────────────────
     if (upstream.status === 'failed') {
-      const purchaseId = typeof meta.purchase_id === 'string' ? meta.purchase_id : null;
-      if (purchaseId && asset.uploaded_by) {
-        try { await refundStudioOutput(asset.uploaded_by, purchaseId); }
+      // Migration 077 moved Studio credits from per-project pools to the
+      // global user_credits ledger. We stored plan_consumed / pack_consumed
+      // on the asset metadata at start time so we can issue an exact refund
+      // now without having to know which plan/pack tier the user is on.
+      const planConsumed = typeof meta.plan_consumed === 'number' ? meta.plan_consumed : 0;
+      const packConsumed = typeof meta.pack_consumed === 'number' ? meta.pack_consumed : 0;
+      if ((planConsumed > 0 || packConsumed > 0) && asset.uploaded_by) {
+        try { await refundStudioOutput(asset.uploaded_by, planConsumed, packConsumed); }
         catch (rErr) { console.error('[Studio video status] refund failed:', rErr); }
       }
       await supabaseAdmin

@@ -37,7 +37,7 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
   const effective = await getEffectiveBrand(id);
 
   // Recent assets + purchases + casting in parallel
-  const [{ data: assetsData }, { data: purchasesData }, { data: modelsData }] = await Promise.all([
+  const [{ data: assetsData }, { data: creditRow }, { data: modelsData }] = await Promise.all([
     supabaseAdmin
       .from('collection_assets')
       .select('id, asset_type, name, url, metadata, is_style_memory, style_memory_role, created_at')
@@ -52,11 +52,12 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
       .not('url', 'like', 'pending:%')
       .order('created_at', { ascending: false })
       .limit(60),
+    // Migration 077: global user_credits balance, no per-project pool.
     supabaseAdmin
-      .from('studio_purchases')
-      .select('id, pack_tier, outputs_allocated, outputs_consumed, created_at')
-      .eq('studio_project_id', id)
-      .order('created_at', { ascending: false }),
+      .from('user_credits')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle(),
     supabaseAdmin
       .from('aimily_models')
       .select('id, name, headshot_url, gender, complexion, hair_style, hair_color, description')
@@ -65,13 +66,9 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
   ]);
 
   const assets = assetsData || [];
-  const purchases = purchasesData || [];
   const models = modelsData || [];
 
-  const outputs_remaining = purchases.reduce(
-    (acc, p) => acc + Math.max(Number(p.outputs_allocated) - Number(p.outputs_consumed), 0),
-    0
-  );
+  const outputs_remaining = creditRow?.balance ?? 0;
 
   // Admin bypass detection (must mirror /api/studio/generate logic)
   const isAdminByEmail = ADMIN_EMAILS.includes(user.email || '');
@@ -102,7 +99,7 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
       assets={assets}
       models={models}
       outputs_remaining={outputs_remaining}
-      pack_count={purchases.length}
+      pack_count={0}
       isAdmin={isAdmin}
       brandSource={brandSource}
     />

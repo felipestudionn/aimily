@@ -1,104 +1,94 @@
 /**
  * Aimily Studio · Output budget checker
  *
- * Studio packs are CLOSED packs (Capsule 10 / Editorial 25 / Full Campaign 50)
- * — NOT credits. Each generation consumes 1 output from the oldest unexhausted
- * `studio_purchase` row for that project, atomically via the RPC.
+ * After the 2026-05-26 credits unification (migration 077), Studio packs
+ * no longer maintain a per-project pool. Capsule / Editorial / Full
+ * Campaign one-time purchases land in the user's global `user_credits.balance`
+ * just like Aimily Credit top-ups, and any generation (Studio or 360 or
+ * In-Season) draws from the same balance.
  *
- * Call site: `/api/studio/generate` before any AI call.
- *   - If `consume_studio_output` returns a purchase_id, generation proceeds
- *     and the id is captured so a refund can be issued on failure.
- *   - If it returns NULL, the project pool is empty → return 402-style
- *     response telling the user to buy another pack.
- *
- * Refund path: on AI failure, call `refund_studio_output(purchaseId)` to
- * restore the consumed output. Pattern mirrors `refundImageryUnits` used
- * by the Aimily 360 endpoints.
+ * This module is a thin Studio-flavoured wrapper around the canonical
+ * `consumeCredits` / `refundCredits` helpers in api-auth.ts. It exists
+ * for two reasons:
+ *   1. Studio-specific 402 response copy ("compra un pack" vs. the
+ *      generic "limit_reached").
+ *   2. A central place for any future Studio-only billing logic (style
+ *      memory bonus credits, partner-pack revenue share, etc.).
  *
  * Reference: business-plan_aimily-studio-2026-05-14.md §0.0 decision #13
+ * + 2026-05-26 unify-credits sprint.
  */
 
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { consumeCredits, refundCredits } from '@/lib/api-auth';
+import type { CreditAction } from '@/lib/stripe';
 
 export interface StudioOutputCheck {
   allowed: boolean;
-  purchaseId?: string;
-  /** Sum of outputs remaining across all active purchases in this project. */
-  outputsRemaining: number;
+  /** Credits taken from the user's monthly plan allowance. Pass to refund. */
+  planConsumed: number;
+  /** Credits taken from the user's pack balance. Pass to refund. */
+  packConsumed: number;
+  /** Pack balance after the consume — used by callers to show "X left". */
+  packBalanceAfter: number;
+  /** When allowed=false, why. */
+  reason?: 'limit_reached' | 'trial_expired' | 'subscription_inactive';
 }
 
 /**
- * Atomically consume one output. Returns the purchase_id that was decremented
- * (for refund-on-failure) or `allowed=false` if no outputs available.
+ * Consume credits for a Studio generation. The action defines the cost
+ * (e.g. video_kling=30, editorial=5) via CREDIT_COSTS, no need to pass
+ * a unit count.
  */
 export async function consumeStudioOutput(
   userId: string,
-  studioProjectId: string
+  userEmail: string,
+  action: CreditAction,
 ): Promise<StudioOutputCheck> {
-  const supabase = await createClient();
-
-  const { data: purchaseId, error } = await supabase.rpc('consume_studio_output', {
-    p_user_id: userId,
-    p_studio_project_id: studioProjectId,
-  });
-
-  if (error) {
-    console.error('[Studio] consume_studio_output error:', error);
-    return { allowed: false, outputsRemaining: 0 };
+  const usage = await consumeCredits(userId, userEmail, action);
+  if (!usage.allowed) {
+    return {
+      allowed: false,
+      planConsumed: 0,
+      packConsumed: 0,
+      packBalanceAfter: usage.packBalance ?? 0,
+      reason: usage.reason as 'limit_reached' | 'trial_expired' | 'subscription_inactive',
+    };
   }
-
-  if (!purchaseId) {
-    // Pool empty — count outputs remaining (will be 0) for the response
-    return { allowed: false, outputsRemaining: 0 };
-  }
-
-  // Optional: total outputs left across all active purchases of this project
-  const { data: aggRow } = await supabase
-    .from('studio_purchases')
-    .select('outputs_allocated, outputs_consumed')
-    .eq('studio_project_id', studioProjectId);
-
-  const remaining = aggRow
-    ? aggRow.reduce(
-        (acc, r) =>
-          acc + Math.max(Number(r.outputs_allocated) - Number(r.outputs_consumed), 0),
-        0
-      )
-    : 0;
-
   return {
     allowed: true,
-    purchaseId: purchaseId as string,
-    outputsRemaining: remaining,
+    planConsumed: usage.planConsumed ?? 0,
+    packConsumed: usage.packConsumed ?? 0,
+    packBalanceAfter: usage.packBalance ?? 0,
   };
 }
 
 /**
- * Refund one output to a specific purchase. Called on AI failure path.
+ * Refund the credits taken by a previous `consumeStudioOutput` when the
+ * downstream provider call (Kling, OpenAI, Freepik) fails. Pass the
+ * `planConsumed` and `packConsumed` from that response.
  */
-export async function refundStudioOutput(userId: string, purchaseId: string): Promise<void> {
-  const supabase = await createClient();
-  const { error } = await supabase.rpc('refund_studio_output', {
-    p_user_id: userId,
-    p_purchase_id: purchaseId,
-  });
-  if (error) {
-    console.error('[Studio] refund_studio_output error:', error);
-  }
+export async function refundStudioOutput(
+  userId: string,
+  planConsumed: number,
+  packConsumed: number,
+): Promise<void> {
+  await refundCredits(userId, planConsumed, packConsumed);
 }
 
 /**
- * Helper for endpoint to return a standardized 402 response when pool empty.
+ * Standardised 402 response when the user is out of credits. Studio
+ * surfaces a more specific copy ("compra un pack") than the global
+ * `usageDeniedResponse` because the Studio user is often a Studio-only
+ * subscriber who doesn't have access to the Founder / Team monthly plans.
  */
-export function studioPoolEmptyResponse(studioProjectId: string) {
+export function studioPoolEmptyResponse(_studioProjectId?: string) {
   return NextResponse.json(
     {
-      error: 'studio_pool_empty',
+      error: 'credits_exhausted',
       message:
-        'No outputs remaining in this project. Purchase another pack to continue.',
-      studio_project_id: studioProjectId,
+        'No tienes créditos disponibles. Compra un pack o sube tu plan mensual para seguir generando.',
     },
-    { status: 402 }
+    { status: 402 },
   );
 }

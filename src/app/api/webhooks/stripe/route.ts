@@ -108,14 +108,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Aimily Studio pack purchase (one-time payment, mode='payment', metadata.type='studio_pack')
-  // Allocates the bundle of outputs into the project's studio_purchases pool.
+  // Post-credits-unification (migration 077): outputs no longer live in a
+  // per-project pool — every pack adds to the user's global user_credits
+  // balance so it can be spent on any Studio project OR on a 360 collection
+  // generation OR on an In-Season run. Same idempotency model as the credit
+  // packs branch below (unique (source='stripe', source_id) in credit_ledger).
   if (session.mode === 'payment' && session.metadata?.type === 'studio_pack') {
-    const studioProjectId = session.metadata?.studio_project_id;
     const tier = session.metadata?.tier;
     const outputsRaw = session.metadata?.outputs;
     const outputs = outputsRaw ? parseInt(outputsRaw, 10) : 0;
 
-    if (!studioProjectId || !tier || !outputs || outputs <= 0) {
+    if (!tier || !outputs || outputs <= 0) {
       console.error('[Stripe webhook] Invalid studio_pack metadata:', session.metadata);
       return;
     }
@@ -124,32 +127,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
 
-    // session.payment_intent is the PaymentIntent ID; use it as the idempotency key
-    const paymentIntentId = typeof session.payment_intent === 'string'
-      ? session.payment_intent
-      : session.payment_intent?.id;
-
-    if (!paymentIntentId) {
-      console.error('[Stripe webhook] No payment_intent on studio_pack session');
-      return;
-    }
-
-    const amountCents = typeof session.amount_total === 'number' ? session.amount_total : null;
-
-    const { error } = await supabaseAdmin.rpc('allocate_studio_outputs', {
+    const { error } = await supabaseAdmin.rpc('add_user_credits', {
       p_user_id: userId,
-      p_studio_project_id: studioProjectId,
-      p_pack_tier: tier,
-      p_outputs_count: outputs,
-      p_stripe_payment_intent_id: paymentIntentId,
-      p_amount_eur_cents: amountCents,
+      p_amount: outputs,
+      p_pack: `studio_${tier}`,
+      p_stripe_session_id: session.id,
     });
 
     if (error) {
-      console.error('[Stripe webhook] Failed to allocate studio outputs:', error);
+      console.error('[Stripe webhook] Failed to add studio-pack user credits:', error);
     } else {
       console.log(
-        `[Stripe webhook] Allocated ${outputs} ${tier} outputs to studio_project ${studioProjectId} for user ${userId}`
+        `[Stripe webhook] Added ${outputs} credits from studio_${tier} pack for user ${userId}`
       );
     }
     return;

@@ -41,7 +41,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
 
   const supabase = await createClient();
 
-  const [assetsResult, purchasesResult] = await Promise.all([
+  const [assetsResult, creditResult] = await Promise.all([
     supabase
       .from('collection_assets')
       .select('id, asset_type, name, url, created_at, is_style_memory, style_memory_role, metadata')
@@ -49,27 +49,23 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(100),
+    // Global balance (migration 077 — no more per-project pools).
     supabase
-      .from('studio_purchases')
-      .select('id, pack_tier, outputs_allocated, outputs_consumed, amount_eur_cents, created_at')
-      .eq('studio_project_id', id)
-      .order('created_at', { ascending: false }),
+      .from('user_credits')
+      .select('balance')
+      .eq('user_id', project.user_id)
+      .maybeSingle(),
   ]);
 
   const assets = assetsResult.data || [];
-  const purchases = purchasesResult.data || [];
-
-  const outputs_remaining = purchases.reduce(
-    (acc, p) => acc + Math.max(Number(p.outputs_allocated) - Number(p.outputs_consumed), 0),
-    0
-  );
+  const outputs_remaining = creditResult.data?.balance ?? 0;
 
   return NextResponse.json({
     project,
     assets,
-    purchases,
+    purchases: [], // legacy field — purchases are now in credit_ledger
     outputs_remaining,
-    pack_count: purchases.length,
+    pack_count: 0,
   });
 }
 

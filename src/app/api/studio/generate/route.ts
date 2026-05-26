@@ -120,7 +120,9 @@ interface AimilyModel {
 
 export async function POST(req: NextRequest) {
   let userId: string | undefined;
-  let purchaseId: string | undefined;
+  let userEmail: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   let consumed = false;
 
   try {
@@ -128,6 +130,7 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
     userId = user!.id;
+    userEmail = user!.email!;
 
     const rateLimited = enforceAiUserRateLimit(userId, 'image');
     if (rateLimited) return rateLimited;
@@ -204,13 +207,22 @@ export async function POST(req: NextRequest) {
 
     let outputsRemaining = -1;
     if (!adminBypass) {
-      const budget = await consumeStudioOutput(userId, body.studio_project_id);
+      // Pick the action based on the output type the caller is generating —
+      // still_life and tryon are cheaper than editorial (no model casting).
+      const generateAction: 'editorial' | 'still_life' | 'tryon' =
+        body.type === 'still_life'
+          ? 'still_life'
+          : body.type === 'tryon'
+            ? 'tryon'
+            : 'editorial';
+      const budget = await consumeStudioOutput(userId, userEmail, generateAction);
       if (!budget.allowed) {
         return studioPoolEmptyResponse(body.studio_project_id);
       }
-      purchaseId = budget.purchaseId;
+      planConsumed = budget.planConsumed;
+      packConsumed = budget.packConsumed;
       consumed = true;
-      outputsRemaining = Math.max(budget.outputsRemaining - 1, 0);
+      outputsRemaining = budget.packBalanceAfter;
     }
 
     // ── 5. Look up aimily model if provided ──────────────────────────────
@@ -224,7 +236,7 @@ export async function POST(req: NextRequest) {
         .single();
       aiModel = data as AimilyModel | null;
       if (!aiModel) {
-        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
         return NextResponse.json({ error: 'Selected model not found or inactive' }, { status: 400 });
       }
     }
@@ -318,7 +330,7 @@ export async function POST(req: NextRequest) {
       if (!gptRes.ok) {
         const errText = await gptRes.text();
         console.error('[Studio GPT] OpenAI error:', gptRes.status, errText.slice(0, 500));
-        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
         return NextResponse.json(
           { error: 'AI generation failed', details: errText.slice(0, 200) },
           { status: 502 }
@@ -330,7 +342,7 @@ export async function POST(req: NextRequest) {
       const masterUrlReturned: string | undefined = gptData.data?.[0]?.url;
 
       if (!masterB64 && !masterUrlReturned) {
-        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
         return NextResponse.json({ error: 'AI returned no image data' }, { status: 502 });
       }
 
@@ -352,7 +364,8 @@ export async function POST(req: NextRequest) {
             category,
             model_id: body.model_id,
             model_name: aiModel.name,
-            purchase_id: purchaseId,
+            plan_consumed: planConsumed,
+            pack_consumed: packConsumed,
             // Regen-relevant inputs (for the lightbox variation pills)
             product_image_url,
             reference_image_url: style_reference_url,
@@ -428,7 +441,7 @@ export async function POST(req: NextRequest) {
       if (!gptRes.ok) {
         const errText = await gptRes.text();
         console.error('[Studio GPT no-model] OpenAI error:', gptRes.status, errText.slice(0, 500));
-        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
         return NextResponse.json(
           { error: 'AI generation failed', details: errText.slice(0, 200) },
           { status: 502 }
@@ -438,7 +451,7 @@ export async function POST(req: NextRequest) {
       const gptData = await gptRes.json();
       const masterB64: string | undefined = gptData.data?.[0]?.b64_json;
       if (!masterB64) {
-        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
         return NextResponse.json({ error: 'AI returned no image data' }, { status: 502 });
       }
 
@@ -454,7 +467,8 @@ export async function POST(req: NextRequest) {
           type: body.type,
           scene,
           category,
-          purchase_id: purchaseId,
+          plan_consumed: planConsumed,
+          pack_consumed: packConsumed,
           product_image_url,
           reference_image_url: style_reference_url,
           product_name,
@@ -476,16 +490,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Should never reach here; left as a defensive fallback.
-    if (purchaseId) await refundStudioOutput(userId, purchaseId);
+    if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
     return NextResponse.json(
       { error: 'Unexpected end of generate flow', details: String(generatedUrl) },
       { status: 500 }
     );
   } catch (error) {
     // Catch-all refund path
-    if (consumed && userId && purchaseId) {
+    if (consumed && userId) {
       try {
-        await refundStudioOutput(userId, purchaseId);
+        await refundStudioOutput(userId, planConsumed, packConsumed);
       } catch (refundErr) {
         console.error('[Studio generate] refund failed in catch:', refundErr);
       }

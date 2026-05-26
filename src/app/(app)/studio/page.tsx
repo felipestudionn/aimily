@@ -24,11 +24,6 @@ interface StudioProjectRow {
   updated_at: string;
 }
 
-interface PurchaseAgg {
-  studio_project_id: string;
-  outputs_allocated: number;
-  outputs_consumed: number;
-}
 
 interface CollectionAssetRow {
   id: string;
@@ -67,17 +62,20 @@ export default async function StudioDashboardPage() {
   const collectionsById = new Map(collections.map((c) => [c.id, c]));
   const collectionIds = collections.map((c) => c.id);
 
-  const [{ data: projectsData }, { data: purchasesData }, { data: assetsData }] = await Promise.all([
+  const [{ data: projectsData }, { data: creditRow }, { data: assetsData }] = await Promise.all([
     supabaseAdmin
       .from('studio_projects')
       .select('id, brand_name, brand_logo_url, updated_at')
       .eq('user_id', user.id)
       .is('archived_at', null)
       .order('updated_at', { ascending: false }),
+    // Global credit balance — migration 077. The dashboard surfaces one
+    // number ("X credits") rather than per-card output counts.
     supabaseAdmin
-      .from('studio_purchases')
-      .select('studio_project_id, outputs_allocated, outputs_consumed')
-      .eq('user_id', user.id),
+      .from('user_credits')
+      .select('balance')
+      .eq('user_id', user.id)
+      .maybeSingle(),
     collectionIds.length > 0
       ? supabaseAdmin
           .from('collection_assets')
@@ -91,14 +89,8 @@ export default async function StudioDashboardPage() {
   ]);
 
   const projects = (projectsData || []) as StudioProjectRow[];
-  const purchases = (purchasesData || []) as PurchaseAgg[];
   const collectionAssets = (assetsData || []) as CollectionAssetRow[];
-
-  const outputsByProject = purchases.reduce((acc, p) => {
-    if (!acc[p.studio_project_id]) acc[p.studio_project_id] = 0;
-    acc[p.studio_project_id] += Math.max(p.outputs_allocated - p.outputs_consumed, 0);
-    return acc;
-  }, {} as Record<string, number>);
+  const creditBalance = creditRow?.balance ?? 0;
 
   // Group cross-collection assets by collection_plan_id for the library view.
   const assetsByCollection = collectionAssets.reduce((acc, a) => {
@@ -158,7 +150,12 @@ export default async function StudioDashboardPage() {
             </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
             {projects.map((p) => {
-              const remaining = outputsByProject[p.id] || 0;
+              // Post-077 unified credits: the dashboard shows one global
+              // balance per project card so the user understands credits
+              // are pooled. (The balance is the same on every card; we
+              // keep it per-card so the UX reads "X credits available"
+              // next to each project without making them hunt for it.)
+              const remaining = creditBalance;
               return (
                 <Link
                   key={p.id}
@@ -186,8 +183,8 @@ export default async function StudioDashboardPage() {
 
                   <p className="text-[13px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
                     {remaining > 0
-                      ? `${remaining} ${remaining === 1 ? 'output disponible' : 'outputs disponibles'}`
-                      : 'Comprar pack para generar'}
+                      ? `${remaining} ${remaining === 1 ? 'crédito disponible' : 'créditos disponibles'}`
+                      : 'Compra un pack o sube de plan para generar'}
                   </p>
 
                   <div className="flex-1" />

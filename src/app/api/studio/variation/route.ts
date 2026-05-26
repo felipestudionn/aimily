@@ -70,7 +70,9 @@ interface AimilyModel {
 
 export async function POST(req: NextRequest) {
   let userId: string | undefined;
-  let purchaseId: string | undefined;
+  let userEmail: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   let consumed = false;
 
   try {
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
     userId = user!.id;
+    userEmail = user!.email!;
 
     const rateLimited = enforceAiUserRateLimit(userId, 'image');
     if (rateLimited) return rateLimited;
@@ -153,13 +156,19 @@ export async function POST(req: NextRequest) {
 
     let outputsRemaining = -1;
     if (!adminBypass) {
-      const budget = await consumeStudioOutput(userId, sourceAsset.studio_project_id);
+      // Pick the action by variation type — variations that swap the model
+      // cost as much as a fresh editorial (model casting overhead); pure
+      // recolor / restage variations are cheaper still-life cost.
+      const variationAction: 'editorial' | 'still_life' =
+        body.variation_type === 'model' ? 'editorial' : 'still_life';
+      const budget = await consumeStudioOutput(userId, userEmail, variationAction);
       if (!budget.allowed) {
         return studioPoolEmptyResponse(sourceAsset.studio_project_id);
       }
-      purchaseId = budget.purchaseId;
+      planConsumed = budget.planConsumed;
+      packConsumed = budget.packConsumed;
       consumed = true;
-      outputsRemaining = Math.max(budget.outputsRemaining - 1, 0);
+      outputsRemaining = budget.packBalanceAfter;
     }
 
     // ── 5. For model swap, load the new aimily model ─────────────────────
@@ -173,7 +182,7 @@ export async function POST(req: NextRequest) {
         .single();
       newModel = data as AimilyModel | null;
       if (!newModel) {
-        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
         return NextResponse.json({ error: 'New model not found or inactive' }, { status: 400 });
       }
     }
@@ -242,7 +251,7 @@ export async function POST(req: NextRequest) {
     if (!gptRes.ok) {
       const errText = await gptRes.text();
       console.error('[Studio variation] OpenAI error:', gptRes.status, errText.slice(0, 500));
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
+      if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'AI generation failed', details: errText.slice(0, 200) },
         { status: 502 }
@@ -252,7 +261,7 @@ export async function POST(req: NextRequest) {
     const gptData = await gptRes.json();
     const masterB64: string | undefined = gptData.data?.[0]?.b64_json;
     if (!masterB64) {
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
+      if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
       return NextResponse.json({ error: 'AI returned no image data' }, { status: 502 });
     }
 
@@ -275,7 +284,8 @@ export async function POST(req: NextRequest) {
         new_model_id: body.new_model_id || undefined,
         new_model_name: newModel?.name,
         parent_asset_id: sourceAsset.id,
-        purchase_id: purchaseId,
+        plan_consumed: planConsumed,
+        pack_consumed: packConsumed,
         /* Carry forward all regen-relevant fields from the parent so
          * subsequent variations on THIS asset still work. */
         ...(sourceMeta ? {
@@ -304,9 +314,9 @@ export async function POST(req: NextRequest) {
       admin_bypass: adminBypass || undefined,
     });
   } catch (error) {
-    if (consumed && userId && purchaseId) {
+    if (consumed && userId) {
       try {
-        await refundStudioOutput(userId, purchaseId);
+        await refundStudioOutput(userId, planConsumed, packConsumed);
       } catch (refundErr) {
         console.error('[Studio variation] refund failed in catch:', refundErr);
       }

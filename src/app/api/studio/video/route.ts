@@ -67,7 +67,9 @@ const VALID_STYLES: VideoStyle[] = [
 
 export async function POST(req: NextRequest) {
   let userId: string | undefined;
-  let purchaseId: string | undefined;
+  let userEmail: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   let consumed = false;
 
   try {
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
     userId = user!.id;
+    userEmail = user!.email!;
 
     const rateLimited = enforceAiUserRateLimit(userId, 'video');
     if (rateLimited) return rateLimited;
@@ -129,13 +132,14 @@ export async function POST(req: NextRequest) {
 
     let outputsRemaining = -1;
     if (!adminBypass) {
-      const budget = await consumeStudioOutput(userId, sourceAsset.studio_project_id);
+      const budget = await consumeStudioOutput(userId, userEmail, 'video_kling');
       if (!budget.allowed) {
         return studioPoolEmptyResponse(sourceAsset.studio_project_id);
       }
-      purchaseId = budget.purchaseId;
+      planConsumed = budget.planConsumed;
+      packConsumed = budget.packConsumed;
       consumed = true;
-      outputsRemaining = Math.max(budget.outputsRemaining - 1, 0);
+      outputsRemaining = budget.packBalanceAfter;
     }
 
     // ── 4. Source meta + product name ────────────────────────────────────
@@ -162,7 +166,7 @@ export async function POST(req: NextRequest) {
       providerLabel = startResult.providerLabel;
     } catch (e) {
       console.error(`[Studio video] startJob ${provider.name} failed:`, e);
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
+      if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
       return NextResponse.json(
         {
           error: 'Video job creation failed',
@@ -192,7 +196,8 @@ export async function POST(req: NextRequest) {
           duration,
           tier,
           parent_asset_id: sourceAsset.id,
-          purchase_id: purchaseId,
+          plan_consumed: planConsumed,
+          pack_consumed: packConsumed,
           user_prompt: body.user_prompt,
           started_at: new Date().toISOString(),
         },
@@ -203,7 +208,7 @@ export async function POST(req: NextRequest) {
 
     if (insertError || !pendingAsset) {
       console.error('[Studio video] pending asset insert failed:', insertError);
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
+      if (consumed) await refundStudioOutput(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Could not persist pending asset', details: insertError?.message },
         { status: 500 }
@@ -224,8 +229,8 @@ export async function POST(req: NextRequest) {
       admin_bypass: adminBypass || undefined,
     });
   } catch (error) {
-    if (consumed && userId && purchaseId) {
-      try { await refundStudioOutput(userId, purchaseId); }
+    if (consumed && userId) {
+      try { await refundStudioOutput(userId, planConsumed, packConsumed); }
       catch (refundErr) { console.error('[Studio video] refund failed in catch:', refundErr); }
     }
     console.error('[Studio video] fatal:', error);

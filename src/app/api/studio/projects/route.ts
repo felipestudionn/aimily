@@ -56,28 +56,21 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to list projects' }, { status: 500 });
   }
 
-  // Augment with outputs_remaining per project
-  const projectIds = (data || []).map((p) => p.id);
-  let purchasesByProject: Record<string, { remaining: number; pack_count: number }> = {};
-  if (projectIds.length) {
-    const { data: purchases } = await supabase
-      .from('studio_purchases')
-      .select('studio_project_id, outputs_allocated, outputs_consumed')
-      .in('studio_project_id', projectIds);
-
-    purchasesByProject = (purchases || []).reduce((acc, p) => {
-      const id = p.studio_project_id as string;
-      if (!acc[id]) acc[id] = { remaining: 0, pack_count: 0 };
-      acc[id].remaining += Math.max(Number(p.outputs_allocated) - Number(p.outputs_consumed), 0);
-      acc[id].pack_count += 1;
-      return acc;
-    }, {} as Record<string, { remaining: number; pack_count: number }>);
-  }
+  // Migration 077: credits live in the user's global user_credits.balance
+  // rather than a per-project pool. Every project now reports the same
+  // global remaining count so the dashboard can show a single balance
+  // (and consumers can show it however they want — total or per-card).
+  const { data: creditRow } = await supabase
+    .from('user_credits')
+    .select('balance')
+    .eq('user_id', user!.id)
+    .maybeSingle();
+  const outputs_remaining = creditRow?.balance ?? 0;
 
   const projects = (data || []).map((p) => ({
     ...p,
-    outputs_remaining: purchasesByProject[p.id]?.remaining || 0,
-    pack_count: purchasesByProject[p.id]?.pack_count || 0,
+    outputs_remaining,
+    pack_count: 0, // legacy field — kept for response back-compat
   }));
 
   return NextResponse.json({ projects });
