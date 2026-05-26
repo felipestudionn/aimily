@@ -11,6 +11,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getServerSession } from '@/lib/auth/server-session';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ADMIN_EMAILS } from '@/lib/stripe';
+import { getEffectiveBrand } from '@/lib/studio/effective-brand';
 import ProjectWorkspaceClient from './ProjectWorkspaceClient';
 
 export const dynamic = 'force-dynamic';
@@ -23,11 +24,17 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
   // Load project + verify ownership
   const { data: project } = await supabaseAdmin
     .from('studio_projects')
-    .select('id, user_id, brand_name, brand_logo_url, brand_palette, brand_fabric_refs')
+    .select('id, user_id, brand_name, brand_logo_url, brand_palette, brand_fabric_refs, brand_source_collection_id')
     .eq('id', id)
     .single();
   if (!project) notFound();
   if (project.user_id !== user.id) notFound();
+
+  // Resolve effective brand — if soft-linked to a collection, brand_name +
+  // palette come live from CIS. Otherwise it's the local snapshot. The
+  // header renders the effective name and (when linked) a badge with the
+  // source collection. See lib/studio/effective-brand.ts.
+  const effective = await getEffectiveBrand(id);
 
   // Recent assets + purchases + casting in parallel
   const [{ data: assetsData }, { data: purchasesData }, { data: modelsData }] = await Promise.all([
@@ -79,14 +86,25 @@ export default async function StudioProjectPage(props: { params: Promise<{ id: s
   }
   const isAdmin = isAdminByEmail || isAdminByDb;
 
+  // Override snapshot brand_name with the live effective one so the header
+  // never drifts when the source collection's brand changes.
+  const projectWithEffective = effective
+    ? { ...project, brand_name: effective.brand_name }
+    : project;
+  const brandSource =
+    effective?.source === 'collection' && effective.source_collection_id && effective.source_collection_name
+      ? { id: effective.source_collection_id, name: effective.source_collection_name }
+      : null;
+
   return (
     <ProjectWorkspaceClient
-      project={project}
+      project={projectWithEffective}
       assets={assets}
       models={models}
       outputs_remaining={outputs_remaining}
       pack_count={purchases.length}
       isAdmin={isAdmin}
+      brandSource={brandSource}
     />
   );
 }

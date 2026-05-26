@@ -19,6 +19,7 @@ import {
   Download,
   User,
   Play,
+  Link2,
 } from 'lucide-react';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
@@ -1026,6 +1027,10 @@ interface Props {
   outputs_remaining: number;
   pack_count: number;
   isAdmin?: boolean;
+  /** When non-null, this Studio project's brand is soft-linked to a 360
+      collection — live edits there flow through. The header surfaces this
+      so the user always sees where the brand is coming from. */
+  brandSource?: { id: string; name: string } | null;
 }
 
 type OutputType = 'still_life' | 'editorial' | 'tryon';
@@ -1607,8 +1612,18 @@ export default function ProjectWorkspaceClient(props: Props) {
         {/* Header — stacks on mobile so the CTA never collides with the title */}
         <header className="mb-10 flex flex-col sm:flex-row sm:items-end items-start justify-between gap-4">
           <div>
-            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2 inline-flex items-center gap-2 flex-wrap">
               {props.project.brand_name}
+              {props.brandSource && (
+                <Link
+                  href={`/collection/${props.brandSource.id}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-carbon/[0.04] text-[11px] text-carbon/55 hover:text-carbon hover:bg-carbon/[0.08] transition-colors"
+                  title="El brand se sincroniza en vivo con esta colección"
+                >
+                  <Link2 className="h-2.5 w-2.5" />
+                  Heredado de {props.brandSource.name}
+                </Link>
+              )}
             </p>
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.05]">
               Campañas
