@@ -89,7 +89,7 @@ async function runGptImageEditOnce(params: {
   }
 
   const formData = new FormData();
-  formData.append('model', 'gpt-image-2');
+  formData.append('model', 'gpt-image-1.5');
   for (const img of images) {
     formData.append(
       'image[]',
@@ -101,8 +101,7 @@ async function runGptImageEditOnce(params: {
   formData.append('n', '1');
   formData.append('size', '1024x1536');
   formData.append('quality', 'high');
-  // gpt-image-2 handles input fidelity automatically; input_fidelity
-  // parameter is gpt-image-1.5-only (no-op or 400 on v2).
+  formData.append('input_fidelity', 'high');
   // `moderation: 'low'` is the documented parameter for gpt-image-1.5
   // commercial-fashion / editorial use cases. The Python SDK does not
   // expose it on images.edit yet, but the REST endpoint accepts it
