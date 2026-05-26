@@ -88,17 +88,8 @@ async function runGptImageEditOnce(params: {
     return { url: null, errorCode: 'auth', rawError: 'OPENAI_API_KEY not set' };
   }
 
-  // Model selection priority:
-  // 1. ENV override (OPENAI_IMAGE_MODEL) — for A/B testing
-  // 2. gpt-image-2 — current default per Codex consult (2026-05-26):
-  //    "stronger image quality, improved editing, processes image
-  //    inputs at high fidelity automatically (so omit input_fidelity)"
-  // 3. Snapshot pin gpt-image-1.5-2025-12-16 — drift control fallback
-  const model = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2';
-  const isV2 = model.startsWith('gpt-image-2');
-
   const formData = new FormData();
-  formData.append('model', model);
+  formData.append('model', 'gpt-image-1.5');
   for (const img of images) {
     formData.append(
       'image[]',
@@ -110,12 +101,7 @@ async function runGptImageEditOnce(params: {
   formData.append('n', '1');
   formData.append('size', '1024x1536');
   formData.append('quality', 'high');
-  // input_fidelity is gpt-image-1.5 specific. gpt-image-2 handles
-  // input fidelity automatically per OpenAI docs — sending it on v2
-  // is a no-op or a 400. Conditional.
-  if (!isV2) {
-    formData.append('input_fidelity', 'high');
-  }
+  formData.append('input_fidelity', 'high');
   // `moderation: 'low'` is the documented parameter for gpt-image-1.5
   // commercial-fashion / editorial use cases. The Python SDK does not
   // expose it on images.edit yet, but the REST endpoint accepts it
@@ -129,7 +115,7 @@ async function runGptImageEditOnce(params: {
 
   // Server-side ops log so we can verify what was actually sent.
   console.log(
-    `[gpt-image attempt=${attempt}] model=${model} prompt.length=${prompt.length} images=${images.length} moderation=low`,
+    `[gpt-image attempt=${attempt}] prompt.length=${prompt.length} images=${images.length} moderation=low`,
   );
 
   const res = await fetch(OPENAI_IMAGE_EDIT_ENDPOINT, {

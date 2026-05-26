@@ -655,83 +655,67 @@ export async function POST(req: NextRequest) {
       // / hair-fall / attitude fidelity to the style reference. Do NOT
       // unify or refactor without explicit approval — past attempts to
       // "unify with buildPrompt()" silently dropped composition fidelity.
-      // ─── STRUCTURED PROMPT per Codex consult (2026-05-26) ───
-      // Replaces the previous flat join(' ') wall-of-text with labeled
-      // sections separated by line breaks (\n\n). OpenAI cookbook +
-      // Codex both confirm: "structure beats length" — labeled segments
-      // give GPT better instruction hierarchy than equivalent prose.
-      // Cut blocks (BLINDAJE 4 mirror, BLINDAJE 5 final verification,
-      // pixel-perfect false-precision language) per Codex — competing
-      // constraints + theater. Added Codex's 3 worth-adding clauses
-      // (material fidelity, skin tone, product angle) into the right
-      // sections instead of as standalone blindajes.
-      const calzadoProductLine = `For footwear: shoes are worn on both feet, visible from an editorial front or three-quarter side angle. Outsole is not the dominant view unless Image 3 explicitly shows it. The upper, strap, and silhouette must read clearly.`;
-      const ropaProductLine = `For garments: the garment is worn naturally on the model, drapes correctly, shows fabric weight and silhouette. The garment is the hero of the frame.`;
-      const accesorioProductLine = `For accessories: the product is held, worn, or carried in a way that keeps it prominent and identifiable in the frame.`;
-      const productLine = category === 'CALZADO' ? calzadoProductLine
-        : category === 'ROPA' ? ropaProductLine
-        : accesorioProductLine;
-
-      const inputsLines = style_reference_url
-        ? [
-            `Image 1: product reference (${product_name || 'fashion product'}). Source of product identity, material, color, silhouette, hardware.`,
-            `Image 2: model identity reference. Source of face structure, hair color/length/texture/cut, complexion, skin tone. NOT pose, NOT gaze, NOT expression — those come from Image 3.`,
-            `Image 3: scene + pose + style reference (the model in Image 3 has already had the casting model's head composited onto her body). Source of pose, body language, head tilt, gaze direction (where she is looking — if sideways, output sideways; if down at her foot, output down at her foot), facial expression, mood, lighting, atmosphere, environment, camera angle, framing, wardrobe styling around the product.`,
-          ]
-        : [
-            `Image 1: product reference (${product_name || 'fashion product'}). Source of product identity, material, color, silhouette.`,
-            `Image 2: model identity reference. Source of face, hair, complexion, skin tone.`,
-            `Compose a high-end editorial scene from scratch — the model from Image 2 wearing or carrying the product from Image 1.`,
-          ];
-
-      const nonNegotiables = style_reference_url
-        ? [
-            `1. Model identity (face / hair / complexion / skin tone) comes from Image 2. Identity wins over any conflicting cue.`,
-            `2. Product (shape, color, material, hardware, details) comes from Image 1. The scene accommodates the product, not the other way around.`,
-            `3. Pose, gaze direction, head tilt, body language, facial expression, lighting, framing, environment come from Image 3 — reproduce exactly.`,
-            `4. ${productLine}`,
-            `5. Full body, head-to-toe crop. Shot on 85mm telephoto compression. Editorial 8-head body proportion (head ≈ 1/8 of total height crown-to-feet). Slight low camera angle. Magazine cover full-figure crop — not portrait, not headshot.`,
-          ]
-        : [
-            `1. Model identity (face / hair / complexion / skin tone) comes from Image 2.`,
-            `2. Product (shape, color, material, hardware, details) comes from Image 1.`,
-            `3. ${productLine}`,
-            `4. Full body, head-to-toe crop. 85mm telephoto compression. Editorial 8-head body proportion. Magazine cover crop.`,
-          ];
-
       const gptPrompt = [
-        `## TASK`,
-        `Create one full-body high-end editorial fashion photograph.`,
-        ``,
-        `## INPUTS`,
-        ...inputsLines,
-        ``,
-        `## NON-NEGOTIABLES`,
-        ...nonNegotiables,
-        ``,
-        `## EDITORIAL QUALITY`,
-        `Runway / editorial casting bone structure: slender swan-like neck, visible defined clavicle where the wardrobe permits, sculpted cheekbones with natural shadow, defined jawline, slim sculpted face. At least one side of the hair is tucked behind the ear, revealing the earlobe and side of the jawline (when the hair length and pose permit). Natural skin texture with realistic pores and subtle highlights. Premium magazine campaign lighting.`,
-        ``,
-        `## MATERIAL FIDELITY`,
-        `Preserve the product's material finish from Image 1 exactly. Leather stays leather (specular highlights, visible grain). Suede stays suede (matte, fine nap). Satin stays satin (smooth specular). Cotton stays cotton, denim stays denim. Do NOT substitute one material for another. Hardware (buckles, rivets, eyelets) stays the same color and finish as in Image 1.`,
-        ``,
-        `## SKIN TONE`,
-        `Match Image 2's complexion and undertone under Image 3's scene lighting. Do not tan, bleach, or shift ethnicity. Variation should only come from light, never from rendering the model as a different person.`,
-        ``,
-        `## ANATOMY`,
-        `Exactly 2 arms, 2 legs, 2 feet, 10 fingers, 10 toes. Feet naturally mirrored: left foot points outward to the model's left, right foot to the model's right. Big toe on medial (inside) edge of each foot. Heels backward. Hands have 5 distinguishable fingers each with natural joint orientation and visible separation between thumb and other fingers — never fused, melted, or merged with surfaces or products.`,
-        ``,
-        `## DO NOT`,
-        `- Do not change leather into suede or substitute any material.`,
-        `- Do not lighten, darken, or shift the model's skin tone beyond what scene lighting justifies.`,
-        `- Do not simplify or remove background elements visible in Image 3 (mirrors, furniture, props, architectural details).`,
-        `- Do not invent extra limbs, fingers, or toes.`,
-        `- Do not add text, captions, watermarks, brand names, phone numbers, page numbers, or magazine markings — even if any of these are visible in Image 3 (they belong to the original publication and must be erased from the output).`,
-        `- Do not render two left feet or two right feet (mirror them naturally).`,
-        user_prompt ? `` : '',
-        user_prompt ? `## ADDITIONAL CREATIVE DIRECTION` : '',
-        user_prompt ? user_prompt : '',
-      ].filter((p) => p !== '').join('\n');
+        `HIGH-END EDITORIAL FASHION PHOTOGRAPH.`,
+        `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
+        `Image 2 shows the EXACT model who must appear. Take her IDENTITY ONLY from Image 2: face structure (eye shape, nose shape, lip shape, jawline), hair (color, length, texture, cut), complexion, skin tone. Do NOT take her expression, gaze, or head pose from Image 2 — Image 2 is a headshot and those come from Image 3.`,
+        style_reference_url
+          ? `Image 3 defines the BEHAVIOR of the photograph: pose, body position, body language, head tilt, GAZE DIRECTION (where she is looking — if she looks sideways in Image 3, she looks sideways in the output; if she looks down at her foot, she looks down at her foot), facial expression, mood, lighting, atmosphere, camera angle, framing, wardrobe styling around the product. Reproduce Image 3's behavior exactly — only the IDENTITY of the face/hair changes (to Image 2's person) and only the PRODUCT changes (to Image 1's item).`
+          : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+        // Head-to-body proportion — research-backed directive replacing
+        // the older direct-anatomical instruction. The OpenAI developer
+        // forum reports that anatomical commands like "head = 1/8 of
+        // body" are ignored by gpt-image-1.5, but three indirect levers
+        // DO work in combination:
+        //   1. Photographic lens spec — telephoto compression
+        //      (85mm portrait lens) naturalizes facial proportions and
+        //      shrinks perceived head size relative to body.
+        //   2. Fashion-industry vocabulary — "fashion croquis", "8-head
+        //      figure ratio", "elongated editorial figure" hit training-
+        //      data fashion-illustration literature directly.
+        //   3. Framing constraint — explicit head-to-toe with negative
+        //      space above head + low camera angle forces the full
+        //      body into the crop.
+        // Sources: OpenAI cookbook, OpenAI dev forum thread on full-body
+        // generation, and academic fashion-illustration literature.
+        `FULL-BODY EDITORIAL COMPOSITION shot on 85mm portrait lens at standing-subject distance — telephoto compression naturalizes facial proportions and matches editorial body ratio. The figure follows fashion editorial 8-head proportion (croquis: head height = 1/8 of total figure height from crown to feet). Frame head-to-toe with negative space above the head, feet included in the crop. Slight low camera angle elongates the legs. Magazine cover full-figure crop, not portrait crop, not headshot crop.`,
+        category === 'CALZADO'
+          ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+          : '',
+        // ─── 5 STRUCTURAL BLINDAJES (added 2026-05-25) ───
+        // Each clause closes a degree of freedom where gpt-image-1.5
+        // was producing visible variance between runs of the same
+        // inputs. The "perfecta" output of 9cf8259 hit the good zone
+        // of these decisions by sampling luck; the regenerations hit
+        // worse zones. These clauses pin the model to the good zone.
+        //
+        // BLINDAJE 1 — Reference priority order (resolves conflicts)
+        style_reference_url
+          ? `REFERENCE PRIORITY ORDER (when sources appear to conflict): Image 2's face/hair identity is the HIGHEST priority — Image 3's behavior adapts around it, never overwrites it. Image 1's product is pixel-perfect — the scene accommodates the product, not the other way around. Image 3 supplies pose, gaze direction, head tilt, lighting, scene, atmosphere. Never blend Image 2's identity with the blurred or composited face in Image 3 — Image 2 wins identity always.`
+          : '',
+        // BLINDAJE 6 — Editorial casting refinement (face + upper body)
+        // The features Felipe identified as the differentiator between
+        // the "perfecta" sample and the merely-decent regenerations:
+        // visible clavicle, slender neck, hair tucked behind the ear,
+        // sharp cheekbones, sculpted face. Without this clause GPT
+        // resolves the model's body/face refinement by sampling luck.
+        `EDITORIAL CASTING REFINEMENT (applies to face and upper body rendering, NOT to pose/scene/product): runway-caliber bone structure — visible defined collarbone (clavicle prominent against the neckline), slender swan-like neck (long elegant proportion), sharp cheekbones with sculpted shadow, slim sculpted face, defined jawline. HAIR STYLING — at least one side of the hair is tucked behind the ear, revealing the earlobe, the jawline, and the side of the neck. The model reads as high-fashion editorial, not commercial catalog.`,
+        // BLINDAJE 2 — Foot anatomy (orientation + mirroring)
+        `FOOT ANATOMY: the model has exactly 2 feet, naturally MIRRORED — left foot points outward toward the model's left side, right foot points outward toward the model's right side. The big toe of each foot is on the medial (inside) edge, the little toe on the lateral (outside) edge. Heels face backward, never sideways. Never render two left feet, two right feet, or both feet rotated identically. Each foot includes 5 distinguishable toes.`,
+        // BLINDAJE 3 — Hands and fingers
+        `HAND ANATOMY: each hand has exactly 5 distinguishable fingers (thumb + 4 fingers) with correct joint orientation, natural curvature, and visible separation between thumb and the other fingers. When a hand touches a product, surface, or body part, the fingers wrap naturally around it — fingers remain individually visible, not fused or melted into the surface. No extra digits, no missing digits, no fingers blending into the product.`,
+        // BLINDAJE 4 — Reflective surfaces coherence (mirrors, glass)
+        style_reference_url
+          ? `REFLECTIVE SURFACES (if a mirror, glass, polished metal, or any reflective surface appears in Image 3): the reflection in the output must be PHYSICALLY COHERENT with the main scene — it shows the same model in the same pose wearing the same product (from Image 1), viewed from the mirror's correct geometric angle with proper perspective inversion. The reflection is a physical mirror of the main composition. Never render a different model, different pose, or different product in the reflection. Never leave the reflection empty or blurred when the main scene shows the model clearly.`
+          : '',
+        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers, 10 toes. No extra limbs, no missing limbs, no merged limbs.`,
+        `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
+        user_prompt ? `Additional direction: ${user_prompt}` : '',
+        // BLINDAJE 5 — Re-specification at the end (cookbook recommendation)
+        style_reference_url
+          ? `CRITICAL FINAL VERIFICATION before returning the output: (1) the face in the output is Image 2's identity, never invented; (2) the pose, gaze direction, and head tilt match Image 3 exactly; (3) the product is Image 1, pixel-perfect; (4) feet are correctly mirrored, never two of the same side; (5) any reflective surface shows a physically coherent reflection; (6) each hand has 5 distinct fingers, no fusions. Re-verify these six points before finalizing.`
+          : `CRITICAL FINAL VERIFICATION before returning the output: (1) the face in the output is Image 2's identity, never invented; (2) the product is Image 1, pixel-perfect; (3) feet are correctly mirrored, never two of the same side; (4) each hand has 5 distinct fingers, no fusions. Re-verify these points before finalizing.`,
+      ].filter(Boolean).join(' ');
 
       const gptResult = await gptImageEdit({
         images,
