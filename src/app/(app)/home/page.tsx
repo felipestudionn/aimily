@@ -73,7 +73,10 @@ export default async function HomePage() {
 
   const collections = (collectionsData || []) as CollectionRow[];
   const studioProjects = (studioData || []) as StudioProjectRow[];
-  const firstName = (user.user_metadata as { first_name?: string } | null)?.first_name?.trim();
+  const meta = user.user_metadata as { first_name?: string; full_name?: string } | null;
+  const firstName =
+    meta?.first_name?.trim() ||
+    (meta?.full_name?.trim().split(/\s+/)[0] ?? '');
   const totalActive = collections.length + studioProjects.length + tenants.length;
 
   return (
