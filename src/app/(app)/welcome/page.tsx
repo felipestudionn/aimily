@@ -78,7 +78,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
   }
 
   if (alreadyDone) {
-    redirect('/my-collections');
+    redirect('/home');
   }
 
   const fullName = (user.user_metadata?.full_name as string | undefined) || null;

@@ -59,11 +59,14 @@ function NewCollectionFlow() {
   const t = useTranslation();
   const { language } = useLanguage();
 
-  // Skip the intent selector when we come from a place that already knows
-  // the user wants to create a collection (e.g. the "+ nueva colección" CTA
-  // inside /my-collections). The selector is for fresh navigations only.
-  const skipIntent = searchParams?.get('direct') === '1';
-  const [view, setView] = useState<View>(skipIntent ? 'pick-date' : 'intent');
+  // The 3-pad intent selector ("¿Qué quieres hacer hoy?") was retired
+  // 2026-05-26 — the /home unified workspace now plays that role, and the
+  // product switcher (top-right pill) covers face-to-face navigation. So
+  // /new-collection always lands on the date wizard directly. The 'intent'
+  // view branch below is kept as dead code for a session in case we need
+  // to revive the gate; remove on next pass.
+  void searchParams; // retained intentionally for future use
+  const [view, setView] = useState<View>('pick-date');
   const [launchDate, setLaunchDate] = useState(defaultLaunchDate());
   const [name, setName] = useState('');
   const [skipNaming, setSkipNaming] = useState(false);

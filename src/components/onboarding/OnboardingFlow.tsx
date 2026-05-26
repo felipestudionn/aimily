@@ -78,7 +78,7 @@ export function OnboardingFlow({ fullName, initialLanguage = null }: Props) {
 
   const firstName = (fullName || '').split(' ')[0] || '';
 
-  async function complete(target: '/new-collection' | '/my-collections') {
+  async function complete(target: '/home' | '/new-collection') {
     if (saving) return;
     setSaving(true);
 
@@ -178,7 +178,7 @@ export function OnboardingFlow({ fullName, initialLanguage = null }: Props) {
           variant="dark"
           showCta
           onCta={() => complete('/new-collection')}
-          onSkip={() => complete('/my-collections')}
+          onSkip={() => complete('/home')}
         />
       )}
     </div>

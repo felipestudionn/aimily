@@ -38,7 +38,7 @@ export default async function MarketingHomePage({ searchParams }: PageProps) {
   // public pricing table (used by /account when a trial user clicks
   // "Ver planes"). The hash (#pricing) still drives the scroll.
   if (user && pricing !== '1') {
-    redirect('/my-collections');
+    redirect('/home');
   }
 
   return <MarketingHomeClient />;

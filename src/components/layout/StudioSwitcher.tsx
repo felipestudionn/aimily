@@ -9,6 +9,10 @@ interface UserProducts {
   has360: boolean;
   hasStudio: boolean;
   hasStrategy?: boolean;
+  // active*Id fields are no longer used — Felipe 2026-05-26: the switcher
+  // always navigates to the face HUB (/my-collections, /studio, /in-season),
+  // never to a specific active project. Kept on the payload for API
+  // back-compat with other consumers; ignored here.
   active360Id?: string;
   activeStudioId?: string;
   activeStrategyTenantSlug?: string | null;
@@ -66,15 +70,12 @@ export function StudioSwitcher() {
   const currentlyStrategy = pathname?.startsWith('/strategy') || pathname?.startsWith('/in-season');
   const currentlyAimily = !currentlyStudio && !currentlyStrategy;
 
-  const studioHref = products.activeStudioId ? `/studio/${products.activeStudioId}` : '/studio';
-  const collectionHref = products.active360Id
-    ? `/collection/${products.active360Id}`
-    : '/my-collections';
-  // Canonical href uses /in-season/ (server-side rewrite to /strategy/* keeps
-  // legacy URLs working). New users see In-Season everywhere.
-  const strategyHref = products.activeStrategyTenantSlug
-    ? `/in-season/${products.activeStrategyTenantSlug}`
-    : '/in-season';
+  // The switcher always points at the face HUB — never at an active
+  // project — so changing faces lands you on that face's library (where
+  // you can pick which project to continue or start a new one).
+  const collectionHref = '/my-collections';
+  const studioHref = '/studio';
+  const strategyHref = '/in-season';
 
   // Admins always see all 3 pills; non-admins only see the ones they have.
   const showAimily = products.isAdmin || products.has360;
