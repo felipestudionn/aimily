@@ -682,9 +682,39 @@ export async function POST(req: NextRequest) {
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
           : '',
-        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
+        // ─── 5 STRUCTURAL BLINDAJES (added 2026-05-25) ───
+        // Each clause closes a degree of freedom where gpt-image-1.5
+        // was producing visible variance between runs of the same
+        // inputs. The "perfecta" output of 9cf8259 hit the good zone
+        // of these decisions by sampling luck; the regenerations hit
+        // worse zones. These clauses pin the model to the good zone.
+        //
+        // BLINDAJE 1 — Reference priority order (resolves conflicts)
+        style_reference_url
+          ? `REFERENCE PRIORITY ORDER (when sources appear to conflict): Image 2's face/hair identity is the HIGHEST priority — Image 3's behavior adapts around it, never overwrites it. Image 1's product is pixel-perfect — the scene accommodates the product, not the other way around. Image 3 supplies pose, gaze direction, head tilt, lighting, scene, atmosphere. Never blend Image 2's identity with the blurred or composited face in Image 3 — Image 2 wins identity always.`
+          : '',
+        // BLINDAJE 6 — Editorial casting refinement (face + upper body)
+        // The features Felipe identified as the differentiator between
+        // the "perfecta" sample and the merely-decent regenerations:
+        // visible clavicle, slender neck, hair tucked behind the ear,
+        // sharp cheekbones, sculpted face. Without this clause GPT
+        // resolves the model's body/face refinement by sampling luck.
+        `EDITORIAL CASTING REFINEMENT (applies to face and upper body rendering, NOT to pose/scene/product): runway-caliber bone structure — visible defined collarbone (clavicle prominent against the neckline), slender swan-like neck (long elegant proportion), sharp cheekbones with sculpted shadow, slim sculpted face, defined jawline. HAIR STYLING — at least one side of the hair is tucked behind the ear, revealing the earlobe, the jawline, and the side of the neck. The model reads as high-fashion editorial, not commercial catalog.`,
+        // BLINDAJE 2 — Foot anatomy (orientation + mirroring)
+        `FOOT ANATOMY: the model has exactly 2 feet, naturally MIRRORED — left foot points outward toward the model's left side, right foot points outward toward the model's right side. The big toe of each foot is on the medial (inside) edge, the little toe on the lateral (outside) edge. Heels face backward, never sideways. Never render two left feet, two right feet, or both feet rotated identically. Each foot includes 5 distinguishable toes.`,
+        // BLINDAJE 3 — Hands and fingers
+        `HAND ANATOMY: each hand has exactly 5 distinguishable fingers (thumb + 4 fingers) with correct joint orientation, natural curvature, and visible separation between thumb and the other fingers. When a hand touches a product, surface, or body part, the fingers wrap naturally around it — fingers remain individually visible, not fused or melted into the surface. No extra digits, no missing digits, no fingers blending into the product.`,
+        // BLINDAJE 4 — Reflective surfaces coherence (mirrors, glass)
+        style_reference_url
+          ? `REFLECTIVE SURFACES (if a mirror, glass, polished metal, or any reflective surface appears in Image 3): the reflection in the output must be PHYSICALLY COHERENT with the main scene — it shows the same model in the same pose wearing the same product (from Image 1), viewed from the mirror's correct geometric angle with proper perspective inversion. The reflection is a physical mirror of the main composition. Never render a different model, different pose, or different product in the reflection. Never leave the reflection empty or blurred when the main scene shows the model clearly.`
+          : '',
+        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers, 10 toes. No extra limbs, no missing limbs, no merged limbs.`,
         `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
         user_prompt ? `Additional direction: ${user_prompt}` : '',
+        // BLINDAJE 5 — Re-specification at the end (cookbook recommendation)
+        style_reference_url
+          ? `CRITICAL FINAL VERIFICATION before returning the output: (1) the face in the output is Image 2's identity, never invented; (2) the pose, gaze direction, and head tilt match Image 3 exactly; (3) the product is Image 1, pixel-perfect; (4) feet are correctly mirrored, never two of the same side; (5) any reflective surface shows a physically coherent reflection; (6) each hand has 5 distinct fingers, no fusions. Re-verify these six points before finalizing.`
+          : `CRITICAL FINAL VERIFICATION before returning the output: (1) the face in the output is Image 2's identity, never invented; (2) the product is Image 1, pixel-perfect; (3) feet are correctly mirrored, never two of the same side; (4) each hand has 5 distinct fingers, no fusions. Re-verify these points before finalizing.`,
       ].filter(Boolean).join(' ');
 
       const gptResult = await gptImageEdit({
