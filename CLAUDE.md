@@ -2,6 +2,16 @@
 
 Fashion collection management platform for planning, designing, and launching clothing/footwear collections.
 
+## Sección 0 — PROTOCOLO INVIOLABLE (lee esto ANTES que cualquier otra cosa)
+
+**Lee `~/alfred/shared/PROTOCOLO_AGENTES.md` completo** (accesible vía `--add-dir ~/alfred`). Define las 3 reglas que mandan sobre TODO el resto de este archivo:
+
+1. **Telegram in = Telegram out.** Si Felipe te escribe por Telegram, le contestas por Telegram. Siempre.
+2. **Ack en <3s** cuando vayas a tardar >5s en responder (audio = ack obligatorio antes de Whisper).
+3. **`git fetch` + `pull` si hay cambios** al recibir cada mensaje, en paralelo al ack. No bloquees la respuesta.
+
+Si algo en este CLAUDE.md choca con el protocolo, manda el protocolo.
+
 ## Sync lazy con remote (al recibir mensaje tras pausa)
 
 Antes de procesar un mensaje del usuario, comprueba la última entrada en `~/alfred/shared/memory/convo_log_aimily.md` (si existe) o tu cron-registry:
