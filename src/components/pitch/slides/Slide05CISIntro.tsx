@@ -28,16 +28,16 @@ export default function Slide05CISIntro() {
       <div className="flex-1 flex flex-col max-w-[1400px] mx-auto w-full">
         {/* Header */}
         <div className="text-center max-w-[1100px] mx-auto mb-16">
-          <div className="text-[12px] tracking-[0.22em] uppercase text-carbon/40 mb-6 font-medium">
+          <p className="text-[11px] font-medium tracking-[0.22em] uppercase text-carbon/40 mb-6">
             CIS · Context Intelligence System
-          </div>
-          <h2 className="text-[48px] md:text-[64px] font-medium text-carbon tracking-[-0.035em] leading-[1.05]">
+          </p>
+          <h2 className="text-[44px] md:text-[60px] lg:text-[68px] font-light text-carbon tracking-[-0.04em] leading-[1.05]">
             Una capa que vive{' '}
-            <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
-              debajo
-            </span>{' '}
+            <span className="font-extrabold">debajo</span>{' '}
             de los cuatro bloques
-            <br />y los mantiene conectados.
+            <br />
+            y los mantiene{' '}
+            <span className="font-extrabold">conectados.</span>
           </h2>
         </div>
 
@@ -48,10 +48,8 @@ export default function Slide05CISIntro() {
             <div className="absolute top-0 left-0 right-0 grid grid-cols-4 gap-6">
               {BLOCKS.map((b, i) => (
                 <div key={b.label} className="flex flex-col items-center">
-                  <div
-                    className="bg-white rounded-[14px] px-5 py-3.5 border border-carbon/[0.06] text-[13px] font-semibold text-carbon tracking-[-0.015em] text-center min-w-[160px] shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
-                  >
-                    <span className="text-carbon/30 text-[11px] tracking-[0.1em] uppercase block mb-0.5">
+                  <div className="bg-white rounded-[14px] px-5 py-3.5 border border-carbon/[0.06] text-[13px] font-semibold text-carbon tracking-[-0.015em] text-center min-w-[160px] shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                    <span className="text-carbon/35 text-[10px] font-medium tracking-[0.15em] uppercase block mb-0.5">
                       0{i + 1}
                     </span>
                     {b.label}
@@ -72,7 +70,7 @@ export default function Slide05CISIntro() {
 
             {/* CIS label on the spine */}
             <div className="absolute top-[126px] left-1/2 -translate-x-1/2 flex items-center gap-3">
-              <div className="text-[11px] tracking-[0.18em] uppercase text-carbon/60 font-medium">
+              <div className="text-[11px] font-medium tracking-[0.22em] uppercase text-carbon/60">
                 Collection Intelligence Spine
               </div>
             </div>
@@ -84,7 +82,7 @@ export default function Slide05CISIntro() {
                   <path d="M7 1L1 7l6 6" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
                 </svg>
               </div>
-              <div className="px-4 text-[10px] tracking-[0.15em] uppercase text-carbon/40 whitespace-nowrap">
+              <div className="px-4 text-[10px] font-medium tracking-[0.18em] uppercase text-carbon/45 whitespace-nowrap">
                 In-Season → semillas → próxima temporada
               </div>
               <div className="flex-1 h-px bg-carbon/15" />
@@ -99,13 +97,13 @@ export default function Slide05CISIntro() {
               key={p.title}
               className="bg-white rounded-[20px] p-8 border border-carbon/[0.04]"
             >
-              <div className="text-[11px] tracking-[0.15em] uppercase text-carbon/35 mb-4">
+              <p className="text-[10px] font-medium tracking-[0.18em] uppercase text-carbon/35 mb-4">
                 Propiedad 0{i + 1}
-              </div>
+              </p>
               <h4 className="text-[18px] font-semibold text-carbon tracking-[-0.02em] leading-[1.25] mb-3">
                 {p.title}
               </h4>
-              <p className="text-[13px] text-carbon/55 leading-[1.65] tracking-[-0.005em]">
+              <p className="text-[13px] font-light text-carbon/60 leading-[1.7] tracking-[-0.005em]">
                 {p.body}
               </p>
             </div>

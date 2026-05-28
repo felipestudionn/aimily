@@ -91,33 +91,37 @@ export function PitchDeck({ initialSlide = 0 }: { initialSlide?: number }) {
         <Current />
       </div>
 
-      {/* Top-left brand mark */}
-      <div className="absolute top-6 left-8 z-50 flex items-center gap-3 pointer-events-none">
-        <div className="text-[13px] font-semibold text-carbon tracking-[-0.02em]">
+      {/* Top-left brand mark — mix-blend-difference adapts to dark/light slides */}
+      <div
+        className="absolute top-6 left-8 z-50 flex items-center gap-3 pointer-events-none text-white"
+        style={{ mixBlendMode: 'difference' }}
+      >
+        <div className="text-[13px] font-semibold tracking-[-0.02em]">
           aimily
         </div>
-        <div className="text-[11px] text-carbon/30 tracking-[0.1em] uppercase">
+        <div className="text-[11px] opacity-50 tracking-[0.18em] uppercase font-medium">
           investor deck · 2026
         </div>
       </div>
 
-      {/* Bottom progress indicator + slide label */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4">
+      {/* Bottom progress indicator + slide label — mix-blend-difference adapts */}
+      <div
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 text-white"
+        style={{ mixBlendMode: 'difference' }}
+      >
         <div className="flex items-center gap-1.5">
           {SLIDES.map((s, i) => (
             <button
               key={s.id}
               onClick={() => go(i)}
               aria-label={`Ir a slide ${i + 1}: ${s.label}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === index
-                  ? 'w-8 bg-carbon'
-                  : 'w-1.5 bg-carbon/15 hover:bg-carbon/30'
+              className={`h-1.5 rounded-full transition-all duration-300 bg-white ${
+                i === index ? 'w-8 opacity-100' : 'w-1.5 opacity-30 hover:opacity-60'
               }`}
             />
           ))}
         </div>
-        <div className="text-[11px] text-carbon/35 tracking-[-0.01em] tabular-nums">
+        <div className="text-[11px] opacity-55 tracking-[-0.01em] tabular-nums font-medium">
           {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
         </div>
       </div>
@@ -144,11 +148,12 @@ export function PitchDeck({ initialSlide = 0 }: { initialSlide?: number }) {
         </svg>
       </button>
 
-      {/* Top-right fullscreen toggle */}
+      {/* Top-right fullscreen toggle — adapts via mix-blend-difference */}
       <button
         onClick={toggleFullscreen}
         aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-        className="absolute top-6 right-8 z-50 text-[11px] tracking-[0.1em] uppercase text-carbon/30 hover:text-carbon transition-colors"
+        className="absolute top-6 right-8 z-50 text-[11px] tracking-[0.18em] uppercase font-medium opacity-40 hover:opacity-80 transition-opacity text-white"
+        style={{ mixBlendMode: 'difference' }}
       >
         {isFullscreen ? 'esc' : 'F · fullscreen'}
       </button>

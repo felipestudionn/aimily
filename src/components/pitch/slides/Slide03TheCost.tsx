@@ -25,16 +25,17 @@ export default function Slide03TheCost() {
   return (
     <SlideShell eyebrow="Acto I · El coste">
       <div className="flex-1 flex flex-col justify-center max-w-[1400px] mx-auto w-full">
-        <div className="max-w-[900px] mb-16">
-          <h2 className="text-[56px] md:text-[72px] font-medium text-carbon tracking-[-0.035em] leading-[1.05]">
-            Y el coste no es<br />
-            <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
-              solo creativo.
-            </span>
+        <div className="max-w-[1000px] mb-16">
+          <p className="text-[11px] font-medium tracking-[0.18em] uppercase text-carbon/40 mb-6">
+            Y el coste no es solo creativo
+          </p>
+          <h2 className="text-[48px] md:text-[64px] lg:text-[72px] font-light text-carbon tracking-[-0.04em] leading-[1.05]">
+            Tres consecuencias que viven{' '}
+            <span className="font-extrabold">en cada colección.</span>
           </h2>
-          <p className="mt-8 text-[18px] md:text-[20px] text-carbon/55 leading-[1.55] tracking-[-0.01em] max-w-[680px]">
-            Tres consecuencias que viven en cada colección, en cada marca,
-            cada temporada.
+          <p className="mt-8 text-[17px] md:text-[19px] font-light text-carbon/65 leading-[1.7] tracking-[-0.01em] max-w-[680px]">
+            En cada marca, cada temporada — son el impuesto invisible que paga
+            la industria entera.
           </p>
         </div>
 
@@ -54,7 +55,7 @@ export default function Slide03TheCost() {
                 {c.title}
               </h3>
 
-              <p className="text-[14px] text-carbon/55 leading-[1.7] tracking-[-0.01em]">
+              <p className="text-[14px] font-light text-carbon/60 leading-[1.7] tracking-[-0.01em]">
                 {c.body}
               </p>
             </div>

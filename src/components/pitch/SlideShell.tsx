@@ -3,6 +3,10 @@
 
    Enforces consistent paddings + max-width + entrance animation so the
    deck feels cohesive. Slides themselves only worry about content.
+
+   Variants:
+   - `light` (default): bg-shade, carbon text
+   - `dark`: bg-carbon, crema text — for hero / dramatic slides
    ═══════════════════════════════════════════════════════════════════ */
 
 import { cn } from '@/lib/utils';
@@ -12,11 +16,21 @@ interface SlideShellProps {
   className?: string;
   /** Numbered eyebrow shown top-center (e.g. "ACTO I · EL PROBLEMA"). */
   eyebrow?: string;
+  /** Background variant — `dark` flips to bg-carbon + crema text. */
+  variant?: 'light' | 'dark';
   /** Optional bottom-right accent color block — used for thematic slides. */
   accentColor?: 'sea-foam' | 'moss' | 'clay' | 'citronella' | 'midnight';
 }
 
-export function SlideShell({ children, className, eyebrow, accentColor }: SlideShellProps) {
+export function SlideShell({
+  children,
+  className,
+  eyebrow,
+  variant = 'light',
+  accentColor,
+}: SlideShellProps) {
+  const isDark = variant === 'dark';
+
   const accentMap = {
     'sea-foam': 'bg-sea-foam',
     moss: 'bg-moss',
@@ -26,10 +40,20 @@ export function SlideShell({ children, className, eyebrow, accentColor }: SlideS
   } as const;
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      className={cn(
+        'relative h-full w-full overflow-hidden',
+        isDark ? 'bg-carbon text-crema' : 'bg-shade text-carbon',
+      )}
+    >
       {eyebrow && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10">
-          <div className="text-[10px] tracking-[0.18em] uppercase text-carbon/30 font-medium">
+          <div
+            className={cn(
+              'text-[10px] tracking-[0.22em] uppercase font-medium',
+              isDark ? 'text-crema/45' : 'text-carbon/35',
+            )}
+          >
             {eyebrow}
           </div>
         </div>

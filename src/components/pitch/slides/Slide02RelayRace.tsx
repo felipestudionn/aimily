@@ -18,14 +18,15 @@ export default function Slide02RelayRace() {
   return (
     <SlideShell eyebrow="Acto I · El problema">
       <div className="flex-1 flex flex-col justify-center max-w-[1400px] mx-auto w-full">
-        <div className="max-w-[900px] mb-20">
-          <h2 className="text-[56px] md:text-[72px] font-medium text-carbon tracking-[-0.035em] leading-[1.05]">
-            La moda se construye como<br />
-            <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>
-              una carrera de relevos.
-            </span>
+        <div className="max-w-[1000px] mb-20">
+          <p className="text-[11px] font-medium tracking-[0.18em] uppercase text-carbon/40 mb-6">
+            La realidad operativa hoy
+          </p>
+          <h2 className="text-[48px] md:text-[64px] lg:text-[72px] font-light text-carbon tracking-[-0.04em] leading-[1.05]">
+            La moda se construye como{' '}
+            <span className="font-extrabold">una carrera de relevos.</span>
           </h2>
-          <p className="mt-8 text-[18px] md:text-[20px] text-carbon/55 leading-[1.55] tracking-[-0.01em] max-w-[680px]">
+          <p className="mt-8 text-[17px] md:text-[19px] font-light text-carbon/65 leading-[1.7] tracking-[-0.01em] max-w-[680px]">
             Cada departamento pasa el contexto al siguiente como un cubo de agua.
             Y en cada paso, algo se derrama.
           </p>
@@ -64,7 +65,7 @@ export default function Slide02RelayRace() {
 
                 {/* Stage label */}
                 <div className="mt-6 text-center">
-                  <div className="text-[11px] text-carbon/30 tracking-[0.1em] uppercase mb-2">
+                  <div className="text-[11px] font-medium text-carbon/35 tracking-[0.15em] uppercase mb-2">
                     0{i + 1}
                   </div>
                   <div className="text-[15px] font-semibold text-carbon tracking-[-0.02em] mb-1">
@@ -75,12 +76,13 @@ export default function Slide02RelayRace() {
                 {/* Context retained number */}
                 <div className="mt-8 text-center">
                   <div
-                    className="text-[40px] font-medium text-carbon tracking-[-0.03em] tabular-nums leading-none"
+                    className="text-[44px] font-light text-carbon tracking-[-0.035em] tabular-nums leading-none"
                     style={{ opacity: 0.3 + (stage.context / 100) * 0.7 }}
                   >
-                    {stage.context}%
+                    <span className="font-extrabold">{stage.context}</span>
+                    <span className="text-[28px] font-light">%</span>
                   </div>
-                  <div className="mt-2 text-[10px] tracking-[0.15em] uppercase text-carbon/35">
+                  <div className="mt-2 text-[10px] font-medium tracking-[0.18em] uppercase text-carbon/35">
                     Contexto retenido
                   </div>
                 </div>
@@ -89,7 +91,7 @@ export default function Slide02RelayRace() {
           </div>
         </div>
 
-        <div className="mt-20 max-w-[640px] text-[15px] text-carbon/45 leading-[1.7] tracking-[-0.005em]">
+        <div className="mt-20 max-w-[720px] text-[15px] font-light text-carbon/55 leading-[1.75] tracking-[-0.005em]">
           Briefs reescritos. Decisiones perdidas en hilos de Slack. Por qué se
           eligió aquel color ya nadie lo recuerda en marketing. El moodboard
           inicial no llega entero a ningún sitio.
