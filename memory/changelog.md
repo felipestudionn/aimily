@@ -8,6 +8,33 @@ originSessionId: f99254a8-8360-4858-a287-eacb00c4229e
 
 > Post-2026-04-12 sessions live in their own `SESSION-YYYY-MM-DD-*.md` files. This changelog is the historical record up to and including 2026-04-12. See Session History in `MEMORY.md` for every day after.
 
+## Session 2026-05-27 / 2026-05-28 — Investor / Zara pitch deck · merged to main
+
+Two surfaces, one narrative: the public-shareable web deck at `/pitch` and the canonical Keynote master at `docs/aimily-pitch.key`.
+
+**Branch**: `pitch/investor-zara-deck` → merged to `main` 2026-05-28 (fast-forward, rebased to drop the duplicate protocol commit).
+
+**Commits on main**:
+- `283f95b` — deck shell + 5 slides (cover · relay race · cost · question · CIS intro) + `/pitch` whitelisted in middleware. Cherry-picked from original `cbbfa51`.
+- `bede8d7` — slide refinements + canonical `docs/aimily-pitch.key`. Cleaned from original `cb7a5d5`: 22 intermediate `.key` drafts (17× AZUR, v2, es, COLORS-FULL, COLORTEST, PRECOLOR) **dropped from main** per Felipe's "solo aimily-pitch" rule.
+
+**What shipped**:
+1. `src/app/(pitch)/layout.tsx` — minimal shell, no app chrome, `robots: noindex,nofollow`.
+2. `src/app/(pitch)/pitch/page.tsx` — soft gate via `?key=<PITCH_KEY>`, `?s=N` deep-link.
+3. `src/components/pitch/PitchDeck.tsx` — keyboard nav (←/→/space/PgUp/PgDn/Home/End/F), URL sync, fullscreen toggle, `mix-blend-difference` chrome that adapts to dark/light slides.
+4. `src/components/pitch/SlideShell.tsx` — light/dark variant + eyebrow + accent color block.
+5. 5 slide components (Cover · RelayRace · TheCost · TheQuestion · CISIntro).
+6. `src/middleware.ts` — `/pitch` added to `publicPagePrefixes`.
+7. `docs/aimily-pitch.key` — canonical Keynote master (4.4 MB).
+
+**Architecture doc**: `memory/architecture-pitch-deck.md` — single source of truth for the deck. Read before any future deck change.
+
+**Hard rules locked**:
+- Only `docs/aimily-pitch.key` lives on `main`. Intermediate drafts stay local.
+- aimily protege, **NUNCA sustituye** — voice rule enforced across all 5 slides.
+- Spanish peninsular, weight contrast (no italic), gold-standard card pattern reused (slides 03 + 05).
+- `/pitch` never linked from any public surface; gate is soft (anti-crawler), not real auth.
+
 ## Session 2026-05-05 / 2026-05-06 — Ecom Block · 12 PRs · zero to shipped
 
 End-to-end DTC storefront generator for aimily. 12 commits, ~5,500 LOC ecom-related, 0 fallbacks (Felipe rule respected through entire code path), 12 editorial themes, 9 endpoints (5 SEO + 4 storefront management), Vercel Pro + Cloudflare aimily.shop infra.
