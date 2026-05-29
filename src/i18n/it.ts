@@ -375,7 +375,7 @@ export const it: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'aimily è l\'assistente con la memoria, la conoscenza e il contesto per accompagnare ogni passo di una collezione — dal primo brief al lancio e alle vendite in-season. Tu dirigi e decidi; aimily ricorda, connette e propone. Non decide mai al posto tuo.',
+    tagline: 'Pianifica, progetta e lancia la tua collezione moda.',
     plansAndPricing: 'Piani e Prezzi',
     allPlansInclude: 'Tutti i piani includono ogni strumento AI. La differenza \u00e8 la scala.',
     trialBadge: 'Prova gratuita di 30 giorni \u2014 accesso completo, senza carta di credito',

@@ -7,12 +7,22 @@ metadata:
 
 # Mensaje canónico de aimily — fuente de verdad
 
-> Decisión Felipe 2026-05-29: el **pitch Keynote es el canon**. La web y la app se alinean
-> hacia él, nunca al revés. Este doc resuelve las discrepancias detectadas en el cruce
-> pitch ([[architecture-pitch-deck]]) ↔ web (`home.ts` + `MeetAimilyContent`) ↔ app
-> (`CollectionOverview.tsx`).
+> 🚨 **REVERTIDO EN LA LANDING — Decisión Felipe 2026-05-29 (tarde).** Tras aplicar el rewrite
+> de tono a la home, Felipe decidió **volver al discurso comercial anterior** en la landing
+> (`home.ts` + `MeetAimilyContent` + `MarketingHomeClient` hero): es "mucho más comercial y más
+> fácil". La home vuelve a "aimily does it in seconds / Generates moodboards…" + tagline corta
+> "Plan, design, and launch your fashion collection.". **NO re-aplicar el rewrite de tono ni el
+> one-liner maestro ni la sección "Dos Tecnologías" a la landing.** Los ficheros de la home se
+> restauraron a `c23c728`.
 >
-> Master rule que gobierna todo: [[feedback_aimily-protege-no-sustituye]].
+> **Qué sigue vigente:** el tono "protege no sustituye" sigue siendo canon para el **pitch** y la
+> **app** (que ya lo cumplen). La **landing es la excepción comercial deliberada** — vende rápido
+> y fácil. Este doc se conserva como el análisis del cruce, pero §2 NO aplica a la home.
+
+> Análisis original del cruce: el **pitch Keynote** fue el canon de referencia para detectar
+> discrepancias entre pitch ([[architecture-pitch-deck]]) ↔ web (`home.ts`) ↔ app
+> (`CollectionOverview.tsx`). Master rule de marca: [[feedback_aimily-protege-no-sustituye]]
+> — vigente para pitch+app; **la landing queda exenta por decisión comercial de Felipe**.
 
 ## 1 · One-liner maestro (único, en todas las superficies)
 
@@ -20,10 +30,10 @@ metadata:
 > una colección — del primer briefing al lanzamiento y la venta in-season. Tú diriges y
 > decides; aimily recuerda, conecta y te propone. Nunca decide por ti.**
 
-- ✅ **Aplicado al hero** (2026-05-29): el one-liner maestro de arriba ES ahora el subtítulo de la portada (`landing.tagline`, único uso = `MarketingHomeClient.tsx`), en los 9 idiomas. Sustituye a la antigua tagline corta "Plan, design, and launch your fashion collection." (retirada del display).
+- ⏪ **Revertido en la landing** (2026-05-29 tarde): se probó como subtítulo del hero pero Felipe volvió a la tagline corta **"Plan, design, and launch your fashion collection."** (más comercial). El one-liner maestro queda como statement de referencia (pitch/materiales), NO en la home.
 - Gancho permitido en web: el ángulo *Devil Wears Prada / Emily → aimily* sirve como **hook**, no como tesis del producto. Refuerzo, igual que en el pitch.
 
-## 2 · Tono (LOCKED — el punto que la web viola hoy)
+## 2 · Tono — canon para PITCH + APP (la landing está exenta)
 
 | | Verbo correcto | Verbo PROHIBIDO |
 |---|---|---|
@@ -32,9 +42,9 @@ metadata:
 
 - **Pitch ✅** — "Que me propusiera. No que decidiera por mí." / "el talento, donde aporta — aimily, en todo lo demás."
 - **App ✅** — "AI **proposes** A/B/C scenarios" + verbos imperativos al usuario.
-- **Web ❌ (a corregir)** — hoy dice *"aimily does it in seconds"*, *"Generates moodboards. Builds range plans. Drafts campaigns."*, *"aimily does it too"* en los 9 idiomas de `home.ts`. **Pendiente de reescritura** hacia "tú diriges, aimily recuerda y propone".
+- **Landing (home) ⏪ EXENTA** — Felipe decidió mantener el discurso comercial ("aimily does it in seconds / Generates moodboards…"). Esta tabla **no aplica a la home**. Si alguna vez se vende aimily como "más estratégico" en la landing, reabrir; hasta entonces, no tocar.
 
-## 3 · Las dos tecnologías (deben aparecer en las tres superficies)
+## 3 · Las dos tecnologías (canon en pitch; ⏪ retiradas de la landing por decisión comercial)
 
 > **Dos tecnologías, un solo flujo.**
 > - **Fashion Knowledge Engine** — el conocimiento. 16 roles, 360º.
@@ -84,11 +94,12 @@ El **núcleo invariante** en las tres: qué es aimily (§1), qué NO hace (§2),
 
 ## Pendientes derivados
 - [x] **Traducir a 7 idiomas** `poweredBy.subtitle` / `optionACaveat` / `photoshootCaveat` (2026-05-29) — estaban en inglés heredado; ahora fr/it/de/pt/nl/sv/no traducidos. Tono completo en los 9.
-- [x] **Bloque "Dos tecnologías" en la web** (2026-05-29) — sección nueva entre "el problema" y "pull the thread" en `MeetAimilyContent.tsx` + namespace `tech` (en+es, opcional como block5). Hace visible al usuario el diferenciador del pitch: Fashion Knowledge Engine + Context Intelligence Layer.
+- ⏪ **Bloque "Dos tecnologías" en la web** — se añadió y luego se REVIRTIÓ (2026-05-29 tarde) al volver al discurso comercial. No re-añadir a la landing sin pedírselo a Felipe.
 - [x] **Estatus In-Season** unificado en la web (2026-05-29) — quitado el numerado "Block 5/Bloque 5" en `loopCaption`/`seedsBody`; ahora "el bloque extra que cierra el bucle" (alineado con el pitch "Bloque Extra").
 - [x] **Cifra de Excels** fijada a 15 (ver §5).
 - [x] **Etiquetas de bloque 1-4** (2026-05-29) — RESUELTO por Felipe: bloque 1 = Brand; bloque 4 = Sales (app) / Launch (web), ambas válidas. Sin cambios en código: variantes de énfasis, no contradicción. Ver tabla §4.
-- [x] **one-liner maestro** aplicado al hero de la portada × 9 idiomas (2026-05-29). Ver §1. (2026-05-29) — quitado "aimily does/generates/builds/drafts/produces/turns" + pasivos "generated by aimily". 135 líneas, 15 claves × 9 locales: `meet.subtitle`, `silogism.titleB(+italic)/aimilyText/aimilyCaption`, `thread.captionEnd`, `block1.description/consumerCaption`, `block2.description/captionFooter`, `block3.description`, `block4.description`, `poweredBy.subtitle/optionACaveat/photoshootCaveat`. Verbos nuevos: aimily *recuerda · conecta · propone · acompaña*; la persona *dirige · decide · ajusta · aprueba*. Ganchos (Emily, "You need aimily") y micro-labels de UI mock (eyebrows "Moodboard generated") preservados a propósito. Los 3 keys que quedaban en inglés (`poweredBy.subtitle`/`optionACaveat`/`photoshootCaveat`) traducidos a los 7 idiomas restantes en un follow-up el mismo día.
+- ⏪ **one-liner maestro en el hero** — se aplicó y luego se REVIRTIÓ (2026-05-29 tarde) a la tagline corta "Plan, design, and launch…". Ver §1.
+- ⏪ **Rewrite de tono en `home.ts` × 9 idiomas** — se aplicó y luego se REVIRTIÓ a `c23c728` (discurso comercial). Detalle de lo que fue (por si se reabre): quitaba "aimily does/generates/builds/drafts/produces/turns" + pasivos "generated by aimily". 135 líneas, 15 claves × 9 locales: `meet.subtitle`, `silogism.titleB(+italic)/aimilyText/aimilyCaption`, `thread.captionEnd`, `block1.description/consumerCaption`, `block2.description/captionFooter`, `block3.description`, `block4.description`, `poweredBy.subtitle/optionACaveat/photoshootCaveat`. Verbos nuevos: aimily *recuerda · conecta · propone · acompaña*; la persona *dirige · decide · ajusta · aprueba*. Ganchos (Emily, "You need aimily") y micro-labels de UI mock (eyebrows "Moodboard generated") preservados a propósito. Los 3 keys que quedaban en inglés (`poweredBy.subtitle`/`optionACaveat`/`photoshootCaveat`) traducidos a los 7 idiomas restantes en un follow-up el mismo día.
 - [ ] Añadir bloque "Dos tecnologías" a la web.
 - [ ] Unificar etiquetas de bloque + estatus de In-Season en web/app.
 - [ ] Fijar cifra de Excels y one-liner maestro en web + app.

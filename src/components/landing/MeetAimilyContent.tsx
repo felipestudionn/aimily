@@ -256,7 +256,7 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-20 max-w-4xl">
             {[
-              { count: '15', label: h.problem.statSpreadsheets },
+              { count: '14', label: h.problem.statSpreadsheets },
               { count: '~200', label: h.problem.statEmails },
               { count: '6', label: h.problem.statApps },
               { count: '2 am', label: h.problem.statTuesdays },
@@ -275,51 +275,6 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
           </div>
         </div>
       </section>
-
-      {/* What aimily is — Two technologies (canon: Fashion Knowledge Engine + Context Intelligence Layer).
-          Renders only where h.tech is defined (en/es), mirroring the block5 optional pattern. */}
-      {h.tech && (
-        <section id="two-technologies" className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
-          <div className="max-w-6xl mx-auto">
-            <Reveal>
-              <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6 text-center">
-                {h.tech.eyebrow}
-              </div>
-            </Reveal>
-            <Reveal delay={150}>
-              <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] text-center max-w-[1000px] mx-auto mb-8">
-                {h.tech.titleStart}<span className="font-bold text-crema">{h.tech.titleItalic}</span>
-              </h2>
-            </Reveal>
-            <Reveal delay={250}>
-              <p className="max-w-[700px] mx-auto text-[16px] md:text-[18px] text-crema/80 leading-[1.7] tracking-[-0.01em] text-center mb-24">
-                {h.tech.subtitle}
-              </p>
-            </Reveal>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-crema/[0.08] rounded-[20px] overflow-hidden">
-              {[
-                { eyebrow: h.tech.card1Eyebrow, title: h.tech.card1Title, body: h.tech.card1Body },
-                { eyebrow: h.tech.card2Eyebrow, title: h.tech.card2Title, body: h.tech.card2Body },
-              ].map((card, i) => (
-                <Reveal key={card.title} delay={i * 120}>
-                  <div className="bg-carbon p-10 md:p-14 h-full flex flex-col">
-                    <div className="text-[12px] tracking-[0.25em] uppercase text-crema/55 font-medium mb-5">
-                      {card.eyebrow}
-                    </div>
-                    <h3 className="text-[24px] md:text-[30px] font-light tracking-[-0.02em] leading-[1.15] text-crema mb-6">
-                      {card.title}
-                    </h3>
-                    <p className="text-[15px] text-crema/75 leading-[1.7] tracking-[-0.005em]">
-                      {card.body}
-                    </p>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Pull the thread — journey overview */}
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">

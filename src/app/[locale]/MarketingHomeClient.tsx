@@ -103,7 +103,7 @@ export default function MarketingHomeClient() {
             />
           </div>
 
-          <p className="text-crema/75 text-[17px] md:text-[19px] font-light tracking-[-0.01em] leading-relaxed max-w-2xl mb-12 animate-fade-in-up animate-delay-100">
+          <p className="text-crema/75 text-[18px] md:text-[20px] font-light tracking-[-0.01em] leading-relaxed max-w-xl mb-12 animate-fade-in-up animate-delay-100">
             {t.landing.tagline}
           </p>
 
