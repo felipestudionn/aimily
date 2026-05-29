@@ -371,7 +371,7 @@ export const no: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Planlegg, design og lanser motekolleksjonen din.',
+    tagline: 'aimily er assistenten med hukommelsen, kunnskapen og konteksten til å følge hvert steg i en kolleksjon — fra første brief til lansering og in-season-salg. Du leder og bestemmer; aimily husker, kobler sammen og foreslår. Den bestemmer aldri for deg.',
     plansAndPricing: 'Planer og priser',
     allPlansInclude: 'Alle planer inkluderer alle AI-verktøy. Forskjellen er skala.',
     trialBadge: '14 dagers gratis prøveperiode — full tilgang, ingen kredittkort',

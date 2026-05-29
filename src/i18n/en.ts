@@ -381,7 +381,7 @@ export const en = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Plan, design, and launch your fashion collection.',
+    tagline: 'aimily is the assistant with the memory, knowledge and context to walk every step of a collection — from the first brief to launch and in-season sales. You direct and decide; aimily remembers, connects and proposes. It never decides for you.',
     plansAndPricing: 'Plans & Pricing',
     allPlansInclude: 'All plans include every AI tool. The difference is scale.',
     trialBadge: '30-day free trial — full access, no credit card',
