@@ -1,12 +1,14 @@
 ---
 name: aimily Pitch Keynote — English Copy
-description: Slide-by-slide English copy that mirrors docs/aimily-pitch.key 1:1. Felipe paste this into a duplicated Keynote saved as docs/aimily-pitch-en.key. Tone matches the ES original — aimily protects, never replaces.
+description: Slide-by-slide English copy that mirrors docs/aimily-pitch.key 1:1. Already applied to docs/aimily-pitch-en.key on 2026-05-29 via AppleScript. Kept as the reference source for re-translation whenever the ES master changes.
 type: project
 ---
 
 # aimily Pitch Keynote — English Copy
 
-Use this to translate `docs/aimily-pitch.key` (ES) into `docs/aimily-pitch-en.key` (EN).
+> **Status (2026-05-29)**: this copy has already been applied to `docs/aimily-pitch-en.key`. Both ES and EN Keynotes are ship-ready and live on `main`. This file remains as the **canonical reference** to use the next time the ES master changes and the EN needs re-syncing.
+
+Use this to translate `docs/aimily-pitch.key` (ES) into `docs/aimily-pitch-en.key` (EN). The actual translation flow (AppleScript via `osascript`) is documented in [`architecture-pitch-deck.md`](architecture-pitch-deck.md).
 
 **How to use**: duplicate the Keynote, rename to `aimily-pitch-en.key`, then for each slide replace the Spanish text below with the English version on the right. Leave photos, colors, layout, fonts untouched. If you change a phrase in Keynote, update it here too in the same commit — these docs and the binary must not drift.
 

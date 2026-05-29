@@ -8,6 +8,30 @@ originSessionId: f99254a8-8360-4858-a287-eacb00c4229e
 
 > Post-2026-04-12 sessions live in their own `SESSION-YYYY-MM-DD-*.md` files. This changelog is the historical record up to and including 2026-04-12. See Session History in `MEMORY.md` for every day after.
 
+## Session 2026-05-29 — Pitch deck closed: ES + EN definitive, web /pitch removed
+
+End-of-day state: the investor / Zara / partner pitch deck is **ship-ready in both languages** and is the only canonical artifact. The earlier web `/pitch` draft was deleted.
+
+**Two Keynote files on main**:
+- `docs/aimily-pitch.key` — Spanish peninsular, canonical source of truth.
+- `docs/aimily-pitch-en.key` — English, 1:1 mirror translated this session via AppleScript (preserves fonts, colors, layout, photos verbatim).
+
+**Commits of record**:
+- `850653a` — deleted misaligned web `/pitch` route (`src/app/(pitch)/` + `src/components/pitch/` + middleware whitelist); rewrote `memory/architecture-pitch-deck.md`; produced `memory/pitch-keynote-en-copy.md`.
+- `b39089e` — `docs/aimily-pitch-en.key` created. AppleScript flow: `cp` ES → EN duplicate, then iterate every slide / every text item (including nested text items inside groups on slide 9) and overwrite `object text` with EN copy. Gotchas surfaced and documented: `return` vs `linefeed` for paragraph breaks, double-`return` to emulate spacing-after that gets reset on overwrite, group navigation via `iWork item N of g`, ~28 literal spaces for slide 22's two-column layout.
+- `fa60d53` — ES Keynote fixes: slide 9 eyebrow typo `QUE ES AMILY` → `QUÉ ES AIMILY`; slide 20 sub-body copy-paste error from slide 16 replaced with the In-Season-specific line (mirrors the EN version).
+- `a483455` — ES Keynote final fix: slide 5 `minima` → `mínima` (acento). All 3 known typos now resolved.
+
+**Reference docs (living)**:
+- [`memory/architecture-pitch-deck.md`](architecture-pitch-deck.md) — single source of truth for the deck. Slide outline, narrative arc, tone rules, hard rules, sync workflow for re-translation.
+- [`memory/pitch-keynote-en-copy.md`](pitch-keynote-en-copy.md) — slide-by-slide EN copy. Already applied to `aimily-pitch-en.key`; kept as canonical reference for next re-sync.
+
+**Hard rules locked**:
+- ES is the source of truth. EN is the mirror. Any future ES edit ships with a matching EN re-translation in the same wave.
+- No intermediate `.key` drafts on main — only the two canonical files.
+- The deck is a Keynote artifact. There is no web mirror. Do not recreate `src/app/(pitch)/`.
+- Voice: aimily protects, NEVER replaces. Talent decides; aimily covers everything else.
+
 ## Session 2026-05-27 / 2026-05-28 — Investor / Zara pitch deck · merged to main
 
 Two surfaces, one narrative: the public-shareable web deck at `/pitch` and the canonical Keynote master at `docs/aimily-pitch.key`.

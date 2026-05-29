@@ -6,21 +6,26 @@ type: project
 
 # aimily Pitch Deck — Source of Truth
 
-> **The deck has two language versions, both as Keynote files on main:**
-> - `docs/aimily-pitch.key` — Spanish peninsular, the canonical version Felipe edits.
-> - `docs/aimily-pitch-en.key` — English, translated from the ES on 2026-05-29 via AppleScript (preserved fonts/colors/layout/photos).
+> **The investor / Zara / partner pitch deck — definitive, ship-ready, as of 2026-05-29.**
 >
-> Both have nothing to do with any web route. An earlier web deck at `/pitch` was a misaligned draft that lived in `src/app/(pitch)/` + `src/components/pitch/` — **deleted on 2026-05-29** because it never matched the Keynote Felipe actually presents.
+> Two language versions live on `main`, both as Keynote files:
+> - `docs/aimily-pitch.key` — Spanish peninsular, canonical source of truth. Felipe edits directly here.
+> - `docs/aimily-pitch-en.key` — English, mirror translated from ES on 2026-05-29 via AppleScript. Fonts, colors, layout, photos preserved 1:1.
+>
+> Both files are presentation-ready. The 3 known ES typos (slides 5, 9, 20) were corrected on 2026-05-29 — no outstanding fixes.
+>
+> Both files have nothing to do with any web route. An earlier web deck at `/pitch` was a misaligned draft that lived in `src/app/(pitch)/` + `src/components/pitch/` — **deleted on 2026-05-29** because it never matched the Keynote Felipe actually presents.
 
 ## Canonical artifacts
 
 | File | Language | Status |
 | ---- | -------- | ------ |
-| `docs/aimily-pitch.key` | Spanish peninsular | **Source of truth.** Felipe edits directly in Keynote, commits the binary. |
-| `docs/aimily-pitch-en.key` | English | Mirror of the ES, translated 2026-05-29. **Must be re-translated whenever the ES changes** — see sync workflow below. |
+| `docs/aimily-pitch.key` | Spanish peninsular | **Source of truth · ship-ready.** Felipe edits directly in Keynote, commits the binary. |
+| `docs/aimily-pitch-en.key` | English | **Ship-ready** mirror of the ES, translated 2026-05-29. **Must be re-translated whenever the ES changes** — see sync workflow below. |
 
 - **Format**: Apple Keynote binary.
 - **Length**: 23 slides each.
+- **Audience**: investors, Zara CTO / partners, internal stakeholders. Use whichever language matches the room.
 
 ## How the English version got translated (and how to re-translate after future ES edits)
 
@@ -104,20 +109,7 @@ The deck is a 3-act structure (no explicit "ACTO" eyebrows, but the rhythm is th
 | ---------- | ---------- | ------------------------------------------------------------------------------------------ |
 | `cb7a5d5` (rebased into `bede8d7`) | 2026-05-28 | Iteration day Keynote, 17 AZUR drafts + final `aimily-pitch.key`.        |
 | `bede8d7`  | 2026-05-28 | Merged to main: canonical `aimily-pitch.key` only (drafts dropped).                        |
-| (this session) | 2026-05-29 | Deleted misaligned web `/pitch` route + rewrote this doc + produced `pitch-keynote-en-copy.md`. |
-
-## How to translate to English
-
-1. Read `memory/pitch-keynote-en-copy.md` — slide-by-slide EN copy that mirrors the Keynote 1:1, with Felipe's tone preserved.
-2. In Keynote: `File → Duplicate` the `aimily-pitch.key` file. Rename the copy `aimily-pitch-en.key`.
-3. Open `aimily-pitch-en.key`. For each slide, replace the Spanish text with the English text from the doc. Keep all photos, colors, layout, and fonts untouched.
-4. Save. `git add docs/aimily-pitch-en.key && git commit -m "feat(pitch): English Keynote — aimily-pitch-en.key"`.
-5. If during the translation Felipe changes the copy, **update `memory/pitch-keynote-en-copy.md`** in the same commit so the two surfaces don't drift.
-
-## Known issues to address inside the Keynote (next time it's opened)
-
-- Slide 5 eyebrow body: `minima expresión` → `mínima expresión` (acento).
-- Slide 9 eyebrow: `QUE ES AMILY` → `QUÉ ES AIMILY` (typo + acento).
-- Slide 20 sub-body: duplicated from slide 16 by copy-paste — needs its own In-Season-specific body. Suggested replacement: *"Cada SKU vendido se convierte en señal: qué reponer, qué amplificar, qué retirar — y qué semilla pasa a la próxima colección."* (Felipe decides.)
-
-These are not blockers for shipping the deck — but worth noting them here so they get fixed next time Felipe opens the file.
+| `850653a`  | 2026-05-29 | Deleted misaligned web `/pitch` route + rewrote this doc + produced `pitch-keynote-en-copy.md`. |
+| `b39089e`  | 2026-05-29 | `docs/aimily-pitch-en.key` — English Keynote translated 1:1 from ES via AppleScript.       |
+| `fa60d53`  | 2026-05-29 | ES Keynote: fixed slide 9 eyebrow typo + slide 20 sub-body copy-paste error.               |
+| `a483455`  | 2026-05-29 | ES Keynote: fixed slide 5 `minima` → `mínima`. All 3 known typos now resolved.             |
