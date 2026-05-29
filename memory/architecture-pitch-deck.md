@@ -1,24 +1,49 @@
 ---
 name: aimily Pitch Deck — Source of Truth
-description: The aimily investor / Zara / partner pitch deck. The ONLY pitch deck is the Keynote at docs/aimily-pitch.key. Read this before touching anything related to the deck. The old web /pitch was a misaligned draft that lived in src/app/(pitch) and was removed 2026-05-29.
+description: The aimily investor / Zara / partner pitch deck. Two language versions live on main — docs/aimily-pitch.key (ES, canonical) and docs/aimily-pitch-en.key (English). Read this before touching anything related to the deck. The old web /pitch was a misaligned draft removed 2026-05-29.
 type: project
 ---
 
 # aimily Pitch Deck — Source of Truth
 
-> **The only presentation is `docs/aimily-pitch.key`.**
-> It is a Keynote file. It has nothing to do with any web route in this app.
+> **The deck has two language versions, both as Keynote files on main:**
+> - `docs/aimily-pitch.key` — Spanish peninsular, the canonical version Felipe edits.
+> - `docs/aimily-pitch-en.key` — English, translated from the ES on 2026-05-29 via AppleScript (preserved fonts/colors/layout/photos).
 >
-> An earlier web deck at `/pitch` was a misaligned draft that lived in `src/app/(pitch)/` + `src/components/pitch/`. **It was deleted on 2026-05-29** because it was not the presentation Felipe presents — the Keynote is. This doc is the single record of what the deck actually says.
+> Both have nothing to do with any web route. An earlier web deck at `/pitch` was a misaligned draft that lived in `src/app/(pitch)/` + `src/components/pitch/` — **deleted on 2026-05-29** because it never matched the Keynote Felipe actually presents.
 
-## Canonical artifact
+## Canonical artifacts
 
-- **Location**: `docs/aimily-pitch.key`
-- **Format**: Apple Keynote binary (cannot be translated from code — open in Keynote and translate manually).
-- **Length**: 23 slides.
-- **Language**: Spanish peninsular.
-- **Status**: living. Felipe edits in Keynote directly; replaces the file on `main` in a single commit when a version is the new truth.
-- **Companion EN copy**: when translating, work from `memory/pitch-keynote-en-copy.md` (slide-by-slide EN copy that mirrors the Keynote). Export the EN Keynote as `docs/aimily-pitch-en.key`.
+| File | Language | Status |
+| ---- | -------- | ------ |
+| `docs/aimily-pitch.key` | Spanish peninsular | **Source of truth.** Felipe edits directly in Keynote, commits the binary. |
+| `docs/aimily-pitch-en.key` | English | Mirror of the ES, translated 2026-05-29. **Must be re-translated whenever the ES changes** — see sync workflow below. |
+
+- **Format**: Apple Keynote binary.
+- **Length**: 23 slides each.
+
+## How the English version got translated (and how to re-translate after future ES edits)
+
+The EN version was produced from code via AppleScript (`osascript` → `tell application "Keynote"`). The same approach is repeatable any time the ES version changes:
+
+1. Save the current ES Keynote in `docs/aimily-pitch.key`. Close Keynote.
+2. Duplicate: `cp docs/aimily-pitch.key docs/aimily-pitch-en.key`.
+3. Open the duplicate in Keynote.
+4. Iterate over every slide and every text item, replacing the ES `object text` with the EN equivalent. Reference the slide-by-slide EN copy in [`memory/pitch-keynote-en-copy.md`](pitch-keynote-en-copy.md).
+5. For text items nested inside `group`s (only slide 9 in v1), navigate via `iWork item N of g` instead of `text item N of g`.
+6. Save + close Keynote: `save document "aimily-pitch-en.key"` then `close … saving yes`.
+7. `git add docs/aimily-pitch-en.key`, commit, push.
+
+**Caveats that came up during v1 translation** (worth re-checking on every re-translation):
+- AppleScript `linefeed` between paragraphs creates a soft line break inside a single paragraph. Use `return` (CR) for a true paragraph break.
+- Paragraph spacing-after gets reset when you overwrite `object text`. To emulate the ES original's visual spacing between wishes/bullets (slides 7, 9, 10), use **double `return`** between paragraphs.
+- Text items nested inside a `group` must be set by assigning to a local variable first (`set ti to iWork item N of g; set object text of ti to "…"`). Setting `object text of iWork item N of g` directly throws `-10006`.
+- Two-column layouts in a single text item (slide 22 thesis) are achieved with literal spaces between the two phrases. The exact number of spaces depends on font/width — slide 22 needed ~28 spaces between `"talent, where it adds value"` and `"aimily, in everything else."` to match the ES layout.
+- Manual "page counters" in the Keynote master (slides 14, 16 had `10 / 19` and `11 / 19`) are not part of the translation — leave as is.
+
+## Companion EN copy reference
+
+When translating, work from [`memory/pitch-keynote-en-copy.md`](pitch-keynote-en-copy.md) — slide-by-slide EN copy that mirrors the Keynote 1:1, with tone rules preserved. **Update that file in the same commit whenever the EN Keynote changes** so the two surfaces don't drift.
 
 ## Slide outline (the actual content)
 
