@@ -1,158 +1,98 @@
 ---
-name: Investor / Partner Pitch Deck Architecture
-description: Single source of truth for the aimily investor + Zara + partner pitch. Lives at /pitch (gated by ?key=…), canonical Keynote master at docs/aimily-pitch.key, 5 web slides in src/components/pitch/slides. Read before touching the deck.
+name: aimily Pitch Deck — Source of Truth
+description: The aimily investor / Zara / partner pitch deck. The ONLY pitch deck is the Keynote at docs/aimily-pitch.key. Read this before touching anything related to the deck. The old web /pitch was a misaligned draft that lived in src/app/(pitch) and was removed 2026-05-29.
 type: project
 ---
 
-# Pitch Deck — Architecture Reference
+# aimily Pitch Deck — Source of Truth
 
-The aimily investor / partner / Zara deck. Built on `pitch/investor-zara-deck`, merged to `main` on **2026-05-28** (commits `283f95b` and `bede8d7`). Two surfaces, one narrative.
+> **The only presentation is `docs/aimily-pitch.key`.**
+> It is a Keynote file. It has nothing to do with any web route in this app.
+>
+> An earlier web deck at `/pitch` was a misaligned draft that lived in `src/app/(pitch)/` + `src/components/pitch/`. **It was deleted on 2026-05-29** because it was not the presentation Felipe presents — the Keynote is. This doc is the single record of what the deck actually says.
 
-## 🚨 Canonical truth
+## Canonical artifact
 
-- **The only Keynote that counts is `docs/aimily-pitch.key`** (Felipe, 2026-05-28). All 17 intermediate AZUR drafts (`aimily-pitch-es-AZUR-v1..v17.key`), `aimily-pitch-v2.key`, `aimily-pitch-es.key`, `COLORS-FULL`, `COLORTEST`, and `PRECOLOR-…` were **dropped from `main`** during the merge. Local copies may still live in Felipe's working tree (`docs/aimily-pitch-es-AZUR-v15 copia.key`, `v17-test.key`, the `v7/` exploded bundle, `tmp/`) — those are untracked and stay untracked.
-- The web deck at `/pitch` is the **shareable** surface. The Keynote `.key` is the **presented** surface. Both must stay narratively aligned with each other.
-- If the two diverge, the **Keynote `aimily-pitch.key` wins** as canonical content; the web deck is the public-shareable mirror.
+- **Location**: `docs/aimily-pitch.key`
+- **Format**: Apple Keynote binary (cannot be translated from code — open in Keynote and translate manually).
+- **Length**: 23 slides.
+- **Language**: Spanish peninsular.
+- **Status**: living. Felipe edits in Keynote directly; replaces the file on `main` in a single commit when a version is the new truth.
+- **Companion EN copy**: when translating, work from `memory/pitch-keynote-en-copy.md` (slide-by-slide EN copy that mirrors the Keynote). Export the EN Keynote as `docs/aimily-pitch-en.key`.
 
-## File map
+## Slide outline (the actual content)
 
-```
-src/app/(pitch)/
-├── layout.tsx                    Minimal shell — no GlobalNav / StudioSwitcher /
-│                                 CreditMeter / AssistantMount. Deck owns the
-│                                 viewport. `robots: noindex,nofollow`.
-└── pitch/
-    └── page.tsx                  Soft gate via ?key=… → reads PITCH_KEY env var
-                                  (default fallback "aimily-2026"). Wrong key →
-                                  redirect to '/'. `?s=N` deep-links to slide N.
+| #  | Eyebrow                                              | Headline                                                          | Notes                          |
+| -- | ---------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------ |
+| 01 | —                                                    | `aimily` (cover · dark)                                           |                                |
+| 02 | `EL ORIGEN DEL CAOS`                                 | 20 presentaciones. 10 equipos. 15 archivos de Excel. 3 presupuestos. 25 reuniones. 8 versiones del calendario. |  |
+| 03 | `LAS CONSECUENCIAS`                                  | el caos genera tres problemas                                     | 3 cards: 01 dispersión · 02 pérdida de tiempo · 03 falta de contexto |
+| 04 | `01 · LA DISPERSIÓN DE LA INFORMACIÓN`               | El volumen de decisiones, múltiples equipos y la velocidad del negocio pierde y dispersa la información de manera exponencial | + foto Devil Wears Prada |
+| 05 | `02 · LA PÉRDIDA DE TIEMPO`                          | El tiempo donde se crea valor: estratégico, creativo, de ejecución de calidad y reflexión, se reduce a la minima expresión. | + foto. Typo: `minima` → debería ser `mínima` |
+| 06 | `03 · LA FALTA DE CONTEXTO EN LA TOMA DE DECISIONES` | Se toman decisiones mediocres, sin contexto y sin tiempo.         | + foto                         |
+| 07 | —                                                    | Si tuviera un asistente ideal, ¿qué le pediría?                    | 4 deseos: 24/7 · recordara todo · supiera interconexiones · me propusiera (no que decidiera por mí) |
+| 08 | —                                                    | aimily · El asistente con memoria, inteligencia y conocimiento que está en cada paso, desde el primer briefing hasta el lanzamiento |  |
+| 09 | `QUE ES AMILY`                                       | Dos tecnologías. Un solo flujo.                                   | 01 Fashion Knowledge Engine (motor) · 02 Context Intelligence Layer (memoria). **Typo en eyebrow: AMILY → debería ser AIMILY** |
+| 10 | `FASHION KNOWLEDGE ENGINE`                           | 16 roles, conocimiento 360º.                                      | 4 cards: Input → Conocimiento experto del rol → Consulta IA → Output |
+| 11 | `CONTEXT INTELLIGENCE LAYER`                         | Cuatro bloques. Un solo flujo.                                    | 4 bloques con Input/Output     |
+| 12 | `01 · DIRECCIÓN CREATIVA Y TENDENCIAS`               | La visión creativa se mantiene viva.                              | Sub: Se vuelca, se cruza y se fusiona con la estructura de compras y la estrategia comercial. Nada del trabajo creativo se pierde. |
+| 13 | `CONTEXT INTELLIGENCE LAYER · BLOQUE 01 · DIRECCIÓN CREATIVA Y TENDENCIAS` | (sub-cards diagram)                          | 4 sub-cards: 01 Moodboard · 02 Cliente · 03 Investigación de Mercado · 04 Identidad de Marca |
+| 14 | `02 · ESTRUCTURA DE COLECCIÓN Y COMPRAS`             | Una colección hiperconectada.                                     | Sub: La estrategia comercial y la visión creativa, en un mismo lugar y vivas. Cualquier variación se retroalimenta sobre el escenario en tiempo real, sin perder nunca el punto de vista creativo ni el del mercado. |
+| 15 | `CONTEXT INTELLIGENCE LAYER · BLOQUE 02 · ESTRUCTURA DE COLECCIÓN Y COMPRAS` | (sub-cards diagram)                      | 4 sub-cards: 01 Estrategia de Compra · 02 Familias y Precios · 03 Canales y Mercados · 04 Presupuesto y Margen |
+| 16 | `03 · DISEÑO, DESARROLLO Y SELECCIÓN`                | De concepto a decisión, conectada al presupuesto. En minutos.     | Sub: Un sketch propio o una referencia se convierten en producto visualizable. La decisión llega con las expectativas de venta de la colección ya conectadas. |
+| 17 | `CONTEXT INTELLIGENCE LAYER · BLOQUE 03 · DISEÑO, DESARROLLO Y SELECCIÓN` | (sub-cards diagram)                          | 4 sub-cards: 01 Boceto y Color · 02 Ficha Técnica · 03 Prototipado · 04 Producción |
+| 18 | `04 · MARKETING Y LANZAMIENTO`                       | Conexión de impacto con el consumidor.                            | Sub: Toda la fuerza creativa, la estrategia numérica y la solidez financiera, maximizando el punto de venta a través de una historia que genera deseo. |
+| 19 | `CONTEXT INTELLIGENCE LAYER · BLOQUE 04 · LANZAMIENTO, CONTENIDO Y VENTA` | (sub-cards diagram)                          | 4 sub-cards: 01 Estrategia de Ventas · 02 Lanzamiento al Mercado · 03 Content Studio · 04 Comunicación |
+| 20 | `BLOQUE EXTRA · IN-SEASON SALES`                     | Cada venta es una semilla. Cada semilla, la próxima colección.    | **Sub-body in Keynote is a copy-paste error from slide 16** (talks about sketches becoming product). Needs its own copy. |
+| 21 | `CONTEXT INTELLIGENCE LAYER · BLOQUE EXTRA · IN-SEASON SALES` | (sub-cards diagram)                                       | 4 sub-cards: 01 Análisis de Venta · 02 Propuesta de Acciones · 03 Ejecución de Acciones · 04 Creación de Semillas |
+| 22 | —                                                    | el talento, donde aporta — aimily, en todo lo demás.              | Two-column closing thesis      |
+| 23 | —                                                    | That's all. aimily.app                                            | Closing dark                    |
 
-src/components/pitch/
-├── PitchDeck.tsx                 Client component. Owns slide index, keyboard nav
-│                                 (←/→/space/PgUp/PgDn/Home/End/F), URL deep-link
-│                                 via history.replaceState, fullscreen toggle.
-│                                 mix-blend-difference chrome adapts to dark/light
-│                                 slides automatically.
-├── SlideShell.tsx                Common wrapper. Props: eyebrow, variant ('light'
-│                                 | 'dark'), accentColor (5 brand colors). Enforces
-│                                 padding + max-width + 700ms fade-in.
-└── slides/
-    ├── Slide01Cover.tsx          Dark · hero · "La inteligencia que protege el
-    │                             contexto creativo."
-    ├── Slide02RelayRace.tsx      Light · Acto I · El problema. 4 dwindling
-    │                             buckets (100% → 72% → 48% → 26%) showing
-    │                             context loss across blocks.
-    ├── Slide03TheCost.tsx        Light · Acto I · El coste. 3 consequence cards
-    │                             using the gold standard card pattern.
-    ├── Slide04TheQuestion.tsx    Dark · Acto II · "¿Y si el contexto nunca se
-    │                             derramara?" — pivots from problem to thesis.
-    └── Slide05CISIntro.tsx       Light · Acto II · La tesis. CIS spine diagram
-                                  + 3 properties cards. Introduces "Collection
-                                  Intelligence Spine" + the In-Season feedback
-                                  loop arc.
+## Narrative arc
 
-src/middleware.ts                 `/pitch` added to publicPagePrefixes — bypasses
-                                  app auth so partners/investors can hit the URL
-                                  without a login.
+The deck is a 3-act structure (no explicit "ACTO" eyebrows, but the rhythm is the same):
 
-docs/aimily-pitch.key             Canonical Keynote master (4.4 MB).
-```
+- **Act I · The chaos** (slides 02–06). One vivid statistic of operational reality, then the three consequences (information dispersion, time loss, context loss) with photo-driven reinforcement (Devil Wears Prada framing).
+- **Act II · The wish + the answer** (slides 07–11). The "if I had an ideal assistant" reframe → aimily as the answer → the two technologies that compose it (Fashion Knowledge Engine = the doer, Context Intelligence Layer = the memory).
+- **Act III · The four blocks + In-Season** (slides 12–21). For each of the 4 blocks: one narrative slide ("X stays alive / hyper-connected / from concept to decision / impact connection") followed by the sub-cards diagram. Then the In-Season Sales extra block as the feedback loop.
+- **Closing** (slides 22–23). The thesis ("talent where it adds value — aimily everywhere else") and the dark sign-off.
 
-## How to access
+## Tone rules (locked across the deck)
 
-```
-https://www.aimily.app/pitch?key=<PITCH_KEY>
-https://www.aimily.app/pitch?key=<PITCH_KEY>&s=2     # deep-link slide 3
-```
+- **aimily protege, NUNCA sustituye.** The deck never says aimily generates / designs / produces. It is the assistant that remembers, knows, proposes — the human decides. Slide 07's wish list bakes this in: "Que me propusiera. No que decidiera por mí." Slide 22 closes on the same idea: talent decides, aimily covers everything else.
+- **Two technologies, one flow.** Fashion Knowledge Engine + Context Intelligence Layer are the two technical anchors. Always introduced together.
+- **Four blocks + In-Season.** The product is always presented as Block 01 Dirección Creativa → 02 Estructura de Colección → 03 Diseño & Desarrollo → 04 Marketing → Extra In-Season Sales. The sub-block names are the canonical naming.
+- **Visual identity**: light cream/shade slides for the bulk; dark carbon slides for cover + closing. Devil Wears Prada photos on slides 04–06 (3 consequences). Sub-card diagrams reuse the 4 brand colors (sea-foam, moss, clay, citronella, midnight) consistently per block.
+- **Spanish peninsular.** No latam vocabulary. EN translation is a separate file (`memory/pitch-keynote-en-copy.md`), not a Keynote slide overlay.
 
-- `PITCH_KEY` env var: set in Vercel for production. Default fallback in code is `aimily-2026` (works locally without env).
-- Gate is **soft**: it stops accidental crawlers and casual sharing, not a determined attacker. Real protection = the URL isn't linked anywhere public + `robots: noindex,nofollow` on the layout.
-- Middleware whitelists `/pitch` so the route bypasses normal session auth.
+## Hard rules
 
-## Keyboard / navigation
-
-| Key                              | Action               |
-| -------------------------------- | -------------------- |
-| `→` · `Space` · `PageDown`       | Next slide           |
-| `←` · `PageUp`                   | Previous slide       |
-| `Home`                           | First slide          |
-| `End`                            | Last slide           |
-| `F`                              | Toggle fullscreen    |
-| Click progress dot               | Jump to slide        |
-| Click left/right circular arrows | Prev / next          |
-
-URL syncs `?s=N` on every navigation via `history.replaceState` (no reload).
-
-## Narrative — 5 slides shipped, Ola 1
-
-The arc is intentionally two acts:
-
-| #  | Slide                | Eyebrow                | Act       | Move                                                                                                                                                  |
-| -- | -------------------- | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 01 | **Cover**            | —                      | —         | aimily wordmark + "La inteligencia que **protege** el contexto creativo." Sets tone: aimily protege, NUNCA sustituye.                                  |
-| 02 | **El problema**      | `Acto I · El problema` | Acto I    | Fashion is built like a relay race. 4 shrinking buckets visualise context retention: Creative 100% → Merch 72% → Design 48% → Marketing 26%.           |
-| 03 | **El coste**         | `Acto I · El coste`    | Acto I    | 3 consequence cards: 01 the idea dilutes · 02 decisions lose their "why" · 03 the collection underperforms its potential.                              |
-| 04 | **La pregunta**      | `Acto II · La pregunta`| Acto II   | "¿Y si el contexto **nunca** se derramara?" — single dramatic question, dark slide, pivots problem → thesis.                                           |
-| 05 | **CIS · La tesis**   | `Acto II · La tesis`   | Acto II   | Introduces the Collection Intelligence Spine. 4-block diagram threaded by a horizontal spine + In-Season feedback arc. 3 properties cards underneath.  |
-
-**Tone rules (locked in feedback memory)**:
-- `aimily protege, NUNCA sustituye` — the deck never says aimily "generates / designs / produces / does". The person directs; aimily is the strategic layer that protects the vision.
-- `Español peninsular` — no latam vocabulary.
-- `Typography: weight contrast, never italic` — `font-light` headings + `font-extrabold` inline emphasis. No italics.
-- Voice pulled from the existing aimily.app + wizard copy. No cheap metaphors, no effectism.
-
-## Design system — slide-specific
-
-Same tokens as the app, plus a slide-only variant on `SlideShell`.
-
-```ts
-// SlideShell props
-variant?: 'light' | 'dark';        // light = bg-shade + carbon; dark = bg-carbon + crema
-eyebrow?: string;                  // top-center · 10px · 0.22em tracking · uppercase
-accentColor?: 'sea-foam' | 'moss' | 'clay' | 'citronella' | 'midnight';
-```
-
-**Reused gold-standard patterns** (see `design-components-canonical.md`):
-- Slide 03's 3-card grid uses the canonical card recipe: `bg-white rounded-[20px] p-10 md:p-14 min-h-[420px] hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)]`, ghost number (`text-[72px] font-bold text-carbon/[0.05]`), semibold title, light body.
-- Slide 05's 3 properties cards: same family, smaller (`p-8`).
-- Slide 05's 4-block diagram: same `bg-white rounded-[14px]` block cards used in CollectionOverview.
-
-**Chrome adapts via `mix-blend-difference`**: top-left wordmark, fullscreen toggle, bottom progress dots all use `style={{ mixBlendMode: 'difference' }}` so they remain readable on both light and dark slides without per-slide branching.
-
-## Bilingual scope
-
-- Current live: Spanish-peninsular. File names of the dropped Keynote drafts (`aimily-pitch-es-AZUR-*.key`) carried the `es` suffix; the canonical `docs/aimily-pitch.key` is also Spanish.
-- An English edition is on the roadmap (feedback memory `pitch-bilingue-es-en` — quotable taglines may stay in English even inside the ES deck).
-- File-naming convention going forward: `aimily-pitch.key` (canonical · ES) and, when shipped, `aimily-pitch-en.key` (English). Versioned drafts do **not** belong on `main`.
-
-## Adding more slides (Ola 2+)
-
-1. Create `src/components/pitch/slides/SlideNN<Name>.tsx`. Use `<SlideShell variant="…" eyebrow="…">` and reuse canonical card / typography tokens.
-2. Import in `PitchDeck.tsx` and append to the `SLIDES` array with `id`, `label`, `Component`.
-3. URL deep-link via `?s=N` is automatic — index is 0-based.
-4. Update this doc's narrative table.
-5. Keep the canonical Keynote `docs/aimily-pitch.key` in sync (export from Keynote, replace the binary in a single commit, don't leave intermediate versions).
-
-## Hard rules (do not break)
-
-- ❌ Don't ship intermediate `.key` drafts to `main`. The only Keynote on `main` is `docs/aimily-pitch.key`. Iterate locally; replace the canonical file in a single commit when the new version is the new truth.
-- ❌ Don't link `/pitch?key=…` from any public page, sitemap, robots, or social card.
-- ❌ Don't add the `/pitch` route to the main sidebar or any app nav.
-- ❌ Don't import `(app)` layout chrome (GlobalNav / StudioSwitcher / CreditMeter / AssistantMount) into a slide. The deck owns the viewport.
-- ❌ Don't introduce new card variants for slides. Reuse the canonical gold-standard pattern.
-- ❌ Don't write "aimily generates / aimily designs / aimily produces / aimily does X". aimily **protege**.
-- ❌ Don't use italic for emphasis. Use weight contrast (`font-light` + `font-extrabold`).
+- ❌ Do not invent or "improve" the deck content from inside this repo. The Keynote is Felipe's; this doc only describes what's there.
+- ❌ Do not create a web version of the deck. Past attempt (`src/app/(pitch)/` + `src/components/pitch/`) was deleted on 2026-05-29 because it drifted from the Keynote and Felipe never used it.
+- ❌ Do not commit intermediate Keynote drafts to `main`. Only `docs/aimily-pitch.key` (canonical · ES) and, once it exists, `docs/aimily-pitch-en.key` (English) live on main.
+- ❌ Do not assume the web `/pitch` route exists. Middleware no longer whitelists `/pitch` (removed 2026-05-29).
+- ✅ If you need to know what the deck says, read this doc + `memory/pitch-keynote-en-copy.md`. If they disagree with the Keynote, the **Keynote wins** and these docs need updating, not the other way around.
 
 ## Commits of record
 
-| Hash       | Date       | What                                                                                                       |
-| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `cbbfa51`  | 2026-05-27 | Ola 1 — original branch commit: deck shell + 5 slides + middleware whitelist. (Now superseded.)           |
-| `cb7a5d5`  | 2026-05-28 | Original branch commit: iteration day with 17 Keynote drafts + final + slide refinements. (Now superseded.)|
-| `283f95b`  | 2026-05-28 | **Merged to main.** Cherry-picked from `cbbfa51`: deck shell + 5 slides + middleware.                      |
-| `bede8d7`  | 2026-05-28 | **Merged to main.** Cleaned version of `cb7a5d5`: slide refinements + canonical `aimily-pitch.key` only.   |
+| Hash       | Date       | What                                                                                       |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------ |
+| `cb7a5d5` (rebased into `bede8d7`) | 2026-05-28 | Iteration day Keynote, 17 AZUR drafts + final `aimily-pitch.key`.        |
+| `bede8d7`  | 2026-05-28 | Merged to main: canonical `aimily-pitch.key` only (drafts dropped).                        |
+| (this session) | 2026-05-29 | Deleted misaligned web `/pitch` route + rewrote this doc + produced `pitch-keynote-en-copy.md`. |
 
-The duplicate protocol commit from the branch (`f249d77`) was dropped during the merge because the same change was already in `main` as `a3a57f6`.
+## How to translate to English
 
-## Out of scope (call this out fast)
+1. Read `memory/pitch-keynote-en-copy.md` — slide-by-slide EN copy that mirrors the Keynote 1:1, with Felipe's tone preserved.
+2. In Keynote: `File → Duplicate` the `aimily-pitch.key` file. Rename the copy `aimily-pitch-en.key`.
+3. Open `aimily-pitch-en.key`. For each slide, replace the Spanish text with the English text from the doc. Keep all photos, colors, layout, and fonts untouched.
+4. Save. `git add docs/aimily-pitch-en.key && git commit -m "feat(pitch): English Keynote — aimily-pitch-en.key"`.
+5. If during the translation Felipe changes the copy, **update `memory/pitch-keynote-en-copy.md`** in the same commit so the two surfaces don't drift.
 
-- `/pitch` is **not** the base of how the application works. It's a marketing/fundraising surface. The base of the app is the 4 blocks (Creative · Merchandising · Design · Marketing) + the In-Season feedback loop + CIS — documented in `architecture-tree-rubik-cube.md`, `architecture_in-season-feedback-loop.md`, and the per-block redesign docs. If anyone (incl. Felipe) asks the deck team to make app changes "to match the deck", route to the right block doc — the deck mirrors the product, not the other way around.
+## Known issues to address inside the Keynote (next time it's opened)
+
+- Slide 5 eyebrow body: `minima expresión` → `mínima expresión` (acento).
+- Slide 9 eyebrow: `QUE ES AMILY` → `QUÉ ES AIMILY` (typo + acento).
+- Slide 20 sub-body: duplicated from slide 16 by copy-paste — needs its own In-Season-specific body. Suggested replacement: *"Cada SKU vendido se convierte en señal: qué reponer, qué amplificar, qué retirar — y qué semilla pasa a la próxima colección."* (Felipe decides.)
+
+These are not blockers for shipping the deck — but worth noting them here so they get fixed next time Felipe opens the file.

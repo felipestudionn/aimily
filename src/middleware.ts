@@ -82,7 +82,6 @@ const publicPagePrefixes = [
   '/presentation/export/',
   '/tech-pack/export/',
   '/vendor/',  // Phase 5 vendor portal (token-gated read-only access)
-  '/pitch',    // Investor / partner deck — gated by ?key=… inside the page
   '/images/',  // public/ static images (PNGs aren't in the matcher exclusion
               // because storefronts need /og.png routed through middleware;
               // without this prefix, anonymous /images/aimily-logo-*.png
