@@ -381,7 +381,7 @@ export const en = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Plan, design, and launch your fashion collection.',
+    tagline: 'Plan. Design. Launch. Your fashion assistant, built on knowledge and technology.',
     plansAndPricing: 'Plans & Pricing',
     allPlansInclude: 'All plans include every AI tool. The difference is scale.',
     trialBadge: '30-day free trial — full access, no credit card',

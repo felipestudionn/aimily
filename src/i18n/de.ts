@@ -375,7 +375,7 @@ export const de: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Planen, entwerfen und launchen Sie Ihre Modekollektion.',
+    tagline: 'Planen. Entwerfen. Launchen. Ihr Mode-Assistent, basierend auf Wissen und Technologie.',
     plansAndPricing: 'Pläne & Preise',
     allPlansInclude: 'Alle Pläne enthalten sämtliche KI-Tools. Der Unterschied liegt im Umfang.',
     trialBadge: '14 Tage kostenlos testen — voller Zugang, keine Kreditkarte',

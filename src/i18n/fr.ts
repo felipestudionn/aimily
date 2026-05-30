@@ -375,7 +375,7 @@ export const fr: Dictionary = {
 
   // ─── Page d'accueil ───
   landing: {
-    tagline: 'Planifiez, concevez et lancez votre collection de mode.',
+    tagline: 'Planifiez. Concevez. Lancez. Votre assistant mode, fondé sur le savoir et la technologie.',
     plansAndPricing: 'Offres & Tarifs',
     allPlansInclude: 'Tous les plans incluent chaque outil IA. La différence est l\'échelle.',
     trialBadge: 'Essai gratuit de 30 jours — accès complet, sans carte bancaire',

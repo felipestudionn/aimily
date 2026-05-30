@@ -386,7 +386,7 @@ export const es: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Planifica, diseña y lanza tu colección de moda.',
+    tagline: 'Planifica. Diseña. Lanza. Tu asistente de moda, basado en conocimiento y tecnología.',
     plansAndPricing: 'Planes y precios',
     allPlansInclude: 'Todos los planes incluyen todas las herramientas de IA. La diferencia es la escala.',
     trialBadge: '30 días de prueba gratis — acceso completo, sin tarjeta de crédito',

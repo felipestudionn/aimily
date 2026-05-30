@@ -371,7 +371,7 @@ export const sv: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Planera, designa och lansera din modekollektion.',
+    tagline: 'Planera. Designa. Lansera. Din modeassistent, byggd på kunskap och teknik.',
     plansAndPricing: 'Planer & priser',
     allPlansInclude: 'Alla planer inkluderar alla AI-verktyg. Skillnaden är skalan.',
     trialBadge: '14 dagars gratis provperiod — full åtkomst, inget kreditkort',

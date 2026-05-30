@@ -371,7 +371,7 @@ export const no: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Planlegg, design og lanser motekolleksjonen din.',
+    tagline: 'Planlegg. Design. Lanser. Moteassistenten din, bygget på kunnskap og teknologi.',
     plansAndPricing: 'Planer og priser',
     allPlansInclude: 'Alle planer inkluderer alle AI-verktøy. Forskjellen er skala.',
     trialBadge: '14 dagers gratis prøveperiode — full tilgang, ingen kredittkort',

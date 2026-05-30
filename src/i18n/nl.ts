@@ -375,7 +375,7 @@ export const nl: Dictionary = {
 
   // ─── Landing Page ───
   landing: {
-    tagline: 'Plan, ontwerp en lanceer uw modecollectie.',
+    tagline: 'Plan. Ontwerp. Lanceer. Uw mode-assistent, gebouwd op kennis en technologie.',
     plansAndPricing: 'Abonnementen & prijzen',
     allPlansInclude: 'Alle abonnementen bevatten alle AI-tools. Het verschil zit in de schaal.',
     trialBadge: '14 dagen gratis uitproberen — volledige toegang, geen creditcard',

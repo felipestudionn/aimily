@@ -30,7 +30,8 @@ metadata:
 > una colección — del primer briefing al lanzamiento y la venta in-season. Tú diriges y
 > decides; aimily recuerda, conecta y te propone. Nunca decide por ti.**
 
-- ⏪ **Revertido en la landing** (2026-05-29 tarde): se probó como subtítulo del hero pero Felipe volvió a la tagline corta **"Plan, design, and launch your fashion collection."** (más comercial). El one-liner maestro queda como statement de referencia (pitch/materiales), NO en la home.
+- ⏪ **Revertido en la landing** (2026-05-29): se probó el one-liner maestro como subtítulo del hero y se descartó. El one-liner maestro queda como statement de referencia (pitch/materiales), NO en la home.
+- 🎯 **Tagline del hero FINAL** (2026-05-30, iterada con Felipe): **"Plan. Design. Launch. Your fashion assistant, built on knowledge and technology."** (staccato + punch; "knowledge and technology" guiña a los dos motores sin ponerse técnico). En los 9 idiomas (`landing.tagline`). Es la línea aprobada — no volver a la anterior sin pedírselo.
 - Gancho permitido en web: el ángulo *Devil Wears Prada / Emily → aimily* sirve como **hook**, no como tesis del producto. Refuerzo, igual que en el pitch.
 
 ## 2 · Tono — canon para PITCH + APP (la landing está exenta)
