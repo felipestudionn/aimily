@@ -229,6 +229,9 @@ function buildPrompt(params: {
   parts.push(
     `• If any brand-like markings are visible in the reference, render them as clean unbranded surfaces — do not invent or replace logos.`
   );
+  parts.push(
+    `• NO THIRD-PARTY BRANDING anywhere in the scene: the model's wardrobe, accessories, props, and background must be free of third-party brand logos, wordmarks, monograms, brand names, or insignia. If the style reference shows branded clothing, bags, signage, or surfaces, reproduce their shape but render every branded surface CLEAN and UNBRANDED — strip the logo and the text. This never applies to the product itself (Image 1), which stays pixel-perfect.`
+  );
 
   // 5. Scene + lighting.
   parts.push(`SCENE: ${sceneDesc}.`);
@@ -682,6 +685,14 @@ export async function POST(req: NextRequest) {
         category === 'CALZADO'
           ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
           : '',
+        // BLINDAJE 7 — strip third-party branding from scene & wardrobe
+        // (added 2026-05-30). gpt-image-1.5 was carrying over visible
+        // third-party logos (e.g. a Prada wordmark) from Image 3's
+        // wardrobe / props into the output. The product (Image 1) is the
+        // user's OWN item and is reproduced verbatim; everything ELSE in
+        // the frame must be clean and unbranded. Additive clause — does
+        // not alter the existing product-preservation contract.
+        `NO THIRD-PARTY BRANDING (legal requirement): the final image MUST NOT show any third-party brand logos, wordmarks, monograms, brand names, or recognizable brand insignia anywhere in the frame — not on the model's wardrobe, not on accessories, bags, or props, not on background signage or storefronts, and never carried over from Image 3. If any reference shows a garment, bag, sign, or surface bearing a third-party logo or brand text, render that surface CLEAN and UNBRANDED: remove the logo and any text, keep the underlying shape and material. This rule does NOT touch Image 1's product, which stays pixel-perfect including its own intrinsic details.`,
         // ─── 5 STRUCTURAL BLINDAJES (added 2026-05-25) ───
         // Each clause closes a degree of freedom where gpt-image-1.5
         // was producing visible variance between runs of the same
